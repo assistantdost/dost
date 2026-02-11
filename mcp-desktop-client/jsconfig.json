@@ -1,0 +1,9 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"],
+			"@repo/shadcn-ui/*": ["src/*"]
+		}
+	}
+}

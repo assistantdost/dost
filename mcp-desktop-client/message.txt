@@ -1,0 +1,153 @@
+Temp messages: [
+[1]   {
+[1]     "role": "user",
+[1]     "content": [
+[1]       {
+[1]         "type": "text",
+[1]         "text": "hi"
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "user",
+[1]     "content": [
+[1]       {
+[1]         "type": "text",
+[1]         "text": "give me weather of durgapur"
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "assistant",
+[1]     "content": [
+[1]       {
+[1]         "type": "reasoning",
+[1]         "text": "Use get_weather tool."
+[1]       },
+[1]       {
+[1]         "type": "tool-call",
+[1]         "toolCallId": "fc_aad108aa-b29c-49e8-b497-137a4b3c3815",
+[1]         "toolName": "get_weather",
+[1]         "input": {
+[1]           "city": "Durgapur",
+[1]           "units": "metric"
+[1]         }
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "tool",
+[1]     "content": [
+[1]       {
+[1]         "type": "tool-result",
+[1]         "toolCallId": "fc_aad108aa-b29c-49e8-b497-137a4b3c3815",
+[1]         "toolName": "get_weather",
+[1]         "output": {
+[1]           "type": "json",
+[1]           "value": {
+[1]             "content": [
+[1]               {
+[1]                 "type": "text",
+[1]                 "text": "{\"city\":\"Durgapur\",\"country\":\"IN\",\"temperature\":17.45,\"feels_like\":16.24,\"humidity\":38,\"weather\":\"overcast clouds\",\"wind_speed\":2.29}"
+[1]               }
+[1]             ],
+[1]             "isError": false,
+[1]             "structuredContent": {
+[1]               "city": "Durgapur",
+[1]               "country": "IN",
+[1]               "temperature": 17.45,
+[1]               "feels_like": 16.24,
+[1]               "humidity": 38,
+[1]               "weather": "overcast clouds",
+[1]               "wind_speed": 2.29
+[1]             }
+[1]           }
+[1]         }
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "assistant",
+[1]     "content": [
+[1]       {
+[1]         "type": "text",
+[1]         "text": "### Weather in Durgapur (India) 🌤️  \n\n| Parameter | Value |\n|--- 
+--------|-------|\n| **Temperature** | 17.5 °C |\n| **Feels Like** | 16.2 °C |\n| **Humidity** | 38 % |\n| **Condition** | Overcast clouds |\n| **Wind Speed** | 2.3 m/s |\n\n*Data source: OpenWeatherMap (current conditions).*\n\nLet me know if you need a forecast, another location, or anything else!"
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "user",
+[1]     "content": [
+[1]       {
+[1]         "type": "text",
+[1]         "text": "now give me sys specs"
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "assistant",
+[1]     "content": [
+[1]       {
+[1]         "type": "reasoning",
+[1]         "text": "Use get_system_info."
+[1]       },
+[1]       {
+[1]         "type": "tool-call",
+[1]         "toolCallId": "fc_17061874-dfda-4e39-a968-b03b3b4a887d",
+[1]         "toolName": "get_system_info",
+[1]         "input": {}
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "tool",
+[1]     "content": [
+[1]       {
+[1]         "type": "tool-result",
+[1]         "toolCallId": "fc_17061874-dfda-4e39-a968-b03b3b4a887d",
+[1]         "toolName": "get_system_info",
+[1]         "output": {
+[1]           "type": "json",
+[1]           "value": {
+[1]             "content": [
+[1]               {
+[1]                 "type": "text",
+[1]                 "text": "--- System Information ---\nOS: Windows 11 Home Single Language (Build 22631)\nCPU: AMD64\nCores: 6 Physical, 12 Logical\nCPU Usage: 8.0%\nRAM: 12.80 GB / 13.86 GB (92.4%)\nDisk Usage:\n  - C:\\ 190.0/474.7 GB (40.0%)\n  - D:\\ 314.9/465.7 GB (67.6%)"
+[1]               }
+[1]             ],
+[1]             "isError": false,
+[1]             "structuredContent": {
+[1]               "result": "--- System Information ---\nOS: Windows 11 Home Single Language (Build 22631)\nCPU: AMD64\nCores: 6 Physical, 12 Logical\nCPU Usage: 8.0%\nRAM: 12.80 GB / 13.86 GB (92.4%)\nDisk Usage:\n  - C:\\ 190.0/474.7 GB (40.0%)\n  - D:\\ 314.9/465.7 GB (67.6%)"
+[1]             }
+[1]           }
+[1]         }
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "assistant",
+[1]     "content": [
+[1]       {
+[1]         "type": "text",
+[1]         "text": "### Your System Specs 🖥️\n\n| Component | Details |\n|-----------|- 
+--------|\n| **Operating System** | Windows 11 Home Single Language (Build 22631) |\n| **CPU** | AMD64 – 6 physical cores / 12 logical threads |\n| **CPU Usage** | 8 % (current) |\n| **Memory** | 12.80 GB used of 13.86 GB (≈ 92 % utilization) |\n| **Disk Usage** | • **C:\\\\** 190 GB / 474.7 GB (~40 %)<br>• **D:\\\\** 314.9 GB / 465.7 GB (~68 %) |\n\nIf you need more detailed info (e.g., GPU, network adapters) or want to run a specific diagnostic, just let me know!"
+[1]       }
+[1]     ]
+[1]   },
+[1]   {
+[1]     "role": "user",
+[1]     "content": [
+[1]       {
+[1]         "type": "text",
+[1]         "text": "hi"
+[1]       }
+[1]     ]
+[1]   }
+[1] ]
+
+
+
+
+[1] Received /api/chat request with messages: 
+[{"role":"user","parts":[{"type":"text","text":"hi","toolCallId":null,"toolName":null,"input":null,"output":null}],"id":"01KGRVNZE26SMKPCX34TJC9WPN","chat_id":"01KGRVNZ5T8FDXPPM4VAD8ESHA","created_at":"2026-02-06T06:54:25.631991Z"},{"role":"assistant","parts":[{"type":"step-start","text":null,"toolCallId":null,"toolName":null,"input":null,"output":null},{"type":"reasoning","text":"Need to greet.","toolCallId":null,"toolName":null,"input":null,"output":null},{"type":"text","text":"**Hello!** 👋 How can I assist you today?","toolCallId":null,"toolName":null,"input":null,"output":null}],"id":"01KGRVP3JXWPQSW2C0S0G04H6E","chat_id":"01KGRVNZ5T8FDXPPM4VAD8ESHA","created_at":"2026-02-06T06:54:29.718639Z"},{"role":"user","parts":[{"type":"text","text":"hello","toolCallId":null,"toolName":null,"input":null,"output":null}],"id":"01KGRVW9D894MNW7Y8E0X6N587","chat_id":"01KGRVNZ5T8FDXPPM4VAD8ESHA","created_at":"2026-02-06T06:57:52.372066Z"},{"role":"assistant","parts":[{"type":"step-start","text":null,"toolCallId":null,"toolName":null,"input":null,"output":null},{"type":"reasoning","text":"Continue conversation.","toolCallId":null,"toolName":null,"input":null,"output":null},{"type":"text","text":"Hi again! Let me know what you’d like help with—whether it’s managing your calendar, checking the weather, finding a song, or anything else. 🚀","toolCallId":null,"toolName":null,"input":null,"output":null}],"id":"01KGRVW9D8FAM9DSSE49HCEHKT","chat_id":"01KGRVNZ5T8FDXPPM4VAD8ESHA","created_at":"2026-02-06T06:57:52.372066Z"},{"role":"user","parts":[{"type":"text","text":"hi","toolCallId":null,"toolName":null,"input":null,"output":null}],"id":"01KGRY9TS5W72013CVBD21224K","chat_id":"01KGRVNZ5T8FDXPPM4VAD8ESHA","created_at":"2026-02-06T07:40:13.396138Z"},{"role":"assistant","parts":[{"type":"step-start","text":null,"toolCallId":null,"toolName":null,"input":null,"output":null},{"type":"reasoning","text":"Just respond.","toolCallId":null,"toolName":null,"input":null,"output":null},{"type":"text","text":"Hey there! What can I do for you today?","toolCallId":null,"toolName":null,"input":null,"output":null}],"id":"01KGRY9TS5DAQ1C0XJNQDNC6WN","chat_id":"01KGRVNZ5T8FDXPPM4VAD8ESHA","created_at":"2026-02-06T07:40:13.396138Z"},{"parts":[{"type":"text","text":"tools?"}],"id":"zHNn8cuvIvjezTXM","role":"user"}]

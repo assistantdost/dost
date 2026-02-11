@@ -1,0 +1,65 @@
+{
+    "screenshot": {
+        "directory": "C:\\Users\\sayan\\Pictures\\Screenshots",
+        "filename_format": "screenshot_%Y-%m-%d_%H-%M-%S",
+        "file_format": "png"
+    },
+    "applications": {
+        "common_apps": {
+            "notepad": "notepad.exe",
+            "calculator": "calc.exe",
+            "paint": "mspaint.exe",
+            "explorer": "explorer.exe",
+            "cmd": "cmd.exe",
+            "powershell": "powershell.exe",
+            "task_manager": "taskmgr.exe",
+            "control_panel": "control.exe",
+            "chrome": "chrome.exe",
+            "firefox": "firefox.exe",
+            "edge": "msedge.exe",
+            "vs_code": "code.exe",
+            "spotify": "Spotify.exe",
+            "discord": "Discord.exe",
+            "steam": "steam.exe",
+            "word": "winword.exe",
+            "excel": "excel.exe",
+            "powerpoint": "powerpnt.exe"
+        },
+        "custom_apps": {}
+    },
+    "web": {
+        "search_engines": {
+            "google": "https://www.google.com/search?q={}",
+            "bing": "https://www.bing.com/search?q={}",
+            "duckduckgo": "https://duckduckgo.com/?q={}",
+            "youtube": "https://www.youtube.com/results?search_query={}",
+            "github": "https://github.com/search?q={}"
+        },
+        "quick_links": {
+            "gmail": "https://mail.google.com",
+            "github": "https://github.com",
+            "stackoverflow": "https://stackoverflow.com"
+        }
+    },
+    "system": {
+        "volume": {
+            "default_step": 10,
+            "max_volume": 100,
+            "min_volume": 0
+        },
+        "brightness": {
+            "default_step": 10,
+            "max_brightness": 100,
+            "min_brightness": 0
+        }
+    },
+    "files": {
+        "downloads": "C:\\Users\\sayan\\Downloads",
+        "documents": "C:\\Users\\sayan\\Documents",
+        "desktop": "C:\\Users\\sayan\\Desktop"
+    },
+    "productivity": {
+        "notes_directory": "C:\\Users\\sayan\\Documents\\MCP_Notes",
+        "default_editor": "notepad.exe"
+    }
+}

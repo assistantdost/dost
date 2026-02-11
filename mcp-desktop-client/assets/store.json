@@ -1,0 +1,13 @@
+{
+  "authStore": {
+    "state": {
+      "user": {
+        "name": "Anirban Saha",
+        "email": "backup25993@gmail.com"
+      },
+      "logged": true
+    },
+    "version": 0
+  },
+  "test": "Hello from renderer!"
+}
