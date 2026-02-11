@@ -20,9 +20,25 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "./store/chatStore";
+import { useMcpStore } from "./store/mcpStore";
 
 function App() {
 	const { refreshToken, logged } = useAuthStore();
+	const {
+		init: initMcpStore,
+		listenForUpdates,
+		cleanup: cleanupMcpStore,
+	} = useMcpStore();
+
+	// Initialize MCP store
+	useEffect(() => {
+		initMcpStore();
+		listenForUpdates();
+
+		return () => {
+			cleanupMcpStore();
+		};
+	}, [initMcpStore, listenForUpdates, cleanupMcpStore]);
 
 	useEffect(() => {
 		// Attempt to refresh token on app load and every 15 minutes

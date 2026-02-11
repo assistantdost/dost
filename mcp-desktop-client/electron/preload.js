@@ -49,4 +49,23 @@ contextBridge.exposeInMainWorld("electron", {
 			ipcRenderer.send("electron-store-delete-all");
 		},
 	},
+	// MCP Store API
+	invoke: (channel, ...args) => {
+		const validChannels = ["mcp-get-state", "mcp-set-state"];
+		if (validChannels.includes(channel)) {
+			return ipcRenderer.invoke(channel, ...args);
+		}
+	},
+	on: (channel, func) => {
+		const validChannels = ["mcp-state-updated"];
+		if (validChannels.includes(channel)) {
+			ipcRenderer.on(channel, (event, ...args) => func(...args));
+		}
+	},
+	removeAllListeners: (channel) => {
+		const validChannels = ["mcp-state-updated"];
+		if (validChannels.includes(channel)) {
+			ipcRenderer.removeAllListeners(channel);
+		}
+	},
 });

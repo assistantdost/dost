@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import McpToolsExample from "@/components/McpToolsExample";
 
 function Test() {
 	const [result, setResult] = useState("");
@@ -100,24 +101,39 @@ function Test() {
 	return (
 		<div>
 			<h1>Hi, this is Testing</h1>
-			<Button onClick={testGetVersion}>Test IPC: Get App Version</Button>
-			<Button onClick={testGetPlatform}>Test IPC: Get Platform</Button>
-			<Button onClick={testAppStoreGet}>
-				Test IPC: electron.store Get
-			</Button>
-			<Button onClick={testAppStoreSet}>
-				Test IPC: electron.store Set
-			</Button>
-			<Button onClick={testAppStoreDelete}>
-				Test IPC: electron.store Delete
-			</Button>
-			<Button onClick={testAppStoreGetAll}>
-				Test IPC: electron.store Get All
-			</Button>
-			<Button onClick={testAppStoreDeleteAll}>
-				Test IPC: electron.store Delete All
-			</Button>
-			<p>{result}</p>
+
+			<div className="mb-8">
+				<h2 className="text-2xl font-bold mb-4">MCP Store Test</h2>
+				<McpToolsExample />
+			</div>
+
+			<div className="mb-8">
+				<h2 className="text-2xl font-bold mb-4">IPC Tests</h2>
+				<div className="flex flex-wrap gap-2">
+					<Button onClick={testGetVersion}>
+						Test IPC: Get App Version
+					</Button>
+					<Button onClick={testGetPlatform}>
+						Test IPC: Get Platform
+					</Button>
+					<Button onClick={testAppStoreGet}>
+						Test IPC: electron.store Get
+					</Button>
+					<Button onClick={testAppStoreSet}>
+						Test IPC: electron.store Set
+					</Button>
+					<Button onClick={testAppStoreDelete}>
+						Test IPC: electron.store Delete
+					</Button>
+					<Button onClick={testAppStoreGetAll}>
+						Test IPC: electron.store Get All
+					</Button>
+					<Button onClick={testAppStoreDeleteAll}>
+						Test IPC: electron.store Delete All
+					</Button>
+				</div>
+				<p className="mt-4">{result}</p>
+			</div>
 		</div>
 	);
 }

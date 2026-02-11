@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import Store from "electron-store";
 import "./ipcStore.js";
 import { createServer } from "./server/server.js";
+import { getSerializedState, updateMcpStore } from "./mcpStore.js";
 
 const store = new Store();
 
@@ -24,6 +25,17 @@ ipcMain.on("electron-store-get-all", async (event) => {
 
 ipcMain.on("electron-store-delete-all", (event) => {
 	store.clear(); // Clears all data
+});
+
+// ✅ MCP Store IPC handlers
+ipcMain.handle("mcp-get-state", () => {
+	const state = getSerializedState();
+	console.log("📤 Sending MCP state to renderer:", state);
+	return state;
+});
+
+ipcMain.handle("mcp-set-state", (event, key, value) => {
+	updateMcpStore(key, value);
 });
 
 const __filename = fileURLToPath(import.meta.url);
@@ -61,6 +73,15 @@ function createWindow() {
 app.whenReady().then(async () => {
 	createWindow();
 	await createServer(mainWindow);
+
+	// ✅ Pre-load MCP tools on startup
+	try {
+		const { getTools } = await import("./ai/tools.js");
+		await getTools();
+		console.log("✅ MCP tools loaded on startup");
+	} catch (error) {
+		console.error("❌ Failed to pre-load MCP tools:", error);
+	}
 });
 
 app.on("window-all-closed", () => {
