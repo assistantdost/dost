@@ -3,7 +3,14 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { groq } from "@ai-sdk/groq";
 
+// ✅ Cache tools to avoid re-fetching on every call
+let cachedTools = null;
+
 export async function getTools() {
+	if (cachedTools) {
+		return cachedTools;
+	}
+
 	// Initialize clients in parallel
 	const [mcpClient, localMcpClient] = await Promise.all([
 		createMCPClient({
@@ -21,7 +28,7 @@ export async function getTools() {
 
 	const toolsRemote = await mcpClient.tools();
 	const toolsLocal = await localMcpClient.tools();
-	const tools = { ...toolsRemote, ...toolsLocal };
+	cachedTools = { ...toolsRemote, ...toolsLocal };
 
-	return tools;
+	return cachedTools;
 }
