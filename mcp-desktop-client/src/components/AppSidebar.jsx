@@ -12,6 +12,7 @@ import {
 	Sun,
 	Moon,
 	MessageSquarePlus,
+	ToolCase,
 } from "lucide-react";
 
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -22,6 +23,7 @@ import {
 	SidebarContent,
 	SidebarGroup,
 	SidebarGroupContent,
+	SidebarGroupAction,
 	SidebarGroupLabel,
 	SidebarMenu,
 	SidebarMenuButton,
@@ -36,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
 import useGlobalStore from "@/store/globalStore";
+import { useMcpStore } from "@/store/mcpStore";
 import { getUserChats } from "@/api/chat";
 
 import { ChatItemActions } from "@/components/sidebar/ChatItemActions";
@@ -64,6 +67,7 @@ export function AppSidebar() {
 	const { logged, token } = useAuthStore();
 	const { setChats, activeChatId } = useChatStore();
 	const { theme, toggleTheme } = useGlobalStore();
+	const { activeTools } = useMcpStore();
 
 	// Fetch user chats with TanStack Query - only when logged and has token
 	const { data: chats = [], isLoading: isLoadingChats } = useQuery({
@@ -77,6 +81,7 @@ export function AppSidebar() {
 			setChats(data);
 		},
 	});
+
 	return (
 		<Sidebar>
 			<SidebarHeader className="border-b px-4 py-2">
@@ -153,6 +158,32 @@ export function AppSidebar() {
 									))}
 								</SidebarMenu>
 							)}
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
+
+				{/* Tools Section - At the bottom of sidebar content */}
+				{logged && (
+					<SidebarGroup>
+						<SidebarGroupLabel>Tools</SidebarGroupLabel>
+						<SidebarGroupContent>
+							<Button
+								className=" w-full cursor-pointer"
+								variant="ghost"
+							>
+								<Link
+									to="/tools"
+									className="flex justify-between items-center gap-2 w-full"
+								>
+									<div className="flex items-center gap-2">
+										<ToolCase className="h-4 w-4" />
+										<span>Tools</span>
+									</div>
+									<span className="text-xs bg-primary/10 px-2 py-1 rounded-full">
+										{Object.keys(activeTools).length}
+									</span>
+								</Link>
+							</Button>
 						</SidebarGroupContent>
 					</SidebarGroup>
 				)}
