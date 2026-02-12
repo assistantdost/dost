@@ -1,5 +1,6 @@
 import { readMcpConfig } from "./configManager.js";
 import { initializeMcpClients } from "./clientManager.js";
+import { getConnectionStats } from "../mcpStore.js";
 
 /**
  * Initialize MCP clients from configuration file
@@ -34,4 +35,21 @@ export async function initializeMcpOnStartup() {
 		console.error("❌ Failed to initialize MCP tools on startup:", error);
 		throw error;
 	}
+}
+
+/**
+ * Force re-initialization (for debugging)
+ */
+export async function forceReinitialize() {
+	console.log("🔄 Force re-initializing MCP clients...");
+	return await initializeMcpOnStartup();
+}
+
+/**
+ * Get initialization status
+ */
+export function getInitStatus() {
+	return {
+		stats: getConnectionStats(),
+	};
 }

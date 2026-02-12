@@ -257,13 +257,36 @@ export const useMcpStore = create((set, get) => ({
 		}
 	},
 
-	// ========== EXISTING STORE METHODS ==========
+	// ========== DIAGNOSTICS & DEBUGGING ==========
 
-	// Set active tools
-	setActiveTools: (tools) => {
-		set({ activeTools: tools });
-		if (isRenderer) {
-			window.electron.invoke("mcp-set-state", "activeTools", tools);
+	// Get initialization status
+	getInitStatus: async () => {
+		if (!isRenderer) return null;
+
+		try {
+			const status = await window.electron.mcp.getInitStatus();
+			console.log("📊 Init status:", status);
+			return status;
+		} catch (error) {
+			console.error("❌ Error getting init status:", error);
+			return null;
+		}
+	},
+
+	// Force re-initialization
+	forceReinitialize: async () => {
+		if (!isRenderer) return { success: false };
+
+		try {
+			console.log("🔄 Force re-initializing MCP...");
+			const result = await window.electron.mcp.forceReinitialize();
+			toast.success("MCP re-initialized successfully");
+			console.log("✅ Force re-initialization complete:", result);
+			return { success: true, data: result };
+		} catch (error) {
+			console.error("❌ Error force re-initializing:", error);
+			toast.error("Failed to re-initialize MCP");
+			return { success: false, error: error.message };
 		}
 	},
 

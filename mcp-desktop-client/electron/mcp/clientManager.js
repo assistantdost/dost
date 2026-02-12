@@ -24,12 +24,13 @@ export async function initializeMcpClients(config) {
 
 	console.log(`📊 Found ${enabledServers.length} enabled servers`);
 
-	// Optimization: Load servers in parallel instead of sequentially
+	// Optimization: Parallel loading with Promise.allSettled
 	const connectionPromises = enabledServers.map(
 		async ([serverName, serverConfig]) => {
 			try {
 				console.log(`🔌 Connecting to ${serverName}...`);
 
+				let client;
 				let transport;
 
 				// Create transport based on type
@@ -42,11 +43,11 @@ export async function initializeMcpClients(config) {
 					serverConfig.transport === "streamable_http" ||
 					serverConfig.transport === "http"
 				) {
-					transport = {
-						type: "http",
-						url: serverConfig.url,
-						headers: serverConfig.headers || {},
-					};
+					const headers = serverConfig.headers || {};
+					transport = new StreamableHTTPClientTransport(
+						new URL(serverConfig.url),
+						{ headers },
+					);
 				} else if (serverConfig.transport === "sse") {
 					transport = {
 						type: "sse",
@@ -59,10 +60,7 @@ export async function initializeMcpClients(config) {
 					);
 				}
 
-				// Create MCP client
-				const client = await createMCPClient({ transport });
-
-				// Get tools from the client
+				client = await createMCPClient({ transport });
 				const tools = await client.tools();
 
 				// Add to store
@@ -76,7 +74,7 @@ export async function initializeMcpClients(config) {
 					`✅ ${serverName} connected (${Object.keys(tools).length} tools)`,
 				);
 
-				return { serverName, success: true, tools };
+				return { serverName, success: true, tools: Object.keys(tools) };
 			} catch (error) {
 				console.error(
 					`❌ Failed to connect to ${serverName}:`,
@@ -88,20 +86,23 @@ export async function initializeMcpClients(config) {
 	);
 
 	// Wait for all connections to complete
-	const connectionResults = await Promise.all(connectionPromises);
+	const connectionResults = await Promise.allSettled(connectionPromises);
 
-	// Process results
-	for (const result of connectionResults) {
-		if (result.success) {
-			results.success.push(result.serverName);
-			results.tools[result.serverName] = Object.keys(result.tools); // Keep as keys for summary
+	// Process results from Promise.allSettled
+	connectionResults.forEach((result) => {
+		if (result.status === "fulfilled") {
+			const { serverName, success, tools } = result.value;
+			if (success) {
+				results.success.push(serverName);
+				results.tools[serverName] = tools;
+			} else {
+				results.failed.push({ serverName, error: result.value.error });
+			}
 		} else {
-			results.failed.push({
-				serverName: result.serverName,
-				error: result.error,
-			});
+			// This shouldn't happen since we handle errors inside the promises
+			console.error("Unexpected promise rejection:", result.reason);
 		}
-	}
+	});
 
 	console.log(
 		`✅ MCP initialization complete: ${results.success.length} success, ${results.failed.length} failed`,
@@ -120,15 +121,11 @@ export function disconnectAllClients() {
 	console.log("✅ All clients disconnected");
 }
 
-/**
- * Connect a single server
- * @param {string} serverName - Name of the server
- * @param {Object} serverConfig - Server configuration
- */
 export async function connectSingleServer(serverName, serverConfig) {
 	try {
 		console.log(`🔌 Connecting to ${serverName}...`);
 
+		let client;
 		let transport;
 
 		if (serverConfig.transport === "stdio") {
@@ -140,24 +137,18 @@ export async function connectSingleServer(serverName, serverConfig) {
 			serverConfig.transport === "streamable_http" ||
 			serverConfig.transport === "http"
 		) {
-			transport = {
-				type: "http",
-				url: serverConfig.url,
-				headers: serverConfig.headers || {},
-			};
-		} else if (serverConfig.transport === "sse") {
-			transport = {
-				type: "sse",
-				url: serverConfig.url,
-				headers: serverConfig.headers || {},
-			};
+			const headers = serverConfig.headers || {};
+			transport = new StreamableHTTPClientTransport(
+				new URL(serverConfig.url),
+				{ headers },
+			);
 		} else {
 			throw new Error(
 				`Unsupported transport type: ${serverConfig.transport}`,
 			);
 		}
 
-		const client = await createMCPClient({ transport });
+		client = await createMCPClient({ transport });
 		const tools = await client.tools();
 
 		addMcpServer(serverName, client, tools, {

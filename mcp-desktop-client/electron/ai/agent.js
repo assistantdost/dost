@@ -22,7 +22,20 @@ export async function chatAgent() {
 	// Always get fresh tools from store
 	const tools = getActiveTools();
 
-	if (!cachedAgent) {
+	// Check if tools have changed (compare tool names)
+	const currentToolNames = Object.keys(tools || {});
+	const cachedToolNames = cachedAgent
+		? Object.keys(cachedAgent.tools || {}).filter(
+				(name) => name !== "browser_search",
+			)
+		: [];
+
+	const toolsChanged =
+		currentToolNames.length !== cachedToolNames.length ||
+		!currentToolNames.every((name) => cachedToolNames.includes(name));
+
+	if (!cachedAgent || toolsChanged) {
+		// Create new agent if it doesn't exist or tools changed
 		cachedAgent = new Agent({
 			model: groq("openai/gpt-oss-20b"),
 			tools: {
@@ -42,12 +55,6 @@ export async function chatAgent() {
          Diagram (Graphviz/DOT): Render compact, modern diagram (rounded nodes, pastel colors, Helvetica font, light grey edges, fits A4 width), just mention one line about it, nothing more info.
          Always give Authorization links as clickable hyperlinks in markdown format like - [link text](https://example.com)`,
 		});
-	} else {
-		// Update tools in existing agent
-		cachedAgent.tools = {
-			...tools,
-			browser_search: groq.tools.browserSearch({}),
-		};
 	}
 
 	return cachedAgent;

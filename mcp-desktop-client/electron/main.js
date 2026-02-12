@@ -29,17 +29,6 @@ ipcMain.on("electron-store-delete-all", (event) => {
 	store.clear(); // Clears all data
 });
 
-// ✅ MCP Store IPC handlers
-ipcMain.handle("mcp-get-state", () => {
-	const state = getSerializedState();
-	console.log("📤 Sending MCP state to renderer:", state);
-	return state;
-});
-
-ipcMain.handle("mcp-set-state", (event, key, value) => {
-	updateMcpStore(key, value);
-});
-
 // ✅ Register MCP IPC handlers
 registerMcpIpcHandlers();
 
