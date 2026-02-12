@@ -51,7 +51,16 @@ contextBridge.exposeInMainWorld("electron", {
 	},
 	// MCP Store API
 	invoke: (channel, ...args) => {
-		const validChannels = ["mcp-get-state", "mcp-set-state"];
+		const validChannels = [
+			"mcp-get-state",
+			"mcp-set-state",
+			"mcp-login-load-defaults",
+			"mcp-read-config",
+			"mcp-add-server",
+			"mcp-remove-server",
+			"mcp-update-server",
+			"mcp-connect",
+		];
 		if (validChannels.includes(channel)) {
 			return ipcRenderer.invoke(channel, ...args);
 		}
@@ -67,5 +76,17 @@ contextBridge.exposeInMainWorld("electron", {
 		if (validChannels.includes(channel)) {
 			ipcRenderer.removeAllListeners(channel);
 		}
+	},
+	// MCP Config API - convenient wrappers
+	mcp: {
+		loginLoadDefaults: (apiUrl) =>
+			ipcRenderer.invoke("mcp-login-load-defaults", apiUrl),
+		readConfig: () => ipcRenderer.invoke("mcp-read-config"),
+		addServer: (name, config) =>
+			ipcRenderer.invoke("mcp-add-server", name, config),
+		removeServer: (name) => ipcRenderer.invoke("mcp-remove-server", name),
+		updateServer: (name, updates) =>
+			ipcRenderer.invoke("mcp-update-server", name, updates),
+		connect: () => ipcRenderer.invoke("mcp-connect"),
 	},
 });

@@ -21,23 +21,6 @@ export default function McpToolsExample() {
 		await init();
 	};
 
-	// Initialize on mount
-	React.useEffect(() => {
-		console.log("🚀 McpToolsExample mounted, calling init...");
-		init();
-	}, [init]);
-
-	// Debug: Log state changes
-	React.useEffect(() => {
-		console.log("📊 McpToolsExample - Current state:", {
-			isInitialized,
-			serversCount: Object.keys(mcpServers).length,
-			toolsCount: allTools.length,
-			servers: Object.keys(mcpServers),
-			tools: allTools,
-		});
-	}, [mcpServers, allTools, isInitialized]);
-
 	return (
 		<div className="p-4">
 			<div className="flex items-center justify-between mb-4">

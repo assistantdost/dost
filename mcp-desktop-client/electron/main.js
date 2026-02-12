@@ -6,6 +6,8 @@ import Store from "electron-store";
 import "./ipcStore.js";
 import { createServer } from "./server/server.js";
 import { getSerializedState, updateMcpStore } from "./mcpStore.js";
+import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
+import { initializeMcpOnStartup } from "./mcp/initializer.js";
 
 const store = new Store();
 
@@ -37,6 +39,9 @@ ipcMain.handle("mcp-get-state", () => {
 ipcMain.handle("mcp-set-state", (event, key, value) => {
 	updateMcpStore(key, value);
 });
+
+// ✅ Register MCP IPC handlers
+registerMcpIpcHandlers();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,14 +79,8 @@ app.whenReady().then(async () => {
 	createWindow();
 	await createServer(mainWindow);
 
-	// ✅ Pre-load MCP tools on startup
-	try {
-		const { getTools } = await import("./ai/tools.js");
-		await getTools();
-		console.log("✅ MCP tools loaded on startup");
-	} catch (error) {
-		console.error("❌ Failed to pre-load MCP tools:", error);
-	}
+	// ✅ Initialize MCP tools on startup from mcp.json
+	await initializeMcpOnStartup();
 });
 
 app.on("window-all-closed", () => {
