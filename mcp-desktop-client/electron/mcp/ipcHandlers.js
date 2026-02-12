@@ -75,6 +75,20 @@ export function registerMcpIpcHandlers() {
 		}
 	});
 
+	// Disconnect from all MCP servers
+	ipcMain.handle("mcp-disconnect", async () => {
+		try {
+			console.log("🔌 Disconnecting MCP clients from IPC...");
+			const { disconnectAllClients } = await import("./clientManager.js");
+			disconnectAllClients();
+			console.log("✅ MCP clients disconnected");
+			return { success: true };
+		} catch (error) {
+			console.error("❌ Error disconnecting MCP clients:", error);
+			return { success: false, error: error.message };
+		}
+	});
+
 	// Optimization: Get state with caching
 	ipcMain.handle("mcp-get-state", () => {
 		return getSerializedState();

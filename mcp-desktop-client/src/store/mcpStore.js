@@ -106,6 +106,13 @@ export const useMcpStore = create((set, get) => ({
 				}));
 				toast.success(`Server "${serverName}" added`);
 				console.log(`✅ Added server to config: ${serverName}`);
+
+				// Auto-connect if enabled
+				if (serverConfig.enabled !== false) {
+					console.log(`🔄 Auto-connecting ${serverName}...`);
+					await get().connectToServers();
+				}
+
 				return { success: true };
 			} else {
 				toast.error(`Failed to add server: ${result.error}`);
@@ -130,7 +137,15 @@ export const useMcpStore = create((set, get) => ({
 				set((state) => {
 					const newConfig = { ...state.serverConfig };
 					delete newConfig[serverName];
-					return { serverConfig: newConfig };
+
+					// Also remove from mcpServers
+					const newMcpServers = { ...state.mcpServers };
+					delete newMcpServers[serverName];
+
+					return {
+						serverConfig: newConfig,
+						mcpServers: newMcpServers,
+					};
 				});
 				toast.success(`Server "${serverName}" removed`);
 				console.log(`✅ Removed server from config: ${serverName}`);
@@ -169,6 +184,15 @@ export const useMcpStore = create((set, get) => ({
 				}));
 				toast.success(`Server "${serverName}" updated`);
 				console.log(`✅ Updated server in config: ${serverName}`);
+
+				// If enabled state changed, reconnect servers
+				if (updates.hasOwnProperty("enabled")) {
+					console.log(
+						`🔄 Enabled state changed for ${serverName}, reconnecting...`,
+					);
+					await get().connectToServers();
+				}
+
 				return { success: true };
 			} else {
 				toast.error(`Failed to update server: ${result.error}`);
@@ -213,16 +237,14 @@ export const useMcpStore = create((set, get) => ({
 			const connectResult = await window.electron.mcp.connect();
 
 			if (connectResult.success) {
-				// Update local state with connected tools
-				// set({
-				// 	activeTools: connectResult.tools,
-				// 	isConnecting: false,
-				// 	isConnected: true,
-				// });
-				// toast.success(
-				// 	`Connected to ${enabledServers.length} server${enabledServers.length > 1 ? "s" : ""}`,
-				// );
-				// console.log("✅ Connected successfully:", connectResult);
+				set({
+					isConnecting: false,
+					isConnected: true,
+				});
+				toast.success(
+					`Connected to ${enabledServers.length} server${enabledServers.length > 1 ? "s" : ""}`,
+				);
+				console.log("✅ Connected successfully:", connectResult);
 				return { success: true };
 			} else {
 				throw new Error(connectResult.error);
@@ -236,11 +258,14 @@ export const useMcpStore = create((set, get) => ({
 	},
 
 	// Disconnect from all servers
-	disconnectFromServers: () => {
+	disconnectFromServers: async () => {
 		if (!isRenderer) return;
 
 		try {
 			console.log("🔌 Disconnecting from all servers...");
+
+			// Call main process to disconnect
+			await window.electron.mcp.disconnect();
 
 			// Clear local state
 			set({

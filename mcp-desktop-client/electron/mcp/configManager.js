@@ -1,6 +1,7 @@
 import { app } from "electron";
 import path from "path";
 import fs from "fs/promises";
+import { removeMcpServer } from "../mcpStore.js";
 
 // MCP configuration file path
 export const MCP_CONFIG_PATH = path.join(app.getPath("userData"), "mcp.json");
@@ -105,6 +106,10 @@ export async function removeServer(serverName) {
 		const config = await readMcpConfig();
 		delete config[serverName];
 		await writeMcpConfig(config);
+
+		// Also disconnect the server from main process
+		removeMcpServer(serverName);
+
 		console.log(`✅ Removed server: ${serverName}`);
 		return { success: true };
 	} catch (error) {

@@ -88,6 +88,7 @@ contextBridge.exposeInMainWorld("electron", {
 		updateServer: (name, updates) =>
 			ipcRenderer.invoke("mcp-update-server", name, updates),
 		connect: () => ipcRenderer.invoke("mcp-connect"),
+		disconnect: () => ipcRenderer.invoke("mcp-disconnect"),
 		getInitStatus: () => ipcRenderer.invoke("mcp-get-init-status"),
 		forceReinitialize: () => ipcRenderer.invoke("mcp-force-reinitialize"),
 	},

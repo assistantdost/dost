@@ -1,7 +1,12 @@
 import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { addMcpServer, removeMcpServer, getActiveTools } from "../mcpStore.js";
+import {
+	addMcpServer,
+	removeMcpServer,
+	getActiveTools,
+	mcpStore,
+} from "../mcpStore.js";
 
 /**
  * Initialize MCP clients from configuration
@@ -116,8 +121,17 @@ export async function initializeMcpClients(config) {
  */
 export function disconnectAllClients() {
 	console.log("🔌 Disconnecting all MCP clients...");
-	// The mcpStore handles client cleanup
-	// Individual clients can be disconnected if needed
+
+	// Disconnect all clients
+	const serverNames = Object.keys(mcpStore.mcpServers);
+	serverNames.forEach((serverName) => {
+		removeMcpServer(serverName);
+	});
+
+	// Clear active tools
+	mcpStore.activeTools = {};
+	mcpStore._cacheInvalidated = true;
+
 	console.log("✅ All clients disconnected");
 }
 
