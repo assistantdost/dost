@@ -37,7 +37,7 @@ export async function chatAgent() {
 	if (!cachedAgent || toolsChanged) {
 		// Create new agent if it doesn't exist or tools changed
 		cachedAgent = new Agent({
-			model: groq("openai/gpt-oss-20b"),
+			model: groq("openai/gpt-oss-120b"),
 			tools: {
 				...tools,
 				browser_search: groq.tools.browserSearch({}),

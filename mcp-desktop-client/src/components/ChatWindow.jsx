@@ -91,13 +91,14 @@ const partsToText = (parts) => {
 };
 
 // ✅ Memoized Message Component for better performance
-const MemoizedMessagePart = memo(({ part, messageId, index, status }) => {
+const MemoizedMessagePart = memo(({ part, messageId, index, status, role }) => {
 	switch (part.type) {
 		case "text":
 			return (
 				<Response
 					key={`${messageId}-${index}`}
 					state={part.state || "done"}
+					role={role}
 				>
 					{part.text}
 				</Response>
@@ -119,7 +120,11 @@ const MemoizedMessagePart = memo(({ part, messageId, index, status }) => {
 					key={`${messageId}-${index}`}
 					defaultOpen={part.state === "output-available"}
 				>
-					<ToolHeader type={part.type} state={part.state} />
+					<ToolHeader
+						type={part.type}
+						toolName={part.toolName}
+						state={part.state}
+					/>
 					<ToolContent>
 						<ToolInput input={part.input} />
 						{part.state === "output-available" && (
@@ -398,6 +403,7 @@ export default function ChatWindow({ chatId, initialMessages = [] }) {
 									messageId={message.id}
 									index={i}
 									status={status}
+									role={message.role}
 								/>
 							))}
 						</MessageContent>
