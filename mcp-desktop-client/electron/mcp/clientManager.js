@@ -33,7 +33,7 @@ export async function initializeMcpClients(config) {
 	const connectionPromises = enabledServers.map(
 		async ([serverName, serverConfig]) => {
 			try {
-				console.log(`🔌 Connecting to ${serverName}...`);
+				console.log(`🔌 Connecting to ${serverName}`);
 
 				let client;
 				let transport;

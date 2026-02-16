@@ -9,6 +9,8 @@ import { getSerializedState, updateMcpStore } from "./mcpStore.js";
 import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
 import { initializeMcpOnStartup } from "./mcp/initializer.js";
 
+import { tools } from "./mcp/tools.js";
+
 const store = new Store();
 
 // IPC listeners
@@ -70,6 +72,9 @@ app.whenReady().then(async () => {
 
 	// ✅ Initialize MCP tools on startup from mcp.json
 	await initializeMcpOnStartup();
+
+	await tools.init();
+	// const results = await tools.initializeMcpClients();
 });
 
 app.on("window-all-closed", () => {

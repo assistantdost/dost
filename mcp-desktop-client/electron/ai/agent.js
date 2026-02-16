@@ -43,7 +43,7 @@ export async function chatAgent() {
 				browser_search: groq.tools.browserSearch({}),
 			},
 			toolChoice: "auto",
-			stopWhen: stepCountIs(10),
+			stopWhen: stepCountIs(5),
 			system: `You are a helpful assistant. You can use multiple tools in sequence to solve complex tasks.
          If a tool's output suggests another tool should be used, do so.
          Always explain your reasoning and show intermediate steps.
