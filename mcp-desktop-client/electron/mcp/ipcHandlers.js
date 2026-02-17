@@ -7,6 +7,13 @@ import {
 	updateServer,
 } from "./configManager.js";
 import { initializeMcpClients } from "./clientManager.js";
+import { getSerializedState, getConnectionStats } from "../mcpStore.js";
+import { getInitStatus, forceReinitialize } from "./initializer.js";
+
+// IPC handlers use configManager's indefinite caching
+async function getConfig() {
+	return await readMcpConfig();
+}
 
 /**
  * Register all MCP-related IPC handlers
@@ -17,10 +24,10 @@ export function registerMcpIpcHandlers() {
 		return await loadDefaultServers(apiUrl);
 	});
 
-	// Read mcp.json config
+	// Read mcp.json config (with indefinite caching)
 	ipcMain.handle("mcp-read-config", async () => {
 		try {
-			return await readMcpConfig();
+			return await getConfig();
 		} catch (error) {
 			console.error("❌ Error reading mcp.json:", error);
 			return {};
@@ -49,18 +56,57 @@ export function registerMcpIpcHandlers() {
 	ipcMain.handle("mcp-connect", async () => {
 		try {
 			console.log("🔌 Connecting MCP clients from IPC...");
-			const config = await readMcpConfig();
+			const config = await getConfig();
 			const result = await initializeMcpClients(config);
 
-			// Flatten tools from all servers into a single array
-			const allTools = Object.values(result.tools).flat();
+			// Optimization: Return structured data instead of flattening
+			const stats = getConnectionStats();
 
 			console.log("✅ MCP clients connected:", result);
-			return { success: true, tools: allTools };
+			return {
+				success: true,
+				tools: Object.keys(result.tools).flat(),
+				stats,
+				results: result,
+			};
 		} catch (error) {
 			console.error("❌ Error connecting MCP clients:", error);
 			return { success: false, error: error.message };
 		}
+	});
+
+	// Disconnect from all MCP servers
+	ipcMain.handle("mcp-disconnect", async () => {
+		try {
+			console.log("🔌 Disconnecting MCP clients from IPC...");
+			const { disconnectAllClients } = await import("./clientManager.js");
+			disconnectAllClients();
+			console.log("✅ MCP clients disconnected");
+			return { success: true };
+		} catch (error) {
+			console.error("❌ Error disconnecting MCP clients:", error);
+			return { success: false, error: error.message };
+		}
+	});
+
+	// Optimization: Get state with caching
+	ipcMain.handle("mcp-get-state", () => {
+		return getSerializedState();
+	});
+
+	// Get connection stats
+	ipcMain.handle("mcp-get-stats", () => {
+		return getConnectionStats();
+	});
+
+	// Get initialization status
+	ipcMain.handle("mcp-get-init-status", () => {
+		return getInitStatus();
+	});
+
+	// Force re-initialization
+	ipcMain.handle("mcp-force-reinitialize", async () => {
+		return await forceReinitialize();
 	});
 
 	console.log("✅ MCP IPC handlers registered");

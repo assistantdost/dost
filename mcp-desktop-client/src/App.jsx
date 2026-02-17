@@ -16,6 +16,7 @@ import Login from "@/pages/Login";
 import Chat from "@/pages/Chat";
 import Account from "@/pages/Account";
 import Settings from "@/pages/Settings";
+import Tools from "@/pages/Tools";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 import { useAuthStore } from "@/store/authStore";
@@ -107,6 +108,14 @@ function App() {
 								</ProtectedRoute>
 							}
 						/>
+						<Route
+							path="tools"
+							element={
+								<ProtectedRoute>
+									<Tools />
+								</ProtectedRoute>
+							}
+						></Route>
 						<Route path="test" element={<Test />} />
 					</Route>
 				</Routes>

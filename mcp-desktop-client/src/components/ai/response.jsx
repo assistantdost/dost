@@ -23,11 +23,11 @@ import "katex/dist/katex.min.css";
 import hardenReactMarkdown from "harden-react-markdown";
 
 // ✅ Lazy load heavy diagram libraries
-const MermaidDiagram = lazy(() =>
-	import("@/components/diagrams/MermaidDiagram")
+const MermaidDiagram = lazy(
+	() => import("@/components/diagrams/MermaidDiagram"),
 );
-const GraphvizDiagram = lazy(() =>
-	import("@/components/diagrams/GraphvizDiagram")
+const GraphvizDiagram = lazy(
+	() => import("@/components/diagrams/GraphvizDiagram"),
 );
 
 /**
@@ -257,7 +257,7 @@ const PreComponent = memo(({ node, className, children, state }) => {
 								}
 								onError={() =>
 									console.error(
-										"Failed to copy code to clipboard"
+										"Failed to copy code to clipboard",
 									)
 								}
 							/>
@@ -298,7 +298,7 @@ const PreComponent = memo(({ node, className, children, state }) => {
 								}
 								onError={() =>
 									console.error(
-										"Failed to copy code to clipboard"
+										"Failed to copy code to clipboard",
 									)
 								}
 							/>
@@ -352,6 +352,7 @@ export const Response = memo(
 		defaultOrigin,
 		parseIncompleteMarkdown: shouldParseIncompleteMarkdown = true,
 		state,
+		role,
 		...props
 	}) => {
 		// ✅ Defer children to prevent freezing during streaming
@@ -364,17 +365,17 @@ export const Response = memo(
 				shouldParseIncompleteMarkdown
 					? parseIncompleteMarkdown(deferredChildren)
 					: deferredChildren,
-			[deferredChildren, shouldParseIncompleteMarkdown]
+			[deferredChildren, shouldParseIncompleteMarkdown],
 		);
 
 		// ✅ Memoized components for better performance
 		const components = useMemo(
 			() => ({
-				ol: ({ node, children, className, ...props }) => (
+				ol: ({ node, children, className, role, ...props }) => (
 					<ol
 						className={cn(
 							"ml-4 list-outside list-decimal",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -408,8 +409,8 @@ export const Response = memo(
 				a: ({ node, children, className, ...props }) => (
 					<a
 						className={cn(
-							"font-medium text-primary underline",
-							className
+							`font-medium ${role === "assistant" ? "text-primary" : "text-secondary"} underline`,
+							className,
 						)}
 						rel="noreferrer"
 						target="_blank"
@@ -422,7 +423,7 @@ export const Response = memo(
 					<h1
 						className={cn(
 							"mt-6 mb-2 font-semibold text-3xl",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -433,7 +434,7 @@ export const Response = memo(
 					<h2
 						className={cn(
 							"mt-6 mb-2 font-semibold text-2xl",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -444,7 +445,7 @@ export const Response = memo(
 					<h3
 						className={cn(
 							"mt-6 mb-2 font-semibold text-xl",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -455,7 +456,7 @@ export const Response = memo(
 					<h4
 						className={cn(
 							"mt-6 mb-2 font-semibold text-lg",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -466,7 +467,7 @@ export const Response = memo(
 					<h5
 						className={cn(
 							"mt-6 mb-2 font-semibold text-base",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -477,7 +478,7 @@ export const Response = memo(
 					<h6
 						className={cn(
 							"mt-6 mb-2 font-semibold text-sm",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -489,7 +490,7 @@ export const Response = memo(
 						<table
 							className={cn(
 								"w-full border-collapse border border-border",
-								className
+								className,
 							)}
 							{...props}
 						>
@@ -522,7 +523,7 @@ export const Response = memo(
 					<th
 						className={cn(
 							"px-4 py-2 text-left font-semibold text-sm",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -541,7 +542,7 @@ export const Response = memo(
 					<img
 						className={cn(
 							"my-4 max-h-96 w-auto rounded-md border border-border object-contain",
-							className
+							className,
 						)}
 						alt={alt || "Image"}
 						loading="lazy"
@@ -552,7 +553,7 @@ export const Response = memo(
 					<blockquote
 						className={cn(
 							"my-4 border-muted-foreground/30 border-l-4 pl-4 text-muted-foreground italic",
-							className
+							className,
 						)}
 						{...props}
 					>
@@ -571,7 +572,7 @@ export const Response = memo(
 						<code
 							className={cn(
 								"rounded bg-muted px-1.5 py-0.5 font-mono text-sm",
-								className
+								className,
 							)}
 							{...props}
 						/>
@@ -586,14 +587,14 @@ export const Response = memo(
 					/>
 				),
 			}),
-			[state]
+			[state],
 		);
 
 		return (
 			<div
 				className={cn(
 					"size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-					className
+					className,
 				)}
 				{...props}
 			>
@@ -613,7 +614,7 @@ export const Response = memo(
 	},
 	(prevProps, nextProps) =>
 		prevProps.children === nextProps.children &&
-		prevProps.state === nextProps.state
+		prevProps.state === nextProps.state,
 );
 
 Response.displayName = "Response";

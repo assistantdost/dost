@@ -26,14 +26,7 @@ export async function setupRoutes(server, mainWindow) {
 			}));
 			const agent = await chatAgent();
 			const stream = agent.stream({
-				messages: convertToModelMessages(
-					filteredMessages.length > 6
-						? [
-								...filteredMessages.slice(0, 1),
-								...filteredMessages.slice(-5),
-							]
-						: filteredMessages,
-				),
+				messages: convertToModelMessages(filteredMessages),
 			});
 
 			stream.pipeUIMessageStreamToResponse(res, {

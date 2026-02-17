@@ -1,21 +1,32 @@
 import { app } from "electron";
 import path from "path";
 import fs from "fs/promises";
+import { removeMcpServer } from "../mcpStore.js";
 
 // MCP configuration file path
 export const MCP_CONFIG_PATH = path.join(app.getPath("userData"), "mcp.json");
 
+// Optimization: In-memory cache for config (indefinite - no expiration)
+let configCache = null;
+
 /**
- * Read MCP configuration from mcp.json
+ * Read MCP configuration from mcp.json (with indefinite caching)
  * @returns {Promise<Object>} Configuration object
  */
 export async function readMcpConfig() {
+	if (configCache) {
+		return JSON.parse(JSON.stringify(configCache)); // Deep clone
+	}
+
 	try {
 		const data = await fs.readFile(MCP_CONFIG_PATH, "utf8");
-		return JSON.parse(data);
+		configCache = JSON.parse(data);
+		return configCache;
 	} catch (error) {
 		// Return empty object if file doesn't exist or is invalid
-		return {};
+		configCache = {};
+		configCacheTime = now;
+		return configCache;
 	}
 }
 
@@ -25,6 +36,9 @@ export async function readMcpConfig() {
  * @returns {Promise<void>}
  */
 export async function writeMcpConfig(config) {
+	// Update cache (indefinite caching)
+	configCache = config;
+
 	await fs.writeFile(MCP_CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
@@ -35,9 +49,17 @@ export async function writeMcpConfig(config) {
  */
 export async function loadDefaultServers(apiUrl) {
 	try {
+		// Optimization: Add timeout to prevent hanging
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
 		const response = await fetch(
 			apiUrl || "http://localhost:5000/api/v1/mcp_store/default-servers",
+			{ signal: controller.signal },
 		);
+
+		clearTimeout(timeoutId);
+
 		if (!response.ok) throw new Error(`HTTP ${response.status}`);
 		const defaults = await response.json();
 		await writeMcpConfig(defaults);
@@ -58,6 +80,12 @@ export async function loadDefaultServers(apiUrl) {
 export async function addServer(serverName, serverConfig) {
 	try {
 		const config = await readMcpConfig();
+
+		// Optimization: Validate config before saving
+		if (!serverConfig.transport) {
+			throw new Error("Server config must include transport type");
+		}
+
 		config[serverName] = serverConfig;
 		await writeMcpConfig(config);
 		console.log(`✅ Added server: ${serverName}`);
@@ -78,6 +106,10 @@ export async function removeServer(serverName) {
 		const config = await readMcpConfig();
 		delete config[serverName];
 		await writeMcpConfig(config);
+
+		// Also disconnect the server from main process
+		removeMcpServer(serverName);
+
 		console.log(`✅ Removed server: ${serverName}`);
 		return { success: true };
 	} catch (error) {
@@ -106,4 +138,36 @@ export async function updateServer(serverName, updates) {
 		console.error("❌ Error updating server:", error);
 		return { success: false, error: error.message };
 	}
+}
+
+/**
+ * Validate configuration
+ * @param {Object} config - Configuration to validate
+ * @returns {Object} Validation result
+ */
+export function validateConfig(config) {
+	const errors = [];
+	const warnings = [];
+
+	Object.entries(config).forEach(([name, server]) => {
+		if (!server.transport) {
+			errors.push(`${name}: Missing transport type`);
+		}
+		if (server.transport === "stdio" && !server.command) {
+			errors.push(`${name}: Stdio transport requires command`);
+		}
+		if (
+			(server.transport === "http" || server.transport === "sse") &&
+			!server.url
+		) {
+			errors.push(`${name}: HTTP/SSE transport requires url`);
+		}
+		if (server.enabled === undefined) {
+			warnings.push(
+				`${name}: enabled field not set, defaulting to false`,
+			);
+		}
+	});
+
+	return { valid: errors.length === 0, errors, warnings };
 }

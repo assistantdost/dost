@@ -1,7 +1,12 @@
 import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { addMcpServer, removeMcpServer, getActiveTools } from "../mcpStore.js";
+import {
+	addMcpServer,
+	removeMcpServer,
+	getActiveTools,
+	mcpStore,
+} from "../mcpStore.js";
 
 /**
  * Initialize MCP clients from configuration
@@ -24,71 +29,85 @@ export async function initializeMcpClients(config) {
 
 	console.log(`📊 Found ${enabledServers.length} enabled servers`);
 
-	// Load each server in try-catch blocks
-	for (const [serverName, serverConfig] of enabledServers) {
-		try {
-			console.log(`🔌 Connecting to ${serverName}...`);
+	// Optimization: Parallel loading with Promise.allSettled
+	const connectionPromises = enabledServers.map(
+		async ([serverName, serverConfig]) => {
+			try {
+				console.log(`🔌 Connecting to ${serverName}...`);
 
-			let client;
-			let transport;
+				let client;
+				let transport;
 
-			// Create transport based on type
-			if (serverConfig.transport === "stdio") {
-				transport = new StdioClientTransport({
-					command: serverConfig.command,
-					args: serverConfig.args || [],
+				// Create transport based on type
+				if (serverConfig.transport === "stdio") {
+					transport = new StdioClientTransport({
+						command: serverConfig.command,
+						args: serverConfig.args || [],
+					});
+				} else if (
+					serverConfig.transport === "streamable_http" ||
+					serverConfig.transport === "http"
+				) {
+					const headers = serverConfig.headers || {};
+					transport = new StreamableHTTPClientTransport(
+						new URL(serverConfig.url),
+						{ headers },
+					);
+				} else if (serverConfig.transport === "sse") {
+					transport = {
+						type: "sse",
+						url: serverConfig.url,
+						headers: serverConfig.headers || {},
+					};
+				} else {
+					throw new Error(
+						`Unsupported transport type: ${serverConfig.transport}`,
+					);
+				}
+
+				client = await createMCPClient({ transport });
+				const tools = await client.tools();
+
+				// Add to store
+				addMcpServer(serverName, client, tools, {
+					description: serverConfig.description || "",
+					transport: serverConfig.transport,
+					url: serverConfig.url || null,
 				});
-			} else if (
-				serverConfig.transport === "streamable_http" ||
-				serverConfig.transport === "http"
-			) {
-				const headers = serverConfig.headers || {};
-				transport = new StreamableHTTPClientTransport(
-					new URL(serverConfig.url),
-					{ headers },
+
+				console.log(
+					`✅ ${serverName} connected (${Object.keys(tools).length} tools)`,
 				);
-			} else if (serverConfig.transport === "sse") {
-				transport = {
-					type: "sse",
-					url: serverConfig.url,
-					headers: serverConfig.headers || {},
-				};
-			} else {
-				throw new Error(
-					`Unsupported transport type: ${serverConfig.transport}`,
+
+				return { serverName, success: true, tools: Object.keys(tools) };
+			} catch (error) {
+				console.error(
+					`❌ Failed to connect to ${serverName}:`,
+					error.message,
 				);
+				return { serverName, success: false, error: error.message };
 			}
+		},
+	);
 
-			// Create MCP client
-			client = await createMCPClient({ transport });
+	// Wait for all connections to complete
+	const connectionResults = await Promise.allSettled(connectionPromises);
 
-			// Get tools from the client
-			const tools = await client.tools();
-
-			console.log(JSON.stringify(tools, null, 2));
-
-			// Add to store
-			addMcpServer(serverName, client, tools, {
-				description: serverConfig.description || "",
-				transport: serverConfig.transport,
-				url: serverConfig.url || null,
-			});
-
-			results.success.push(serverName);
-			results.tools[serverName] = Object.keys(tools);
-
-			console.log(
-				`✅ ${serverName} connected (${Object.keys(tools).length} tools)`,
-			);
-		} catch (error) {
-			console.error(
-				`❌ Failed to connect to ${serverName}:`,
-				error.message,
-			);
-			results.failed.push({ serverName, error: error.message });
-			// Continue to next server instead of crashing
+	// Process results from Promise.allSettled
+	connectionResults.forEach((result) => {
+		if (result.status === "fulfilled") {
+			const { serverName, success, tools } = result.value;
+			if (success) {
+				results.success.push(serverName);
+				results.tools[serverName] = tools;
+			} else {
+				results.failed.push({ serverName, error: result.value.error });
+			}
+		} else {
+			// This shouldn't happen since we handle errors inside the promises
+			console.error("Unexpected promise rejection:", result.reason);
 		}
-	}
+	});
 
 	console.log(
 		`✅ MCP initialization complete: ${results.success.length} success, ${results.failed.length} failed`,
@@ -102,16 +121,20 @@ export async function initializeMcpClients(config) {
  */
 export function disconnectAllClients() {
 	console.log("🔌 Disconnecting all MCP clients...");
-	// The mcpStore handles client cleanup
-	// Individual clients can be disconnected if needed
+
+	// Disconnect all clients
+	const serverNames = Object.keys(mcpStore.mcpServers);
+	serverNames.forEach((serverName) => {
+		removeMcpServer(serverName);
+	});
+
+	// Clear active tools
+	mcpStore.activeTools = {};
+	mcpStore._cacheInvalidated = true;
+
 	console.log("✅ All clients disconnected");
 }
 
-/**
- * Connect a single server
- * @param {string} serverName - Name of the server
- * @param {Object} serverConfig - Server configuration
- */
 export async function connectSingleServer(serverName, serverConfig) {
 	try {
 		console.log(`🔌 Connecting to ${serverName}...`);

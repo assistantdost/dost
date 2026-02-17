@@ -8,7 +8,7 @@ import { getChat } from "@/api/chat";
 
 function Chat() {
 	const { chatId } = useParams();
-	const { setMessages, setSummary } = useChatStore();
+	const { setMessages, setSummary, setActiveChatId } = useChatStore();
 	const { logged, token } = useAuthStore();
 
 	// Fetch chat with React Query - only when logged and has token
@@ -33,6 +33,7 @@ function Chat() {
 		if (chat?.summary !== undefined) {
 			setSummary(chat.summary, chat.last_summarized_message_id);
 		}
+		setActiveChatId(chatId);
 	}, [chat]);
 
 	return (
