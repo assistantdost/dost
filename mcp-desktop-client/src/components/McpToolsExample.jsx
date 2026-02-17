@@ -1,100 +1,74 @@
-// Example component showing how to use the MCP store
+// Example component showing connected MCP servers
 
 import React from "react";
 import { useMcpStore } from "@/store/mcpStore";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function McpToolsExample() {
-	const {
-		mcpServers,
-		activeTools,
-		getAllTools,
-		setActiveTools,
-		init,
-		isInitialized,
-	} = useMcpStore();
-
-	const allTools = getAllTools();
-
-	const handleRefresh = async () => {
-		console.log("🔄 Manual refresh triggered");
-		await init();
-	};
+	const { mcpServers } = useMcpStore();
 
 	return (
-		<div className="p-4">
-			<div className="flex items-center justify-between mb-4">
-				<h2 className="text-xl font-bold">MCP Servers & Tools</h2>
-				<Button onClick={handleRefresh} size="sm" variant="outline">
-					🔄 Refresh
-				</Button>
-			</div>
+		<div className=" max-w-4xl mx-auto">
+			<h1 className="text-2xl font-bold mb-6">MCP Servers</h1>
 
-			{Object.keys(mcpServers).length === 0 && (
-				<div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-					<p className="text-sm text-yellow-800">
-						No MCP servers connected yet. Tools will load when the
-						chat agent is first used, or click Refresh to load them
-						now.
-					</p>
-				</div>
-			)}
+			{/* Connected Servers */}
+			<div className="grid grid-cols-1 md:grid-cols-2  gap-4">
+				{mcpServers && mcpServers.length > 0 ? (
+					mcpServers.map((server) => (
+						<Card key={server.name}>
+							<CardHeader>
+								<CardTitle className="text-lg">
+									{server.name}
+								</CardTitle>
+							</CardHeader>
 
-			<div className="mb-6">
-				<h3 className="text-lg font-semibold mb-2">
-					Connected Servers
-				</h3>
-				{Object.entries(mcpServers).map(([name, server]) => (
-					<div key={name} className="mb-4 p-3 border rounded">
-						<div className="flex items-center gap-2">
-							<span
-								className={`w-2 h-2 rounded-full ${server.connected ? "bg-green-500" : "bg-red-500"}`}
-							/>
-							<h4 className="font-semibold">{name}</h4>
-						</div>
-						<p className="text-sm text-gray-600 mt-1">
-							{server.metadata?.type === "http"
-								? server.metadata.url
-								: "Local Server"}
-						</p>
-						<p className="text-sm mt-1">
-							Tools:{" "}
-							{server.toolsCount ||
-								(Array.isArray(server.tools)
-									? server.tools.length
-									: 0)}
+							<CardContent>
+								<div className="space-y-2">
+									<h4 className="font-semibold">Tools:</h4>
+									{server.tools && server.tools.length > 0 ? (
+										<div className="max-h-64 overflow-y-auto ">
+											<Accordion
+												type="single"
+												collapsible
+											>
+												{server.tools.map((tool) => (
+													<AccordionItem
+														key={tool.name}
+														value={tool.name}
+													>
+														<AccordionTrigger>
+															{tool.name}
+														</AccordionTrigger>
+														<AccordionContent>
+															{tool.description ||
+																"No description"}
+														</AccordionContent>
+													</AccordionItem>
+												))}
+											</Accordion>
+										</div>
+									) : (
+										<p className="text-sm text-muted-foreground">
+											No tools available
+										</p>
+									)}
+								</div>
+							</CardContent>
+						</Card>
+					))
+				) : (
+					<div className="col-span-full text-center py-8">
+						<p className="text-muted-foreground">
+							No servers configured yet.
 						</p>
 					</div>
-				))}
-			</div>
-
-			<div className="mb-6">
-				<h3 className="text-lg font-semibold mb-2">Available Tools</h3>
-				<div className="flex flex-wrap gap-2">
-					{allTools.length > 0 ? (
-						allTools.map((toolName) => (
-							<span
-								key={toolName}
-								className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-							>
-								{toolName}
-							</span>
-						))
-					) : (
-						<p className="text-sm text-gray-500">
-							No tools available
-						</p>
-					)}
-				</div>
-			</div>
-
-			<div>
-				<h3 className="text-lg font-semibold mb-2">Active Tools</h3>
-				<p className="text-sm text-gray-600">
-					{activeTools.length > 0
-						? activeTools.join(", ")
-						: "No active tools"}
-				</p>
+				)}
 			</div>
 		</div>
 	);

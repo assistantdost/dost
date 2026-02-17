@@ -1,20 +1,7 @@
-import React, { useState, useEffect } from "react";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
-import { Switch } from "../ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { useMcpStore } from "../../store/mcpStore";
-import { AlertCircle } from "lucide-react";
+// This component is deprecated - settings are now handled in ConfigCard
+export function ServerSettingsDialog() {
+	return null;
+}
 
 export function ServerSettingsDialog({
 	open,

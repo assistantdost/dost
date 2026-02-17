@@ -15,21 +15,24 @@ export function registerMcpIpcHandlers() {
 	});
 
 	// Add server to mcp.json
-	ipcMain.handle("mcp-add-server", async (serverName, serverConfig) => {
-		return await tools.addServer(serverName, serverConfig);
-	});
+	ipcMain.handle(
+		"mcp-add-server",
+		async (event, serverName, serverConfig) => {
+			return await tools.addServer(serverName, serverConfig);
+		},
+	);
 
 	// Remove server from mcp.json
-	ipcMain.handle("mcp-remove-server", async (serverName) => {
+	ipcMain.handle("mcp-remove-server", async (event, serverName) => {
 		return await tools.removeServer(serverName);
 	});
 
 	// Update server in mcp.json
-	ipcMain.handle("mcp-update-server", async (serverName, updates) => {
+	ipcMain.handle("mcp-update-server", async (event, serverName, updates) => {
 		return await tools.updateServer(serverName, updates);
 	});
 
-	ipcMain.handle("mcp-initialize", async (state) => {
+	ipcMain.handle("mcp-initialize", async (event, state) => {
 		return await tools.initializeMcpClients(state);
 	});
 
@@ -43,11 +46,11 @@ export function registerMcpIpcHandlers() {
 		return await tools.disconnectAllServers();
 	});
 
-	ipcMain.handle("mcp-connect-one", async (serverName) => {
+	ipcMain.handle("mcp-connect-one", async (event, serverName) => {
 		return await tools.connectOneServer(serverName);
 	});
 
-	ipcMain.handle("mcp-disconnect-one", async (serverName) => {
+	ipcMain.handle("mcp-disconnect-one", async (event, serverName) => {
 		return await tools.disconnectOneServer(serverName);
 	});
 

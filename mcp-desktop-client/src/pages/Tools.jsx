@@ -1,174 +1,207 @@
 import React, { useEffect, useState } from "react";
 import { useMcpStore } from "../store/mcpStore";
-import { Card, CardContent } from "../components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { RefreshCw, Plus, Plug, Unplug, Power } from "lucide-react";
-import { ServerCard } from "../components/tools/ServerCard";
-import { AddServerDialog } from "../components/tools/AddServerDialog";
-import { ViewToolsDialog } from "../components/tools/ViewToolsDialog";
-import { ServerSettingsDialog } from "../components/tools/ServerSettingsDialog";
+import { Separator } from "../components/ui/separator";
+import { Power, Settings2, Plus, Database } from "lucide-react";
+import { ConfigCard } from "@/components/tools/ConfigCard";
+import { ToolsServerView } from "@/components/tools/ToolsServerView";
+import { AddServerDialog } from "@/components/tools/AddServerDialog";
 
 function Tools() {
 	const {
 		mcpServers,
-		activeTools,
-		isConnected,
-		isConnecting,
-		init,
-		connectToServers,
-		disconnectFromServers,
-		readConfig,
-		forceReinitialize,
-		listenForUpdates,
-		cleanup,
+		config,
+		isMcpConnected,
+		toolCount,
+		connectAllServers,
+		disconnectAllServers,
 	} = useMcpStore();
 
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
-	const [viewToolsDialog, setViewToolsDialog] = useState({
-		open: false,
-		serverName: null,
-		serverData: null,
-	});
-	const [settingsDialog, setSettingsDialog] = useState({
-		open: false,
-		serverName: null,
-		serverData: null,
-	});
+	const [isPowering, setIsPowering] = useState(false);
 
-	useEffect(() => {
-		init();
-		listenForUpdates();
-
-		return () => {
-			cleanup();
-		};
-	}, [init, listenForUpdates, cleanup]);
-
-	const handleConnect = async () => {
-		await connectToServers();
+	const handlePowerToggle = async () => {
+		setIsPowering(true);
+		if (isMcpConnected) {
+			await disconnectAllServers();
+		} else {
+			await connectAllServers();
+		}
+		setIsPowering(false);
 	};
 
-	const handleDisconnect = async () => {
-		await disconnectFromServers();
-	};
-
-	const handleRefresh = async () => {
-		await readConfig();
-		await forceReinitialize();
-	};
-
-	const handleViewTools = (serverName, serverData) => {
-		setViewToolsDialog({ open: true, serverName, serverData });
-	};
-
-	const handleSettings = (serverName, serverData) => {
-		setSettingsDialog({ open: true, serverName, serverData });
-	};
-
-	const serverEntries = Object.entries(mcpServers);
-	const totalTools = activeTools.length;
+	const configEntries = Object.entries(config || {});
+	const isSystemOn = Object.keys(mcpServers || {}).length > 0;
 
 	return (
-		<div className="container mx-auto p-6 space-y-6">
-			{/* Header Section */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-3xl font-bold">MCP Tools</h1>
-					<p className="text-muted-foreground">
-						Manage your Model Context Protocol servers and tools
-					</p>
+		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+			<div className="container mx-auto p-6 space-y-8">
+				{/* Header */}
+				<div className="space-y-2">
+					<div className="flex items-center justify-between">
+						<div className="space-y-1">
+							<h2 className="text-xl font-bold tracking-tight">
+								MCP Control Center
+							</h2>
+							<p className="text-muted-foreground ">
+								Manage and monitor your Model Context Protocol
+								infrastructure
+							</p>
+						</div>
+						<div className="flex items-center gap-3">
+							<div className="flex flex-col items-end gap-1">
+								<Badge
+									variant={isSystemOn ? "default" : "outline"}
+									className="text-xs px-3 py-1"
+								>
+									<Database className="h-3 w-3 mr-1" />
+									{Object.keys(mcpServers || {}).length}{" "}
+									{Object.keys(mcpServers || {}).length === 1
+										? "Server"
+										: "Servers"}
+								</Badge>
+								<Badge
+									variant="outline"
+									className="text-xs px-3 py-1"
+								>
+									{toolCount || 0}{" "}
+									{toolCount === 1 ? "Tool" : "Tools"}
+								</Badge>
+							</div>
+							<Button
+								variant={isSystemOn ? "destructive" : "default"}
+								className="gap-2 min-w-[140px] cursor-pointer"
+								onClick={handlePowerToggle}
+								disabled={
+									isPowering || configEntries.length === 0
+								}
+							>
+								<Power className="h-5 w-5" />
+								{isPowering
+									? "Processing..."
+									: isSystemOn
+										? "Power Off"
+										: "Power On"}
+							</Button>
+						</div>
+					</div>
 				</div>
-				<div className="flex items-center gap-2">
-					<Badge variant="outline" className="text-lg px-4 py-2">
-						{totalTools} {totalTools === 1 ? "Tool" : "Tools"}
-					</Badge>
-					<Button
-						onClick={handleRefresh}
-						variant="outline"
-						size="icon"
-					>
-						<RefreshCw className="h-4 w-4" />
-					</Button>
-				</div>
-			</div>
 
-			{/* Control Buttons */}
-			<div className="flex items-center gap-3">
-				<Button
-					onClick={handleConnect}
-					disabled={isConnecting || isConnected}
-					className="gap-2"
-				>
-					<Plug className="h-4 w-4" />
-					{isConnecting ? "Connecting..." : "Connect All"}
-				</Button>
-				<Button
-					onClick={handleDisconnect}
-					disabled={!isConnected}
-					variant="destructive"
-					className="gap-2"
-				>
-					<Unplug className="h-4 w-4" />
-					Disconnect All
-				</Button>
-				<Button
-					variant="outline"
-					className="gap-2"
-					onClick={() => setAddDialogOpen(true)}
-				>
-					<Plus className="h-4 w-4" />
-					Add Server
-				</Button>
-			</div>
+				<Separator />
 
-			{/* Server Grid */}
-			{serverEntries.length === 0 ? (
-				<Card>
-					<CardContent className="flex flex-col items-center justify-center py-12">
-						<p className="text-muted-foreground text-lg mb-4">
-							No servers connected
-						</p>
-						<Button onClick={handleConnect} className="gap-2">
-							<Power className="h-4 w-4" />
-							Connect to Servers
+				{/* Config Section */}
+				<div className="space-y-4">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							<Settings2 className="h-5 w-5 text-muted-foreground" />
+							<h2 className="text-2xl font-semibold">
+								Server Configuration
+							</h2>
+						</div>
+						<Button
+							variant="outline"
+							className="gap-2"
+							onClick={() => setAddDialogOpen(true)}
+						>
+							<Plus className="h-4 w-4" />
+							Add Server
 						</Button>
-					</CardContent>
-				</Card>
-			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-					{serverEntries.map(([serverName, serverData]) => (
-						<ServerCard
-							key={serverName}
-							serverName={serverName}
-							serverData={serverData}
-							onViewTools={handleViewTools}
-							onSettings={handleSettings}
-						/>
-					))}
+					</div>
+
+					{configEntries.length === 0 ? (
+						<Card className="border-dashed">
+							<CardContent className="flex flex-col items-center justify-center py-12">
+								<Settings2 className="h-12 w-12 text-muted-foreground mb-4" />
+								<h3 className="text-lg font-semibold mb-2">
+									No Servers Configured
+								</h3>
+								<p className="text-muted-foreground text-center mb-4 max-w-sm">
+									Get started by adding your first MCP server
+									configuration
+								</p>
+								<Button
+									onClick={() => setAddDialogOpen(true)}
+									className="gap-2"
+								>
+									<Plus className="h-4 w-4" />
+									Add Your First Server
+								</Button>
+							</CardContent>
+						</Card>
+					) : (
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+							{configEntries.map(([serverName, serverConfig]) => (
+								<ConfigCard
+									key={serverName}
+									serverName={serverName}
+									serverConfig={serverConfig}
+									isConnected={Object.keys(
+										mcpServers || {},
+									).includes(serverName)}
+								/>
+							))}
+						</div>
+					)}
 				</div>
-			)}
+
+				<Separator />
+
+				{/* Tools Section */}
+				<div className="space-y-4">
+					<div className="flex items-center gap-2">
+						<Database className="h-5 w-5 text-muted-foreground" />
+						<h2 className="text-xl font-semibold">Active Tools</h2>
+					</div>
+
+					{Object.keys(mcpServers || {}).length === 0 ? (
+						<Card>
+							<CardContent className="flex flex-col items-center justify-center py-12">
+								<Power className="h-12 w-12 text-muted-foreground mb-4" />
+								<h3 className="text-lg font-semibold mb-2">
+									System Offline
+								</h3>
+								<p className="text-muted-foreground text-center mb-4 max-w-sm">
+									Power on the system to view available tools
+									from connected servers
+								</p>
+								{configEntries.length > 0 && (
+									<Button
+										onClick={handlePowerToggle}
+										className="gap-2"
+										disabled={isPowering}
+									>
+										<Power className="h-4 w-4" />
+										Power On System
+									</Button>
+								)}
+							</CardContent>
+						</Card>
+					) : (
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+							{Object.entries(mcpServers || {}).map(
+								([name, server]) => (
+									<ToolsServerView
+										key={name}
+										server={{ name, ...server }}
+									/>
+								),
+							)}
+						</div>
+					)}
+				</div>
+			</div>
 
 			{/* Dialogs */}
 			<AddServerDialog
 				open={addDialogOpen}
 				onOpenChange={setAddDialogOpen}
-			/>
-			<ViewToolsDialog
-				open={viewToolsDialog.open}
-				onOpenChange={(open) =>
-					setViewToolsDialog({ ...viewToolsDialog, open })
-				}
-				serverName={viewToolsDialog.serverName}
-				serverData={viewToolsDialog.serverData}
-			/>
-			<ServerSettingsDialog
-				open={settingsDialog.open}
-				onOpenChange={(open) =>
-					setSettingsDialog({ ...settingsDialog, open })
-				}
-				serverName={settingsDialog.serverName}
-				serverData={settingsDialog.serverData}
 			/>
 		</div>
 	);

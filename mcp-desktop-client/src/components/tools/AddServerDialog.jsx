@@ -13,9 +13,10 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { useMcpStore } from "../../store/mcpStore";
+import { ServerIcon, Code2 } from "lucide-react";
 
 export function AddServerDialog({ open, onOpenChange }) {
-	const { addServerToConfig } = useMcpStore();
+	const { addServer } = useMcpStore();
 	const [serverName, setServerName] = useState("");
 	const [configJson, setConfigJson] = useState(
 		'{\n  "description": "My MCP Server",\n  "transport": "http",\n  "url": "http://localhost:3000",\n  "enabled": true,\n  "headers": {\n    "Authorization": "Bearer your-api-key-here"\n  }\n}',
@@ -44,7 +45,7 @@ export function AddServerDialog({ open, onOpenChange }) {
 			serverConfig.enabled = true;
 		}
 
-		const result = await addServerToConfig(serverName, serverConfig);
+		const result = await addServer(serverName, serverConfig);
 
 		if (result.success) {
 			setServerName("");
@@ -61,46 +62,72 @@ export function AddServerDialog({ open, onOpenChange }) {
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
-					<DialogTitle>Add MCP Server</DialogTitle>
+					<DialogTitle className="flex items-center gap-2">
+						<ServerIcon className="h-5 w-5" />
+						Add MCP Server
+					</DialogTitle>
 					<DialogDescription>
-						Configure a new Model Context Protocol server.
+						Configure a new Model Context Protocol server to expand
+						your tool ecosystem.
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit}>
 					<Tabs defaultValue="basic" className="w-full">
 						<TabsList className="grid w-full grid-cols-2">
-							<TabsTrigger value="basic">Basic</TabsTrigger>
-							<TabsTrigger value="json">JSON Config</TabsTrigger>
+							<TabsTrigger value="basic" className="gap-2">
+								<ServerIcon className="h-4 w-4" />
+								Basic
+							</TabsTrigger>
+							<TabsTrigger value="json" className="gap-2">
+								<Code2 className="h-4 w-4" />
+								JSON Config
+							</TabsTrigger>
 						</TabsList>
 
 						<TabsContent value="basic" className="space-y-4 py-4">
 							<div className="space-y-2">
-								<Label htmlFor="serverName">
+								<Label
+									htmlFor="serverName"
+									className="flex items-center gap-2"
+								>
 									Server Name *
 								</Label>
 								<Input
 									id="serverName"
-									placeholder="my-mcp-server"
+									placeholder="e.g., my-mcp-server, production-api"
 									value={serverName}
 									onChange={(e) =>
 										setServerName(e.target.value)
 									}
 									required
+									className="font-mono"
 								/>
+								<p className="text-xs text-muted-foreground">
+									A unique identifier for this server
+									configuration
+								</p>
 							</div>
-							<div className="p-4 bg-muted rounded-lg">
+							<div className="p-4 bg-gradient-to-br from-muted/50 to-muted rounded-lg border">
+								<p className="text-sm font-semibold mb-2">
+									⚙️ Advanced Configuration
+								</p>
 								<p className="text-sm text-muted-foreground">
-									Use the JSON Config tab to configure all
-									server settings including transport,
-									URL/command, headers, and any custom
-									options.
+									Switch to the <strong>JSON Config</strong>{" "}
+									tab to configure all server settings
+									including transport type, endpoint
+									URL/command, authentication headers, and
+									custom options.
 								</p>
 							</div>
 						</TabsContent>
 
 						<TabsContent value="json" className="space-y-4 py-4">
 							<div className="space-y-2">
-								<Label htmlFor="config">
+								<Label
+									htmlFor="config"
+									className="flex items-center gap-2"
+								>
+									<Code2 className="h-4 w-4" />
 									Server Configuration (JSON)
 								</Label>
 								<Textarea
@@ -110,14 +137,21 @@ export function AddServerDialog({ open, onOpenChange }) {
 									onChange={(e) =>
 										setConfigJson(e.target.value)
 									}
-									className="font-mono text-sm"
-									rows={12}
+									className="font-mono text-sm bg-muted/50"
+									rows={14}
 								/>
-								<p className="text-xs text-muted-foreground">
-									Enter the complete server configuration as
-									JSON. Supports all MCP server options
-									including custom fields.
-								</p>
+								<div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded">
+									<span className="text-blue-600 dark:text-blue-400 text-xs">
+										ℹ️
+									</span>
+									<p className="text-xs text-blue-700 dark:text-blue-300">
+										Enter the complete server configuration
+										as JSON. Supports all MCP server options
+										including custom fields, transport
+										protocols, and authentication
+										mechanisms.
+									</p>
+								</div>
 							</div>
 						</TabsContent>
 					</Tabs>

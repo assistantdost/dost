@@ -11,9 +11,9 @@ import { tool } from "ai";
 config(); // Load environment variables from .env file
 
 const MCP_CONFIG_PATH = path.join(app.getPath("userData"), "mcp.json");
-const API_URL =
-	process.env.VITE_API_URL + "/mcp_store/default-servers" ||
-	"http://localhost:5000/api/v1/mcp_store/default-servers";
+const API_URL = process.env.VITE_API_URL
+	? process.env.VITE_API_URL + "/mcp_store/default-servers"
+	: "http://localhost:5000/api/v1/mcp_store/default-servers";
 
 export class Tools extends EventEmitter {
 	constructor() {
@@ -106,20 +106,23 @@ export class Tools extends EventEmitter {
 
 	_transformStateForUI() {
 		return {
-			mcpServers: Object.entries(this.state.mcpServers).map(
-				([name, server]) => ({
-					name,
-					...server.metadata,
-					tools: Object.entries(server.tools).map(
-						([toolName, tool]) => ({
-							name: toolName,
-							description: tool.description || "",
-							// Add more tool metadata here if needed
-						}),
-					),
-					toolCount: Object.keys(server.tools).length,
-					connected: server.connected,
-				}),
+			mcpServers: Object.entries(this.state.mcpServers).reduce(
+				(acc, [serverName, server]) => {
+					acc[serverName] = {
+						...server.metadata,
+						tools: Object.entries(server.tools).map(
+							([toolName, tool]) => ({
+								name: toolName,
+								description: tool.description || "",
+								// Add more tool metadata here if needed
+							}),
+						),
+						toolCount: Object.keys(server.tools).length,
+						connected: server.connected,
+					};
+					return acc;
+				},
+				{},
 			),
 			toolCount: Object.values(this.state.mcpServers).reduce(
 				(count, server) => count + Object.keys(server.tools).length,
@@ -129,6 +132,7 @@ export class Tools extends EventEmitter {
 			isMcpConnected: this.state.isMcpConnected,
 		};
 	}
+
 	async initializeMcpClients() {
 		await this.ensureInitialized();
 

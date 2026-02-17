@@ -4,7 +4,7 @@ import {
 	stepCountIs,
 } from "ai";
 import { groq } from "@ai-sdk/groq";
-import { getActiveTools } from "../mcpStore.js";
+import { tools } from "../mcp/tools.js";
 
 export const providerOptions = {
 	groq: {
@@ -20,10 +20,10 @@ let cachedAgent = null;
 
 export async function chatAgent() {
 	// Always get fresh tools from store
-	const tools = getActiveTools();
+	const activeTools = tools.getTools();
 
 	// Check if tools have changed (compare tool names)
-	const currentToolNames = Object.keys(tools || {});
+	const currentToolNames = Object.keys(activeTools || {});
 	const cachedToolNames = cachedAgent
 		? Object.keys(cachedAgent.tools || {}).filter(
 				(name) => name !== "browser_search",
@@ -39,7 +39,7 @@ export async function chatAgent() {
 		cachedAgent = new Agent({
 			model: groq("openai/gpt-oss-120b"),
 			tools: {
-				...tools,
+				...activeTools,
 				browser_search: groq.tools.browserSearch({}),
 			},
 			toolChoice: "auto",
