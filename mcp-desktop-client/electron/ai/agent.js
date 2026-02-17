@@ -1,37 +1,37 @@
 import {
-	convertToModelMessages,
-	Experimental_Agent as Agent,
-	stepCountIs,
+  convertToModelMessages,
+  Experimental_Agent as Agent,
+  stepCountIs,
 } from "ai";
 import { groq } from "@ai-sdk/groq";
 import { getActiveTools } from "../mcpStore.js";
 
 export const providerOptions = {
-	groq: {
-		reasoningFormat: "parsed",
-		reasoningEffort: "low",
-		parallelToolCalls: true,
-		maxTokens: 3000,
-	},
+  groq: {
+    reasoningFormat: "parsed",
+    reasoningEffort: "low",
+    parallelToolCalls: true,
+    maxTokens: 3000,
+  },
 };
 
 // ✅ Cache the agent to avoid recreating on every call
 let cachedAgent = null;
 
 export async function chatAgent() {
-	// Always get fresh tools from store
-	const tools = getActiveTools();
+  // Always get fresh tools from store
+  const tools = getActiveTools();
 
-	if (!cachedAgent) {
-		cachedAgent = new Agent({
-			model: groq("openai/gpt-oss-20b"),
-			tools: {
-				...tools,
-				browser_search: groq.tools.browserSearch({}),
-			},
-			toolChoice: "auto",
-			stopWhen: stepCountIs(10),
-			system: `You are a helpful assistant. You can use multiple tools in sequence to solve complex tasks.
+  if (!cachedAgent) {
+    cachedAgent = new Agent({
+      model: groq("openai/gpt-oss-20b"),
+      tools: {
+        ...tools,
+        browser_search: groq.tools.browserSearch({}),
+      },
+      toolChoice: "auto",
+      stopWhen: stepCountIs(10),
+      system: `You are a helpful assistant. You can use multiple tools in sequence to solve complex tasks.
          If a tool's output suggests another tool should be used, do so.
          Always explain your reasoning and show intermediate steps.
          Keep reasoning small and focused until asked for more.
@@ -41,14 +41,14 @@ export async function chatAgent() {
          Always format math in Markdown using $...$ for inline and $$...$$ for block equations.
          Diagram (Graphviz/DOT): Render compact, modern diagram (rounded nodes, pastel colors, Helvetica font, light grey edges, fits A4 width), just mention one line about it, nothing more info.
          Always give Authorization links as clickable hyperlinks in markdown format like - [link text](https://example.com)`,
-		});
-	} else {
-		// Update tools in existing agent
-		cachedAgent.tools = {
-			...tools,
-			browser_search: groq.tools.browserSearch({}),
-		};
-	}
+    });
+  } else {
+    // Update tools in existing agent
+    cachedAgent.tools = {
+      ...tools,
+      browser_search: groq.tools.browserSearch({}),
+    };
+  }
 
-	return cachedAgent;
+  return cachedAgent;
 }
