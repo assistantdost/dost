@@ -1,6 +1,7 @@
 import { app } from "electron";
 import path from "path";
 import fs from "fs/promises";
+import { EventEmitter } from "events";
 import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -9,25 +10,51 @@ const MCP_CONFIG_PATH = path.join(app.getPath("userData"), "mcp.json");
 const API_URL =
 	process.env.VITE_API_URL || "http://localhost:3000/api/defaults";
 
-export class Tools {
+export class Tools extends EventEmitter {
 	constructor() {
-		// ✅ Sync constructor - no async operations
-		this.config = {};
-		this.mcpServers = {};
+		super();
+
+		// ✅ Centralized state with Proxy for automatic change detection
+		this.state = new Proxy(
+			{
+				config: {},
+				mcpServers: {},
+				isMcpConnected: false,
+			},
+			{
+				set: (target, prop, value) => {
+					const oldValue = target[prop];
+					target[prop] = value;
+
+					// Only emit if value actually changed
+					if (oldValue !== value) {
+						this.emit("mcp-state-changed", { ...this.state });
+					}
+					return true;
+				},
+			},
+		);
+
 		this.initialized = false;
-		this.isMcpConnected = false;
+	}
+
+	// ✅ Helper to update nested state immutably (triggers proxy)
+	_updateState(updates) {
+		Object.entries(updates).forEach(([key, value]) => {
+			this.state[key] = value;
+		});
 	}
 
 	// ✅ Async initialization method
 	async init() {
 		try {
 			const data = await fs.readFile(MCP_CONFIG_PATH, "utf8");
-			this.config = JSON.parse(data);
+
+			this.state.config = JSON.parse(data);
 			this.initialized = true;
 		} catch (error) {
 			console.error("Failed to load MCP config:", error);
-			// Fallback to empty config
-			this.config = {};
+			this.state.config = {};
 			this.initialized = true;
 		}
 	}
@@ -68,16 +95,16 @@ export class Tools {
 		}
 	}
 
-	async initializeMcpClients() {
+	async initializeMcpClients(state = false) {
 		await this.ensureInitialized();
+
 		// Clear existing clients before re-initializing
-		this.mcpServers = {};
-		this.activeTools = {};
+		this.state.mcpServers = {};
 
 		console.log("---------- Initializing MCP clients from config...");
 
 		// Filter enabled servers
-		const enabledServers = Object.entries(this.config).filter(
+		const enabledServers = Object.entries(this.state.config).filter(
 			([_, serverConfig]) => serverConfig.enabled === true,
 		);
 
@@ -87,7 +114,7 @@ export class Tools {
 					console.log(`🔌 Connecting to ${serverName}-----------`);
 
 					let client;
-					let transport = this._createTransport(serverConfig); // ✅ Use extracted method
+					let transport = this._createTransport(serverConfig);
 
 					client = await createMCPClient({ transport });
 					const tools = await client.tools();
@@ -133,12 +160,14 @@ export class Tools {
 			failed: [],
 		};
 
+		const newMcpServers = {};
+
 		connectionResults.forEach((result) => {
 			if (result.status === "fulfilled") {
 				const { success, data } = result.value;
 				if (success) {
 					const { serverName, client, tools, metadata } = data;
-					this.mcpServers[serverName] = {
+					newMcpServers[serverName] = {
 						client,
 						tools,
 						metadata,
@@ -159,16 +188,20 @@ export class Tools {
 			}
 		});
 
-		// After processing results
-		this.isMcpConnected = results.success.length > 0;
+		// Update state immutably to trigger proxy
+		this.state.mcpServers = newMcpServers;
+		this.state.isMcpConnected = results.success.length > 0;
 
+		if (state) {
+			results.state = { ...this.state };
+		}
 		return results;
 	}
 
 	async loadDefaultServers() {
 		try {
 			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+			const timeoutId = setTimeout(() => controller.abort(), 10000);
 
 			const response = await fetch(API_URL, {
 				signal: controller.signal,
@@ -206,25 +239,29 @@ export class Tools {
 			console.log(`🔌 Connecting to ${serverName}-----------`);
 
 			let client;
-			let transport = this._createTransport(serverConfig); // ✅ Use extracted method
+			let transport = this._createTransport(serverConfig);
 
 			client = await createMCPClient({ transport });
 			const tools = await client.tools();
 
-			this.mcpServers[serverName] = {
-				client,
-				tools,
-				metadata: {
-					description: serverConfig.description || "",
-					transport: serverConfig.transport,
-					url: serverConfig.url || null,
+			// Update state immutably
+			this.state.mcpServers = {
+				...this.state.mcpServers,
+				[serverName]: {
+					client,
+					tools,
+					metadata: {
+						description: serverConfig.description || "",
+						transport: serverConfig.transport,
+						url: serverConfig.url || null,
+					},
+					connected: true,
+					connectedAt: new Date(),
 				},
-				connected: true,
-				connectedAt: new Date(),
 			};
 
 			await this.updateConfig({
-				...this.config,
+				...this.state.config,
 				[serverName]: serverConfig,
 			});
 
@@ -245,21 +282,23 @@ export class Tools {
 	}
 
 	async updateServer(serverName, updates) {
-		if (!this.mcpServers[serverName]) {
+		if (!this.state.mcpServers[serverName]) {
 			return { success: false, error: "Server not found" };
 		}
-		const existingConfig = this.config[serverName] || {};
+		const existingConfig = this.state.config[serverName] || {};
 		const newConfig = { ...existingConfig, ...updates };
 		return await this.addServer(serverName, newConfig);
 	}
 
 	async removeServer(serverName) {
-		const newConfig = { ...this.config };
+		const newConfig = { ...this.state.config };
 		delete newConfig[serverName];
 		await this.updateConfig(newConfig);
-		if (this.mcpServers[serverName]) {
-			delete this.mcpServers[serverName];
-		}
+
+		// Update state immutably
+		const newMcpServers = { ...this.state.mcpServers };
+		delete newMcpServers[serverName];
+		this.state.mcpServers = newMcpServers;
 	}
 
 	async updateConfig(newConfig) {
@@ -267,15 +306,15 @@ export class Tools {
 		if (!validation.valid) {
 			throw new Error(`Invalid config: ${validation.errors.join(", ")}`);
 		}
-		this.config = newConfig;
+		this.state.config = newConfig;
 		await fs.writeFile(MCP_CONFIG_PATH, JSON.stringify(newConfig, null, 2));
 	}
 
-	validateConfig() {
+	validateConfig(configToValidate = this.state.config) {
 		const errors = [];
 		const warnings = [];
 
-		Object.entries(this.config).forEach(([name, server]) => {
+		Object.entries(configToValidate).forEach(([name, server]) => {
 			if (!server.transport) {
 				errors.push(`${name}: Missing transport type`);
 			}
@@ -321,7 +360,7 @@ export class Tools {
 	}
 
 	async connectAllServers() {
-		const newConfig = Object.entries(this.config).reduce(
+		const newConfig = Object.entries(this.state.config).reduce(
 			(acc, [name, server]) => {
 				acc[name] = { ...server, enabled: true };
 				return acc;
@@ -333,7 +372,7 @@ export class Tools {
 	}
 
 	async disconnectAllServers() {
-		const newConfig = Object.entries(this.config).reduce(
+		const newConfig = Object.entries(this.state.config).reduce(
 			(acc, [name, server]) => {
 				acc[name] = { ...server, enabled: false };
 				return acc;
@@ -341,12 +380,12 @@ export class Tools {
 			{},
 		);
 		await this.updateConfig(newConfig);
-		this.mcpServers = {};
-		this.isMcpConnected = false;
+		this.state.mcpServers = {};
+		this.state.isMcpConnected = false;
 	}
 
 	async connectOneServer(serverName) {
-		const serverConfig = this.config[serverName];
+		const serverConfig = this.state.config[serverName];
 		if (!serverConfig) {
 			throw new Error(`Server ${serverName} not found`);
 		}
@@ -354,25 +393,29 @@ export class Tools {
 			console.log(`🔌 Connecting to ${serverName}-----------`);
 
 			let client;
-			let transport = this._createTransport(serverConfig); // ✅ Use extracted method
+			let transport = this._createTransport(serverConfig);
 
 			client = await createMCPClient({ transport });
 			const tools = await client.tools();
 
-			this.mcpServers[serverName] = {
-				client,
-				tools,
-				metadata: {
-					description: serverConfig.description || "",
-					transport: serverConfig.transport,
-					url: serverConfig.url || null,
+			// Update state immutably
+			this.state.mcpServers = {
+				...this.state.mcpServers,
+				[serverName]: {
+					client,
+					tools,
+					metadata: {
+						description: serverConfig.description || "",
+						transport: serverConfig.transport,
+						url: serverConfig.url || null,
+					},
+					connected: true,
+					connectedAt: new Date(),
 				},
-				connected: true,
-				connectedAt: new Date(),
 			};
 
 			await this.updateConfig({
-				...this.config,
+				...this.state.config,
 				[serverName]: { ...serverConfig, enabled: true },
 			});
 
@@ -393,20 +436,24 @@ export class Tools {
 	}
 
 	async disconnectOneServer(serverName) {
-		const serverConfig = this.config[serverName];
+		const serverConfig = this.state.config[serverName];
 		if (!serverConfig) {
 			throw new Error(`Server ${serverName} not found`);
 		}
 		await this.updateConfig({
-			...this.config,
-			[serverName]: { ...this.config[serverName], enabled: false },
+			...this.state.config,
+			[serverName]: { ...this.state.config[serverName], enabled: false },
 		});
-		delete this.mcpServers[serverName];
+
+		// Update state immutably
+		const newMcpServers = { ...this.state.mcpServers };
+		delete newMcpServers[serverName];
+		this.state.mcpServers = newMcpServers;
 	}
 
 	getTools() {
 		const tools = {};
-		Object.values(this.mcpServers).forEach((server) => {
+		Object.values(this.state.mcpServers).forEach((server) => {
 			Object.entries(server.tools).forEach(([toolName, tool]) => {
 				tools[toolName] = { ...tool, server: server.metadata };
 			});
@@ -415,11 +462,16 @@ export class Tools {
 	}
 
 	getConfig() {
-		return this.config;
+		return this.state.config;
 	}
 
 	getState() {
-		return this.mcpServers;
+		return this.state.mcpServers;
+	}
+
+	// ✅ Get full state snapshot
+	getFullState() {
+		return structuredClone(this.state);
 	}
 }
 

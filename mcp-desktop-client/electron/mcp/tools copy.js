@@ -8,6 +8,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 const MCP_CONFIG_PATH = path.join(app.getPath("userData"), "mcp.json");
 const API_URL =
 	process.env.VITE_API_URL || "http://localhost:3000/api/defaults";
+
 export class Tools {
 	constructor() {
 		// ✅ Sync constructor - no async operations
@@ -38,6 +39,35 @@ export class Tools {
 		}
 	}
 
+	// ✅ Extracted transport creation to eliminate duplication
+	_createTransport(serverConfig) {
+		if (serverConfig.transport === "stdio") {
+			return new StdioClientTransport({
+				command: serverConfig.command,
+				args: serverConfig.args || [],
+			});
+		} else if (
+			serverConfig.transport === "streamable_http" ||
+			serverConfig.transport === "http"
+		) {
+			const headers = serverConfig.headers || {};
+			return new StreamableHTTPClientTransport(
+				new URL(serverConfig.url),
+				{ headers },
+			);
+		} else if (serverConfig.transport === "sse") {
+			return {
+				type: "sse",
+				url: serverConfig.url,
+				headers: serverConfig.headers || {},
+			};
+		} else {
+			throw new Error(
+				`Unsupported transport type: ${serverConfig.transport}`,
+			);
+		}
+	}
+
 	async initializeMcpClients() {
 		await this.ensureInitialized();
 		// Clear existing clients before re-initializing
@@ -57,34 +87,7 @@ export class Tools {
 					console.log(`🔌 Connecting to ${serverName}-----------`);
 
 					let client;
-					let transport;
-
-					// Create transport based on type
-					if (serverConfig.transport === "stdio") {
-						transport = new StdioClientTransport({
-							command: serverConfig.command,
-							args: serverConfig.args || [],
-						});
-					} else if (
-						serverConfig.transport === "streamable_http" ||
-						serverConfig.transport === "http"
-					) {
-						const headers = serverConfig.headers || {};
-						transport = new StreamableHTTPClientTransport(
-							new URL(serverConfig.url),
-							{ headers },
-						);
-					} else if (serverConfig.transport === "sse") {
-						transport = {
-							type: "sse",
-							url: serverConfig.url,
-							headers: serverConfig.headers || {},
-						};
-					} else {
-						throw new Error(
-							`Unsupported transport type: ${serverConfig.transport}`,
-						);
-					}
+					let transport = this._createTransport(serverConfig); // ✅ Use extracted method
 
 					client = await createMCPClient({ transport });
 					const tools = await client.tools();
@@ -203,34 +206,7 @@ export class Tools {
 			console.log(`🔌 Connecting to ${serverName}-----------`);
 
 			let client;
-			let transport;
-
-			// Create transport based on type
-			if (serverConfig.transport === "stdio") {
-				transport = new StdioClientTransport({
-					command: serverConfig.command,
-					args: serverConfig.args || [],
-				});
-			} else if (
-				serverConfig.transport === "streamable_http" ||
-				serverConfig.transport === "http"
-			) {
-				const headers = serverConfig.headers || {};
-				transport = new StreamableHTTPClientTransport(
-					new URL(serverConfig.url),
-					{ headers },
-				);
-			} else if (serverConfig.transport === "sse") {
-				transport = {
-					type: "sse",
-					url: serverConfig.url,
-					headers: serverConfig.headers || {},
-				};
-			} else {
-				throw new Error(
-					`Unsupported transport type: ${serverConfig.transport}`,
-				);
-			}
+			let transport = this._createTransport(serverConfig); // ✅ Use extracted method
 
 			client = await createMCPClient({ transport });
 			const tools = await client.tools();
@@ -378,34 +354,7 @@ export class Tools {
 			console.log(`🔌 Connecting to ${serverName}-----------`);
 
 			let client;
-			let transport;
-
-			// Create transport based on type
-			if (serverConfig.transport === "stdio") {
-				transport = new StdioClientTransport({
-					command: serverConfig.command,
-					args: serverConfig.args || [],
-				});
-			} else if (
-				serverConfig.transport === "streamable_http" ||
-				serverConfig.transport === "http"
-			) {
-				const headers = serverConfig.headers || {};
-				transport = new StreamableHTTPClientTransport(
-					new URL(serverConfig.url),
-					{ headers },
-				);
-			} else if (serverConfig.transport === "sse") {
-				transport = {
-					type: "sse",
-					url: serverConfig.url,
-					headers: serverConfig.headers || {},
-				};
-			} else {
-				throw new Error(
-					`Unsupported transport type: ${serverConfig.transport}`,
-				);
-			}
+			let transport = this._createTransport(serverConfig); // ✅ Use extracted method
 
 			client = await createMCPClient({ transport });
 			const tools = await client.tools();
@@ -453,6 +402,24 @@ export class Tools {
 			[serverName]: { ...this.config[serverName], enabled: false },
 		});
 		delete this.mcpServers[serverName];
+	}
+
+	getTools() {
+		const tools = {};
+		Object.values(this.mcpServers).forEach((server) => {
+			Object.entries(server.tools).forEach(([toolName, tool]) => {
+				tools[toolName] = { ...tool, server: server.metadata };
+			});
+		});
+		return tools;
+	}
+
+	getConfig() {
+		return this.config;
+	}
+
+	getState() {
+		return this.mcpServers;
 	}
 }
 

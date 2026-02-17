@@ -35,14 +35,14 @@ function App() {
 	} = useMcpStore();
 
 	// Initialize MCP store and listen for updates
-	useEffect(() => {
-		initMcpStore();
-		listenForUpdates();
+	// useEffect(() => {
+	// 	initMcpStore();
+	// 	listenForUpdates();
 
-		return () => {
-			cleanupMcpStore();
-		};
-	}, []);
+	// 	return () => {
+	// 		cleanupMcpStore();
+	// 	};
+	// }, []);
 
 	useEffect(() => {
 		// Attempt to refresh token on app load and every 15 minutes

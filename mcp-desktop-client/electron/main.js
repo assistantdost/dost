@@ -7,7 +7,7 @@ import "./ipcStore.js";
 import { createServer } from "./server/server.js";
 import { getSerializedState, updateMcpStore } from "./mcpStore.js";
 import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
-import { initializeMcpOnStartup } from "./mcp/initializer.js";
+// import { initializeMcpOnStartup } from "./mcp/initializer.js";
 
 import { tools } from "./mcp/tools.js";
 
@@ -71,10 +71,14 @@ app.whenReady().then(async () => {
 	await createServer(mainWindow);
 
 	// ✅ Initialize MCP tools on startup from mcp.json
-	await initializeMcpOnStartup();
+	// await initializeMcpOnStartup();
 
 	await tools.init();
-	// const results = await tools.initializeMcpClients();
+	// const results = await tools.initializeMcpClients(true);
+	// console.log(
+	// 	"MCP clients initialized on startup:",
+	// 	JSON.parse(JSON.stringify(results)),
+	// );
 });
 
 app.on("window-all-closed", () => {
