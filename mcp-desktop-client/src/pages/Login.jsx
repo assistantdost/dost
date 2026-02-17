@@ -36,7 +36,7 @@ export default function LoginPage() {
 				await googleLogin(tokens);
 
 				// Load default MCP servers after successful login
-				await loadDefaultServers();
+				loadDefaultServers();
 
 				navigate("/");
 			} catch (err) {

@@ -60,7 +60,7 @@ export function registerMcpIpcHandlers() {
 		return tools.getState();
 	});
 
-	ipcMain.on("mcp-state-changed", (event, newState) => {
+	tools.on("mcp-state-changed", (newState) => {
 		// Broadcast to all renderer windows
 		BrowserWindow.getAllWindows().forEach((win) => {
 			win.webContents.send("mcp-state-updated", newState);

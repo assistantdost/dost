@@ -2,68 +2,63 @@ import { create } from "zustand";
 import { toast } from "sonner";
 
 // Check if we're in renderer process
-const isRenderer = typeof window !== "undefined" && window.electron;
+const isRenderer = typeof window !== "undefined" && window.mcp;
 
 // Renderer store (with Zustand and IPC sync)
 export const useMcpStore = create((set, get) => ({
-	activeTools: [], // Array of tool names
 	mcpServers: {},
-	serverConfig: {}, // mcp.json config
-	isInitialized: false,
-	isConnecting: false,
-	isConnected: false,
+	toolCount: 0,
+	config: {},
+	isMcpConnected: false,
 
 	// ========== INITIALIZATION ==========
 
 	// Initialize store from main process
-	init: async () => {
+	initialize: async () => {
 		if (!isRenderer) return;
-
 		try {
-			console.log("🔄 Initializing MCP store from main process...");
-			const state = await window.electron.invoke("mcp-get-state");
-			console.log("📦 Received state from main:", state);
-			set({ ...state, isInitialized: true });
+			const { success, failed } = await window.mcp.initialize();
 
-			// ✅ Auto-connect on refresh if config exists but not connected
-			const currentState = get();
-			if (
-				Object.keys(currentState.serverConfig).length > 0 &&
-				!currentState.isConnected
-			) {
-				console.log("🔄 Auto-connecting on refresh...");
-				await get().connectToServers();
-			}
-
-			console.log("✅ MCP store initialized successfully");
+			failed.forEach((fail) => {
+				toast.error(
+					`MCP server ${fail.serverName} failed to initialize`,
+					{
+						description: fail.error,
+					},
+				);
+				console.error("MCP Initialization error:", fail);
+			});
 		} catch (error) {
-			console.error("❌ Failed to initialize MCP store:", error);
+			console.error("❌ Error initializing MCP Store:", error);
+			toast.error("Failed to initialize MCP Store");
 		}
 	},
 
 	// ========== CONFIG MANAGEMENT ==========
 
 	// Load default servers from API on login
-	loadDefaultServers: async (apiUrl) => {
+	loadDefaultServers: async () => {
 		if (!isRenderer) return { success: false };
 
 		try {
 			console.log("📥 Loading default MCP servers...");
-			const result = await window.electron.mcp.loginLoadDefaults(apiUrl);
+			const res = await window.mcp.loginLoadDefaults();
 
-			if (result.success) {
-				set({ serverConfig: result.data });
-				toast.success("Default servers loaded successfully");
-				console.log("✅ Default servers loaded:", result.data);
+			const { success, failed } = res.results || {};
+			success.forEach((s) => {
+				toast.success(`MCP server ${s.serverName} loaded successfully`);
+				console.log("✅ MCP server loaded:", s.serverName);
+			});
 
-				// ✅ Auto-connect after loading defaults
-				await get().connectToServers();
-
-				return { success: true, data: result.data };
-			} else {
-				toast.error(`Failed to load defaults: ${result.error}`);
-				return { success: false, error: result.error };
-			}
+			failed.forEach((fail) => {
+				toast.error(
+					`MCP server ${fail.serverName} failed to initialize`,
+					{
+						description: fail.error,
+					},
+				);
+				console.error("MCP Initialization error:", fail);
+			});
 		} catch (error) {
 			console.error("❌ Error loading defaults:", error);
 			toast.error("Failed to load default servers");
@@ -406,13 +401,17 @@ export const useMcpStore = create((set, get) => ({
 	listenForUpdates: () => {
 		if (!isRenderer) return;
 
-		console.log("👂 Setting up listener for MCP state updates...");
-		window.electron.on("mcp-state-updated", (data) => {
-			const { key, value } = data;
-			console.log(`📨 Received update from main: ${key}`, value);
-			set({ [key]: value });
+		console.log("👂 Listening for MCP state updates from main process...");
+
+		window.mcp.onStateUpdated((state) => {
+			set({
+				mcpServers: state.mcpServers || {},
+				toolCount: state.toolCount || 0,
+				config: state.config || {},
+				isMcpConnected: state.isMcpConnected || false,
+			});
+			console.log("🔄 MCP state updated:", state);
 		});
-		console.log("✅ Listener setup complete");
 	},
 
 	// Clean up listeners

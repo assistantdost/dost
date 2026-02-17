@@ -49,47 +49,28 @@ contextBridge.exposeInMainWorld("electron", {
 			ipcRenderer.send("electron-store-delete-all");
 		},
 	},
-	// MCP Store API
-	invoke: (channel, ...args) => {
-		const validChannels = [
-			"mcp-get-state",
-			"mcp-set-state",
-			"mcp-login-load-defaults",
-			"mcp-read-config",
-			"mcp-add-server",
-			"mcp-remove-server",
-			"mcp-update-server",
-			"mcp-connect",
-		];
-		if (validChannels.includes(channel)) {
-			return ipcRenderer.invoke(channel, ...args);
-		}
-	},
-	on: (channel, func) => {
-		const validChannels = ["mcp-state-updated"];
-		if (validChannels.includes(channel)) {
-			ipcRenderer.on(channel, (event, ...args) => func(...args));
-		}
-	},
-	removeAllListeners: (channel) => {
-		const validChannels = ["mcp-state-updated"];
-		if (validChannels.includes(channel)) {
-			ipcRenderer.removeAllListeners(channel);
-		}
-	},
-	// MCP Config API - convenient wrappers
-	mcp: {
-		loginLoadDefaults: (apiUrl) =>
-			ipcRenderer.invoke("mcp-login-load-defaults", apiUrl),
-		readConfig: () => ipcRenderer.invoke("mcp-read-config"),
-		addServer: (name, config) =>
-			ipcRenderer.invoke("mcp-add-server", name, config),
-		removeServer: (name) => ipcRenderer.invoke("mcp-remove-server", name),
-		updateServer: (name, updates) =>
-			ipcRenderer.invoke("mcp-update-server", name, updates),
-		connect: () => ipcRenderer.invoke("mcp-connect"),
-		disconnect: () => ipcRenderer.invoke("mcp-disconnect"),
-		getInitStatus: () => ipcRenderer.invoke("mcp-get-init-status"),
-		forceReinitialize: () => ipcRenderer.invoke("mcp-force-reinitialize"),
+});
+
+// MCP API - expose all handlers directly under "mcp"
+contextBridge.exposeInMainWorld("mcp", {
+	loginLoadDefaults: (apiUrl) =>
+		ipcRenderer.invoke("mcp-login-load-defaults", apiUrl),
+	readConfig: () => ipcRenderer.invoke("mcp-read-config"),
+	addServer: (name, config) =>
+		ipcRenderer.invoke("mcp-add-server", name, config),
+	removeServer: (name) => ipcRenderer.invoke("mcp-remove-server", name),
+	updateServer: (name, updates) =>
+		ipcRenderer.invoke("mcp-update-server", name, updates),
+	initialize: (state) => ipcRenderer.invoke("mcp-initialize", state),
+	connect: () => ipcRenderer.invoke("mcp-connect"),
+	disconnect: () => ipcRenderer.invoke("mcp-disconnect"),
+	connectOne: (name) => ipcRenderer.invoke("mcp-connect-one", name),
+	disconnectOne: (name) => ipcRenderer.invoke("mcp-disconnect-one", name),
+	getFullState: () => ipcRenderer.invoke("mcp-get-full-state"),
+	getState: () => ipcRenderer.invoke("mcp-get-state"),
+	onStateUpdated: (callback) => {
+		const wrapped = (event, ...args) => callback(...args);
+		ipcRenderer.on("mcp-state-updated", wrapped);
+		return () => ipcRenderer.removeListener("mcp-state-updated", wrapped);
 	},
 });

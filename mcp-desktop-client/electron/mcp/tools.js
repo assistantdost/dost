@@ -5,10 +5,15 @@ import { EventEmitter } from "events";
 import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { config } from "dotenv";
+import { tool } from "ai";
+
+config(); // Load environment variables from .env file
 
 const MCP_CONFIG_PATH = path.join(app.getPath("userData"), "mcp.json");
 const API_URL =
-	process.env.VITE_API_URL || "http://localhost:3000/api/defaults";
+	process.env.VITE_API_URL + "/mcp_store/default-servers" ||
+	"http://localhost:5000/api/v1/mcp_store/default-servers";
 
 export class Tools extends EventEmitter {
 	constructor() {
@@ -27,8 +32,12 @@ export class Tools extends EventEmitter {
 					target[prop] = value;
 
 					// Only emit if value actually changed
+					console.log(`State change: ${prop} updated`);
 					if (oldValue !== value) {
-						this.emit("mcp-state-changed", { ...this.state });
+						this.emit(
+							"mcp-state-changed",
+							this._transformStateForUI(),
+						);
 					}
 					return true;
 				},
@@ -95,7 +104,32 @@ export class Tools extends EventEmitter {
 		}
 	}
 
-	async initializeMcpClients(state = false) {
+	_transformStateForUI() {
+		return {
+			mcpServers: Object.entries(this.state.mcpServers).map(
+				([name, server]) => ({
+					name,
+					...server.metadata,
+					tools: Object.entries(server.tools).map(
+						([toolName, tool]) => ({
+							name: toolName,
+							description: tool.description || "",
+							// Add more tool metadata here if needed
+						}),
+					),
+					toolCount: Object.keys(server.tools).length,
+					connected: server.connected,
+				}),
+			),
+			toolCount: Object.values(this.state.mcpServers).reduce(
+				(count, server) => count + Object.keys(server.tools).length,
+				0,
+			),
+			config: this.state.config,
+			isMcpConnected: this.state.isMcpConnected,
+		};
+	}
+	async initializeMcpClients() {
 		await this.ensureInitialized();
 
 		// Clear existing clients before re-initializing
@@ -192,9 +226,6 @@ export class Tools extends EventEmitter {
 		this.state.mcpServers = newMcpServers;
 		this.state.isMcpConnected = results.success.length > 0;
 
-		if (state) {
-			results.state = { ...this.state };
-		}
 		return results;
 	}
 
@@ -219,8 +250,8 @@ export class Tools extends EventEmitter {
 				};
 			}
 			await this.updateConfig(defaults);
-			await this.initializeMcpClients();
-			return { success: true, data: defaults };
+			const results = await this.initializeMcpClients();
+			return { success: true, results };
 		} catch (error) {
 			console.error("Failed to load defaults:", error);
 			return { success: false, error: error.message };

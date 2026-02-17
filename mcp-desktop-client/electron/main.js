@@ -77,7 +77,7 @@ app.whenReady().then(async () => {
 	// const results = await tools.initializeMcpClients(true);
 	// console.log(
 	// 	"MCP clients initialized on startup:",
-	// 	JSON.parse(JSON.stringify(results)),
+	// 	JSON.stringify(results, null, 2),
 	// );
 });
 

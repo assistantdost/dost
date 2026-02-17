@@ -67,7 +67,7 @@ export function AppSidebar() {
 	const { logged, token } = useAuthStore();
 	const { setChats, activeChatId } = useChatStore();
 	const { theme, toggleTheme } = useGlobalStore();
-	const { activeTools } = useMcpStore();
+	// const { activeTools } = useMcpStore();
 
 	// Fetch user chats with TanStack Query - only when logged and has token
 	const { data: chats = [], isLoading: isLoadingChats } = useQuery({
@@ -180,7 +180,7 @@ export function AppSidebar() {
 										<span>Tools</span>
 									</div>
 									<span className="text-xs bg-primary/10 px-2 py-1 rounded-full">
-										{Object.keys(activeTools).length}
+										0
 									</span>
 								</Link>
 							</Button>

@@ -11,12 +11,12 @@ import {
 import "./App.css";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
-import Test from "@/pages/Test";
+// import Test from "@/pages/Test";
 import Login from "@/pages/Login";
 import Chat from "@/pages/Chat";
 import Account from "@/pages/Account";
 import Settings from "@/pages/Settings";
-import Tools from "@/pages/Tools";
+// import Tools from "@/pages/Tools";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 import { useAuthStore } from "@/store/authStore";
@@ -26,23 +26,23 @@ import { useMcpStore } from "./store/mcpStore";
 function App() {
 	const { refreshToken, logged } = useAuthStore();
 	const {
-		init: initMcpStore,
+		initialize,
 		listenForUpdates,
-		cleanup: cleanupMcpStore,
-		readConfig,
-		connectToServers,
-		isInitialized,
+		// cleanup: cleanupMcpStore,
+		// readConfig,
+		// connectToServers,
+		// isInitialized,
 	} = useMcpStore();
 
 	// Initialize MCP store and listen for updates
-	// useEffect(() => {
-	// 	initMcpStore();
-	// 	listenForUpdates();
+	useEffect(() => {
+		initialize();
+		listenForUpdates();
 
-	// 	return () => {
-	// 		cleanupMcpStore();
-	// 	};
-	// }, []);
+		// return () => {
+		// 	cleanupMcpStore();
+		// };
+	}, []);
 
 	useEffect(() => {
 		// Attempt to refresh token on app load and every 15 minutes
@@ -108,15 +108,15 @@ function App() {
 								</ProtectedRoute>
 							}
 						/>
-						<Route
+						{/* <Route
 							path="tools"
 							element={
 								<ProtectedRoute>
 									<Tools />
 								</ProtectedRoute>
 							}
-						></Route>
-						<Route path="test" element={<Test />} />
+						></Route> */}
+						{/* <Route path="test" element={<Test />} /> */}
 					</Route>
 				</Routes>
 			</div>

@@ -21,7 +21,8 @@ import { Separator } from "@/components/ui/separator";
 
 export default function SignupPage() {
 	const router = useRouter();
-	const { signup, loading, error, setSignUpData } = useAuthStore();
+	const { signup, loading, error, setSignUpData, googleLogin } =
+		useAuthStore();
 	const [formData, setFormData] = useState({
 		name: "",
 		email: "",
@@ -210,7 +211,7 @@ export default function SignupPage() {
 										type="button"
 										onClick={() =>
 											setShowConfirmPassword(
-												!showConfirmPassword
+												!showConfirmPassword,
 											)
 										}
 										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
