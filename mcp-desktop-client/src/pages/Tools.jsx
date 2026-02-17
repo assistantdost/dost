@@ -42,21 +42,21 @@ function Tools() {
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-			<div className="container mx-auto p-6 space-y-8">
+			<div className="container mx-auto p-4 space-y-8">
 				{/* Header */}
-				<div className="space-y-2">
-					<div className="flex items-center justify-between">
-						<div className="space-y-1">
+				<div className="space-y-4 md:space-y-2">
+					<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-3">
+						<div className="space-y-1 text-center md:text-left">
 							<h2 className="text-xl font-bold tracking-tight">
 								MCP Control Center
 							</h2>
-							<p className="text-muted-foreground ">
+							<p className="text-muted-foreground">
 								Manage and monitor your Model Context Protocol
 								infrastructure
 							</p>
 						</div>
-						<div className="flex items-center gap-3">
-							<div className="flex flex-col items-end gap-1">
+						<div className="flex flex-col items-center gap-3 md:flex-row md:items-center md:gap-3">
+							<div className="flex flex-row items-center gap-1 md:flex-col md:items-end md:gap-1">
 								<Badge
 									variant={isSystemOn ? "default" : "outline"}
 									className="text-xs px-3 py-1"
@@ -142,9 +142,6 @@ function Tools() {
 									key={serverName}
 									serverName={serverName}
 									serverConfig={serverConfig}
-									isConnected={Object.keys(
-										mcpServers || {},
-									).includes(serverName)}
 								/>
 							))}
 						</div>
@@ -189,7 +186,8 @@ function Tools() {
 								([name, server]) => (
 									<ToolsServerView
 										key={name}
-										server={{ name, ...server }}
+										serverName={name}
+										serverData={server}
 									/>
 								),
 							)}

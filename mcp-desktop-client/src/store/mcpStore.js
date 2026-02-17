@@ -130,14 +130,9 @@ export const useMcpStore = create((set, get) => ({
 		if (!isRenderer) return { success: false };
 
 		try {
-			const result = await window.mcp.removeServer(serverName);
-			if (result.success) {
-				toast.success(`Server "${serverName}" removed`);
-				console.log(`✅ Removed server: ${serverName}`);
-			} else {
-				toast.error(`Failed to remove server: ${result.error}`);
-			}
-			return result;
+			await window.mcp.removeServer(serverName);
+			toast.success(`Server "${serverName}" removed`);
+			console.log(`✅ Removed server: ${serverName}`);
 		} catch (error) {
 			console.error("❌ Error removing server:", error);
 			toast.error("Failed to remove server");
@@ -171,12 +166,7 @@ export const useMcpStore = create((set, get) => ({
 
 		try {
 			const result = await window.mcp.disconnect();
-			if (result.success) {
-				toast.success("Disconnected from all servers");
-				console.log("✅ Disconnected from all servers");
-			} else {
-				toast.error("Failed to disconnect from all servers");
-			}
+			toast.success("Disconnected from all servers");
 			return result;
 		} catch (error) {
 			console.error("❌ Error disconnecting from all servers:", error);
@@ -215,16 +205,8 @@ export const useMcpStore = create((set, get) => ({
 		if (!isRenderer) return { success: false };
 
 		try {
-			const result = await window.mcp.disconnectOne(serverName);
-			if (result.success) {
-				toast.success(`Disconnected from "${serverName}"`);
-				console.log(`✅ Disconnected from server: ${serverName}`);
-			} else {
-				toast.error(
-					`Failed to disconnect from "${serverName}": ${result.error}`,
-				);
-			}
-			return result;
+			await window.mcp.disconnectOne(serverName);
+			toast.success(`Disconnected from "${serverName}"`);
 		} catch (error) {
 			console.error(
 				`❌ Error disconnecting from server ${serverName}:`,

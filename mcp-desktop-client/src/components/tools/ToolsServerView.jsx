@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
 import {
 	Accordion,
@@ -9,28 +9,31 @@ import {
 } from "../ui/accordion";
 import { Server, Wrench } from "lucide-react";
 
-export function ToolsServerView({ server }) {
-	const tools = server?.tools || [];
+export const ToolsServerView = React.memo(function ToolsServerView({
+	serverName,
+	serverData,
+}) {
+	const tools = serverData?.tools || [];
 	const toolCount = tools.length;
 
 	return (
-		<Card className="overflow-hidden">
+		<Card size="sm" className="overflow-hidden">
 			<CardHeader>
 				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2 text-lg">
+					<CardTitle className="flex items-center gap-2 ">
 						<Server className="h-5 w-5 text-primary" />
-						{server.name}
+						{serverName}
 					</CardTitle>
 					<Badge variant="secondary" className="gap-1">
 						<Wrench className="h-3 w-3" />
 						{toolCount} {toolCount === 1 ? "Tool" : "Tools"}
 					</Badge>
 				</div>
-				{server.description && (
+				{/* {server.description && (
 					<p className="text-sm text-muted-foreground ">
 						{server.description}
 					</p>
-				)}
+				)} */}
 			</CardHeader>
 			<CardContent className="">
 				{toolCount === 0 ? (
@@ -87,4 +90,4 @@ export function ToolsServerView({ server }) {
 			</CardContent>
 		</Card>
 	);
-}
+});

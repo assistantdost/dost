@@ -334,6 +334,8 @@ export class Tools extends EventEmitter {
 		const newMcpServers = { ...this.state.mcpServers };
 		delete newMcpServers[serverName];
 		this.state.mcpServers = newMcpServers;
+
+		return { success: true };
 	}
 
 	async updateConfig(newConfig) {
@@ -417,6 +419,7 @@ export class Tools extends EventEmitter {
 		await this.updateConfig(newConfig);
 		this.state.mcpServers = {};
 		this.state.isMcpConnected = false;
+		return { success: true };
 	}
 
 	async connectOneServer(serverName) {
@@ -484,6 +487,8 @@ export class Tools extends EventEmitter {
 		const newMcpServers = { ...this.state.mcpServers };
 		delete newMcpServers[serverName];
 		this.state.mcpServers = newMcpServers;
+
+		return { success: true };
 	}
 
 	getTools() {

@@ -10,12 +10,12 @@ import {
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
-	Settings,
 	Trash2,
 	Server,
-	Link as LinkIcon,
 	CheckCircle2,
 	XCircle,
+	Eye,
+	Pencil,
 } from "lucide-react";
 import { useMcpStore } from "../../store/mcpStore";
 import {
@@ -27,56 +27,45 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "../ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
+import { ViewServerDialog } from "./ViewServerDialog";
+import { EditServerDialog } from "./EditServerDialog";
 
-export function ConfigCard({ serverName, serverConfig, isConnected }) {
+export const ConfigCard = React.memo(function ConfigCard({ serverName, serverConfig }) {
 	const { removeServer, connectOneServer, disconnectOneServer } =
 		useMcpStore();
+
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-	const [isToggling, setIsToggling] = useState(false);
+	const [showViewDialog, setShowViewDialog] = useState(false);
+	const [showEditDialog, setShowEditDialog] = useState(false);
 
 	const handleDelete = async () => {
 		await removeServer(serverName);
 		setShowDeleteDialog(false);
 	};
 
-	const handleToggleConnection = async () => {
-		setIsToggling(true);
-		if (isConnected) {
-			await disconnectOneServer(serverName);
-		} else {
-			await connectOneServer(serverName);
-		}
-		setIsToggling(false);
-	};
-
 	const isEnabled = serverConfig?.enabled !== false;
 
 	return (
 		<>
-			<Card className="group hover:shadow-md transition-all">
-				<CardHeader className="pb-3">
+			<Card size="sm" className="group hover:shadow-md transition-all">
+				<CardHeader>
 					<div className="flex items-start justify-between">
-						<div className="flex-1 min-w-0">
-							<CardTitle className="flex items-center gap-2 text-lg">
+						<div className="flex-1 min-w-0 space-y-1">
+							<CardTitle className="flex items-center gap-2 ">
 								<Server className="h-4 w-4 text-muted-foreground flex-shrink-0" />
 								<span className="truncate">{serverName}</span>
 							</CardTitle>
-							<CardDescription className="mt-1 line-clamp-2">
+							<CardDescription className=" line-clamp-2">
 								{serverConfig?.description ||
 									"No description provided"}
 							</CardDescription>
 						</div>
 						<div className="ml-2">
-							{isConnected ? (
+							{isEnabled ? (
 								<Badge variant="default" className="gap-1">
 									<CheckCircle2 className="h-3 w-3" />
 									Active
-								</Badge>
-							) : isEnabled ? (
-								<Badge variant="secondary" className="gap-1">
-									<XCircle className="h-3 w-3" />
-									Ready
 								</Badge>
 							) : (
 								<Badge variant="outline" className="gap-1">
@@ -87,52 +76,47 @@ export function ConfigCard({ serverName, serverConfig, isConnected }) {
 						</div>
 					</div>
 				</CardHeader>
-				<CardContent className="space-y-2 pb-3">
-					<div className="flex items-center justify-between text-sm">
-						<span className="text-muted-foreground">Transport</span>
-						<Badge variant="outline" className="font-mono">
-							{serverConfig?.transport || "N/A"}
-						</Badge>
-					</div>
-					{serverConfig?.url && (
-						<div className="flex items-center gap-2 text-sm">
-							<LinkIcon className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-							<span className="text-muted-foreground truncate text-xs">
-								{serverConfig.url}
-							</span>
-						</div>
-					)}
-					{serverConfig?.command && (
-						<div className="flex items-center gap-2 text-sm">
-							<span className="text-muted-foreground">
-								Command:
-							</span>
-							<code className="text-xs bg-muted px-2 py-0.5 rounded truncate">
-								{serverConfig.command}
-							</code>
-						</div>
-					)}
-				</CardContent>
-				<CardFooter className="pt-3 flex gap-2">
-					{isEnabled && (
+
+				<CardFooter className="flex gap-2">
+					{isEnabled ? (
 						<Button
-							variant={isConnected ? "outline" : "default"}
+							variant="outline"
 							size="sm"
 							className="flex-1"
-							onClick={handleToggleConnection}
-							disabled={isToggling}
+							onClick={() => disconnectOneServer(serverName)}
 						>
-							{isToggling
-								? "Processing..."
-								: isConnected
-									? "Disconnect"
-									: "Connect"}
+							Disconnect
+						</Button>
+					) : (
+						<Button
+							variant="default"
+							size="sm"
+							className="flex-1"
+							onClick={() => connectOneServer(serverName)}
+						>
+							Connect
 						</Button>
 					)}
 					<Button
 						variant="ghost"
 						size="sm"
-						className="opacity-0 group-hover:opacity-100 transition-opacity"
+						title="View"
+						onClick={() => setShowViewDialog(true)}
+					>
+						<Eye className="h-4 w-4" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						title="Edit"
+						onClick={() => setShowEditDialog(true)}
+					>
+						<Pencil className="h-4 w-4" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						title="Delete"
 						onClick={() => setShowDeleteDialog(true)}
 					>
 						<Trash2 className="h-4 w-4 text-destructive" />
@@ -165,6 +149,17 @@ export function ConfigCard({ serverName, serverConfig, isConnected }) {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+
+			<ViewServerDialog
+				open={showViewDialog}
+				onOpenChange={setShowViewDialog}
+				serverName={serverName}
+			/>
+			<EditServerDialog
+				open={showEditDialog}
+				onOpenChange={setShowEditDialog}
+				serverName={serverName}
+			/>
 		</>
 	);
-}
+});

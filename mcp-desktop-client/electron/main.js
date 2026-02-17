@@ -5,9 +5,7 @@ import dotenv from "dotenv";
 import Store from "electron-store";
 import "./ipcStore.js";
 import { createServer } from "./server/server.js";
-import { getSerializedState, updateMcpStore } from "./mcpStore.js";
 import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
-// import { initializeMcpOnStartup } from "./mcp/initializer.js";
 
 import { tools } from "./mcp/tools.js";
 
@@ -69,9 +67,6 @@ function createWindow() {
 app.whenReady().then(async () => {
 	createWindow();
 	await createServer(mainWindow);
-
-	// ✅ Initialize MCP tools on startup from mcp.json
-	// await initializeMcpOnStartup();
 
 	await tools.init();
 	// const results = await tools.initializeMcpClients(true);
