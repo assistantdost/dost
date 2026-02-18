@@ -1,9 +1,11 @@
 import { convertToModelMessages } from "ai";
 import { chatAgent } from "../ai/agent.js";
-
+import { tools } from "../mcp/tools.js";
+import { toolRAG } from "../mcp/toolRAG.js";
 import { generateText } from "ai";
 
 import { groq } from "@ai-sdk/groq";
+import { mode } from "d3";
 
 const SUMMARY_MAX_TOKENS = parseInt(process.env.VITE_SUMMARY_MAX_TOKENS) || 800;
 
@@ -24,9 +26,29 @@ export async function setupRoutes(server, mainWindow) {
 				role: msg.role,
 				parts: msg.parts,
 			}));
-			const agent = await chatAgent();
+			const modelMessages = convertToModelMessages(filteredMessages);
+
+			const activeTools = tools.getTools();
+
+			const query =
+				modelMessages[modelMessages.length - 1].content[0].text || "";
+
+			// console.log("Received chat request with query:", query);
+
+			const filteredTools = await toolRAG.select(
+				query,
+				modelMessages,
+				activeTools,
+			);
+
+			// console.log(
+			// 	"Tools filtered by Rag : ",
+			// 	JSON.stringify(filteredTools),
+			// );
+
+			const agent = await chatAgent(filteredTools);
 			const stream = agent.stream({
-				messages: convertToModelMessages(filteredMessages),
+				messages: modelMessages,
 			});
 
 			stream.pipeUIMessageStreamToResponse(res, {

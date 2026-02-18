@@ -8,6 +8,7 @@ import { createServer } from "./server/server.js";
 import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
 
 import { tools } from "./mcp/tools.js";
+import { toolRAG } from "./mcp/toolRAG.js";
 
 const store = new Store();
 
@@ -67,7 +68,7 @@ function createWindow() {
 app.whenReady().then(async () => {
 	createWindow();
 	await createServer(mainWindow);
-
+	await toolRAG.init();
 	await tools.init();
 	// const results = await tools.initializeMcpClients(true);
 	// console.log(

@@ -15,36 +15,19 @@ export const providerOptions = {
 	},
 };
 
-// ✅ Cache the agent to avoid recreating on every call
-let cachedAgent = null;
-
-export async function chatAgent() {
+export async function chatAgent(tools) {
 	// Always get fresh tools from store
-	const activeTools = tools.getTools();
+	// const activeTools = tools.getTools();
 
-	// Check if tools have changed (compare tool names)
-	const currentToolNames = Object.keys(activeTools || {});
-	const cachedToolNames = cachedAgent
-		? Object.keys(cachedAgent.tools || {}).filter(
-				(name) => name !== "browser_search",
-			)
-		: [];
-
-	const toolsChanged =
-		currentToolNames.length !== cachedToolNames.length ||
-		!currentToolNames.every((name) => cachedToolNames.includes(name));
-
-	if (!cachedAgent || toolsChanged) {
-		// Create new agent if it doesn't exist or tools changed
-		cachedAgent = new Agent({
-			model: groq("openai/gpt-oss-120b"),
-			tools: {
-				...activeTools,
-				browser_search: groq.tools.browserSearch({}),
-			},
-			toolChoice: "auto",
-			stopWhen: stepCountIs(5),
-			system: `You are a helpful assistant. You can use multiple tools in sequence to solve complex tasks.
+	const cachedAgent = new Agent({
+		model: groq("openai/gpt-oss-120b"),
+		tools: {
+			...tools,
+			browser_search: groq.tools.browserSearch({}),
+		},
+		toolChoice: "auto",
+		stopWhen: stepCountIs(8),
+		system: `You are a helpful assistant. You can use multiple tools in sequence to solve complex tasks.
          If a tool's output suggests another tool should be used, do so.
          Always explain your reasoning and show intermediate steps.
          Keep reasoning small and focused until asked for more.
@@ -54,8 +37,7 @@ export async function chatAgent() {
          Always format math in Markdown using $...$ for inline and $$...$$ for block equations.
          Diagram (Graphviz/DOT): Render compact, modern diagram (rounded nodes, pastel colors, Helvetica font, light grey edges, fits A4 width), just mention one line about it, nothing more info.
          Always give Authorization links as clickable hyperlinks in markdown format like - [link text](https://example.com)`,
-		});
-	}
+	});
 
 	return cachedAgent;
 }

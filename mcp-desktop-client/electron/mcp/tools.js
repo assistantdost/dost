@@ -6,7 +6,7 @@ import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { config } from "dotenv";
-import { tool } from "ai";
+import { toolRAG } from "./toolRAG.js";
 
 config(); // Load environment variables from .env file
 
@@ -38,6 +38,11 @@ export class Tools extends EventEmitter {
 							"mcp-state-changed",
 							this._transformStateForUI(),
 						);
+					}
+
+					// Auto-reindex tools in RAG when servers change
+					if (prop === "mcpServers") {
+						toolRAG.reindex(this.getTools());
 					}
 					return true;
 				},
