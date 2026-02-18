@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 from models.chat import Chat as ChatModel, Message as MessageModel
 from schemas.chat import ChatCreate, ChatUpdate
 from typing import List, Optional
+from datetime import datetime, timezone
 
 
 async def get_user_chats(db: AsyncSession, user_id: str) -> List[ChatModel]:
@@ -71,28 +72,28 @@ async def update_chat_messages(db: AsyncSession, chat_id: str, user_id: str, cha
     if not chat:
         return None
 
-    # Append new messages in order
-    for message_data in chat_update.messages:
-        db_message = MessageModel(
-            id=message_data.id,
-            chat_id=chat.id,
-            role=message_data.role,
-            parts=[item.dict() for item in message_data.parts]
-        )
-        db.add(db_message)
+    try:
+        for message_data in chat_update.messages:
+            db_message = MessageModel(
+                id=message_data.id,
+                chat_id=chat.id,
+                role=message_data.role,
+                parts=[item.dict() for item in message_data.parts]
+            )
+            db.add(db_message)
 
-    # Update chat's updated_at timestamp
-    chat.updated_at = func.now()
+        chat.updated_at = datetime.now(timezone.utc)
+        db.add(chat)
 
-    await db.commit()
+        await db.flush()
+        await db.commit()
+        await db.refresh(chat)
 
-    # Load the updated chat with all messages
-    stmt = select(ChatModel).options(selectinload(
-        ChatModel.messages)).where(ChatModel.id == chat_id)
-    result = await db.execute(stmt)
-    updated_chat = result.scalar_one()
+        return chat
 
-    return updated_chat
+    except Exception as e:
+        await db.rollback()
+        raise e
 
 
 async def delete_chat(db: AsyncSession, chat_id: str, user_id: str) -> bool:

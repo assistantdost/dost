@@ -25,7 +25,7 @@ class Chat(Base):
     # Relationships
     user = relationship("User", back_populates="chats")
     messages = relationship(
-        "Message", back_populates="chat", cascade="all, delete-orphan")
+        "Message", back_populates="chat", cascade="all, delete-orphan", order_by="Message.created_at")
 
 
 class Message(Base):
