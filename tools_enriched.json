@@ -1,0 +1,842 @@
+{
+  "calculator": {
+    "description": "Perform mathematical calculations on a list of numbers. Use this for finding the sum, product, minimum, maximum, or average (mean) of a dataset. Useful for basic statistics and arithmetic.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "numbers": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "operation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "numbers",
+          "operation"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "get_weather": {
+    "description": "Retrieves the current weather forecast. Use this to check if it is raining, snowing, sunny, or to get the temperature in a specific city (e.g., Tokyo).",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "units": {
+            "default": "metric",
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "get_stock_data": {
+    "description": "Fetches real-time or historical stock market data. Use this to check share prices, stock performance, and financial metrics for a company by its symbol or name (e.g., AAPL, Apple).",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "stock_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stock_name"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "read_recent_emails": {
+    "description": "Retrieves recent emails from the user's Gmail inbox. Use this to read the latest messages, check for unread emails, or search for specific emails from a sender or with a specific subject.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "max_results": {
+            "default": 5,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string",
+            "default": null
+          },
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "send_email": {
+    "description": "Sends a new email from the user's Gmail account. Use this to compose and send messages to recipients. Requires a recipient email address, subject, and body text. Always resolve the email address via 'list_contacts' first if only a name is given.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "subject",
+          "body"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "list_calendar_events": {
+    "description": "Retrieves the user's personal daily agenda, upcoming meetings, and appointments from Google Calendar. Use this to check availability, see what is planned for today or tomorrow, and manage time.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "max_results": {
+            "default": 5,
+            "type": "integer"
+          },
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "create_calendar_event": {
+    "description": "Schedules a new event, meeting, or appointment in Google Calendar. Use this to book time slots, set up reminders for specific dates and times, and invite attendees.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "start_datetime": {
+            "type": "string"
+          },
+          "end_datetime": {
+            "type": "string"
+          },
+          "time_zone": {
+            "default": "Asia/Kolkata",
+            "type": "string"
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "start_datetime",
+          "end_datetime"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "list_contacts": {
+    "description": "Searches the user's Google Contacts address book. Use this to find contact details like email addresses or phone numbers for a specific person (e.g., 'What is John's email?').",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "default": null
+          },
+          "max_results": {
+            "default": 10,
+            "type": "integer"
+          },
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "get_current_playback": {
+    "description": "Checks what song or audio is currently playing on Spotify. Use this to identify the active track, artist, and album.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "play_spotify": {
+    "description": "Resumes media playback on the active Spotify device. Use this to unpause music or continue listening.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "pause_spotify": {
+    "description": "Pauses the current media playback on Spotify. Use this to stop music or audio temporarily.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "next_track_spotify": {
+    "description": "Skips to the next song or track in the Spotify queue. Use this to jump forward in the playlist.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "previous_track_spotify": {
+    "description": "Returns to the previous song or track in the Spotify history. Use this to go back or replay a song.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "start_spotify_playback": {
+    "description": "Starts playing specific music on Spotify. Use this to play a song, album, artist, or playlist by providing its URI. Can also initiate playback on a specific context.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "context_uri": {
+            "type": "string"
+          },
+          "uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "list_spotify_devices": {
+    "description": "Lists all available Spotify Connect devices. Use this to see where music can be played (e.g., laptop, phone, smart speaker) and get device IDs for transfer.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "set_spotify_device": {
+    "description": "Transfers Spotify playback to a different device. Use this to switch music from one device (e.g., phone) to another (e.g., speaker).",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string"
+          },
+          "play": {
+            "default": false,
+            "type": "boolean"
+          },
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        },
+        "required": [
+          "device_id"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "search_spotify": {
+    "description": "Searches the Spotify catalog for music. Use this to find tracks, albums, artists, or playlists by name and get their URIs for playback.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "search_type": {
+            "default": "track",
+            "type": "string"
+          },
+          "limit": {
+            "default": 5,
+            "type": "integer"
+          },
+          "user_id": {
+            "default": "default",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "get_time": {
+    "description": "Retrieves the current local time for a specific location, city, or timezone. Use this to check 'What time is it in Tokyo?' or 'current time'.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "default": "",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "brightness_control": {
+    "description": "Adjusts the screen brightness level. Use this to dim the screen, make it brighter, or set it to a specific percentage.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "enum": [
+              "SET",
+              "INCREASE",
+              "DECREASE"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "clipboard_manager": {
+    "description": "Manages the system clipboard. Use this to read the current copied text (paste) or set new text into the clipboard (copy).",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "enum": [
+              "GET",
+              "SET"
+            ],
+            "type": "string"
+          },
+          "text_to_set": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "close_window": {
+    "description": "Closes a specific application window. Use this to terminate or quit a window by its title.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "create_note": {
+    "description": "Creates a new text file. Use this to jot down quick thoughts, save memos, or use as a scratchpad. Use this for text storage, NOT for time-based alerts.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "custom_filename": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "content"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "delete_scheduled_task": {
+    "description": "Removes a scheduled task from Windows Task Scheduler. Use this to cancel future automated actions.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "task_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_name"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "find_files": {
+    "description": "Searches the hard drive for specific files. Use this to find PDFs, invoices, documents, images, or executables by name.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "start_directory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query",
+          "start_directory"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "focus_window": {
+    "description": "Brings an open window to the foreground. Use this to bring apps like 'Firefox', 'Chrome', or 'Spotify' to the front/focus.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "get_system_info": {
+    "description": "Retrieves detailed hardware and software specifications. Use this to get information about the OS, CPU, memory (RAM), and disk space.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "dynamic"
+  },
+  "list_open_windows": {
+    "description": "Lists all currently open application windows. Use this to see what programs are running and visible on the desktop.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "dynamic"
+  },
+  "list_scheduled_tasks": {
+    "description": "Lists technical background jobs and automated scripts in the Windows Task Scheduler. Use this to manage system automation and cron-like tasks, NOT for personal meetings.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "filter_name": {
+            "default": "",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "maximize_window": {
+    "description": "Maximizes a window to fill the screen. Use this to expand an application window.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "minimize_window": {
+    "description": "Minimizes a window to the taskbar. Use this to hide an application window without closing it.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "open_app": {
+    "description": "Launches a desktop application executable. Use this to start or run programs like 'Firefox', 'Spotify', 'Calculator', 'Notepad', or 'Chrome'. Use this to open the app window, not to control content inside it.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "app_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_name"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "open_webpage": {
+    "description": "Navigates to a specific URL or website address (e.g., google.com, youtube.com). Use this to visit a page directly, NOT to search for information.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "play_song": {
+    "description": "Searches for and plays a song on YouTube in the browser. Use this to listen to specific music or videos on the web.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "song": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "song"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "rate_limit": {
+    "description": "Internal tool for rate limiting operations. Limits how often a function can be called.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "max_calls": {
+            "type": "integer"
+          },
+          "time_window": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_calls",
+          "time_window"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "schedule_task": {
+    "description": "Schedules a command or script to run at a specific time. Use this to automate tasks using Windows Task Scheduler.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "task_name": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "time_str": {
+            "type": "string"
+          },
+          "date_str": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_name",
+          "command",
+          "time_str"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "screenshot": {
+    "description": "Takes a screenshot of the entire screen. Use this to capture the current display state and save it as an image file.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "dynamic"
+  },
+  "search_web": {
+    "description": "Queries a search engine (Google/Bing) to find answers, pasta recipes, or information. Use this when looking for facts or unknown websites.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "engine": {
+            "default": "google",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "secure_operation": {
+    "description": "Internal tool for validating inputs and logging operations for security.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "require_validation": {
+            "default": true,
+            "type": "boolean"
+          },
+          "log_operation": {
+            "default": true,
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "type": "dynamic"
+  },
+  "set_reminder": {
+    "description": "Sets a time-based alert or notification. Use this to get reminded at a specific time or after a duration. NOT for writing notes.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "time_string": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "time_string",
+          "message"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "show_notification": {
+    "description": "Displays a desktop notification. Use this to show a pop-up message to the user.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "default": 5,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "message"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "sound_control": {
+    "description": "Adjusts the system audio volume. Use this to mute, unmute, increase, decrease, or set the volume to a specific level.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "enum": [
+              "SET",
+              "INCREASE",
+              "DECREASE"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "default": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    "type": "dynamic"
+  },
+  "system_power": {
+    "description": "Controls system power states. Use this to shutdown, reboot, restart the computer, sleep, hibernate, or lock the PC.",
+    "inputSchema": {
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "enum": [
+              "shutdown",
+              "restart",
+              "hibernate",
+              "lock"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    "type": "dynamic"
+  }
+}
