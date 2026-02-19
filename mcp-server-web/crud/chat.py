@@ -4,12 +4,17 @@ from sqlalchemy.orm import selectinload
 from models.chat import Chat as ChatModel, Message as MessageModel
 from schemas.chat import ChatCreate, ChatUpdate
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta  # ✅ add timedelta
 
 
 async def get_user_chats(db: AsyncSession, user_id: str) -> List[ChatModel]:
     """Get all chats for a user"""
-    result = await db.execute(select(ChatModel).options(selectinload(ChatModel.messages)).where(ChatModel.user_id == user_id))
+    result = await db.execute(
+        select(ChatModel)
+        .options(selectinload(ChatModel.messages))
+        .where(ChatModel.user_id == user_id)
+        .order_by(ChatModel.updated_at.desc())  # ✅ most recently updated first
+    )
     return result.scalars().all()
 
 
@@ -73,12 +78,16 @@ async def update_chat_messages(db: AsyncSession, chat_id: str, user_id: str, cha
         return None
 
     try:
-        for message_data in chat_update.messages:
+        base_time = datetime.now(timezone.utc)  # ✅ single base time
+
+        for i, message_data in enumerate(chat_update.messages):
             db_message = MessageModel(
                 id=message_data.id,
                 chat_id=chat.id,
                 role=message_data.role,
-                parts=[item.dict() for item in message_data.parts]
+                parts=[item.dict() for item in message_data.parts],
+                created_at=base_time +
+                timedelta(milliseconds=i)  # ✅ +0ms, +1ms
             )
             db.add(db_message)
 
@@ -87,9 +96,9 @@ async def update_chat_messages(db: AsyncSession, chat_id: str, user_id: str, cha
 
         await db.flush()
         await db.commit()
-        await db.refresh(chat)
+        # await db.refresh(chat)
 
-        return chat
+        return True
 
     except Exception as e:
         await db.rollback()

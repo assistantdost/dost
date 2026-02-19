@@ -72,7 +72,7 @@ async def create_chat(
     return await crud_chat.create_chat(db, chat_data, current_user)
 
 
-@router.patch("/{chat_id}", response_model=Chat)
+@router.patch("/{chat_id}", )
 async def update_chat(
     chat_id: str,
     chat_update: ChatUpdate,
@@ -86,7 +86,7 @@ async def update_chat(
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    return chat
+    return {"message": "Chat updated successfully"}
 
 
 @router.delete("/{chat_id}")

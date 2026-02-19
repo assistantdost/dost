@@ -41,7 +41,7 @@ function Tools() {
 	const isSystemOn = Object.keys(mcpServers || {}).length > 0;
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+		<div className="max-h-[95vh] overflow-y-auto ">
 			<div className="container mx-auto p-4 space-y-8">
 				{/* Header */}
 				<div className="space-y-4 md:space-y-2">

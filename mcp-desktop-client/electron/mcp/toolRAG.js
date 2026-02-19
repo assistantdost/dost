@@ -66,18 +66,31 @@ export class ToolRAG {
 			schema: {
 				name: "string",
 				description: "string",
-				schemaJson: "string",
+				schemaText: "string", // human-readable param names for BM25
+				schemaJson: "string", // raw JSON for retrieval only (excluded from BM25)
 				embedding: `vector[${DIMS}]`,
 			},
 		});
 
 		for (const tool of tools) {
 			const desc = tool.description || "";
-			const vec = await this._embed(`${tool.name}: ${desc}`);
+
+			// Richer embedding: name + description + parameter names
+			const paramNames = Object.keys(
+				tool.inputSchema?.properties ||
+					tool.inputSchema?.jsonSchema?.properties ||
+					{},
+			).join(", ");
+			const embedText = paramNames
+				? `${tool.name}: ${desc}. Parameters: ${paramNames}`
+				: `${tool.name}: ${desc}`;
+
+			const vec = await this._embed(embedText);
 			insert(this._db, {
 				name: tool.name,
 				description: desc,
-				schemaJson: JSON.stringify(tool.inputSchema || {}),
+				schemaText: paramNames, // clean readable text — BM25 indexes this
+				schemaJson: JSON.stringify(tool.inputSchema || {}), // raw JSON — retrieval only
 				embedding: vec,
 			});
 		}
@@ -129,10 +142,13 @@ export class ToolRAG {
 		const { search } = await import("@orama/orama");
 		const vec = await this._embed(query);
 
+		// Hybrid: BM25 text search + vector similarity, scores merged by Orama
+		// properties scoped to avoid BM25 over raw schemaJson tokens
 		const results = search(this._db, {
-			mode: "vector",
+			mode: "hybrid",
+			term: query,
+			properties: ["name", "description", "schemaText"],
 			vector: { value: vec, property: "embedding" },
-			similarity: 0.25,
 			limit,
 			includeVectors: false,
 		});
@@ -146,14 +162,6 @@ export class ToolRAG {
 	}
 
 	// ── Sticky Context ──────────────────────────────────────────────────────────
-
-	/**
-	 * Extract tool names from recent conversation history.
-	 * Scans the last N assistant turns for tool calls.
-	 * @param {Array<object>} history - Conversation messages
-	 * @param {number} [window]
-	 * @returns {Set<string>}
-	 */
 
 	/**
 	 * Extract tool names from recent conversation history.

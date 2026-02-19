@@ -2,7 +2,9 @@
 
 ## Overview
 
-`ToolRAG` is a comprehensive RAG (Retrieval-Augmented Generation) system for MCP (Model Context Protocol) tool discovery and selection. It combines semantic vector search with conversation-history-aware "sticky" tool selection to intelligently filter and prioritize relevant tools for LLM calls.
+`ToolRAG` is a comprehensive RAG (Retrieval-Augmented Generation) system for MCP (Model Context Protocol) tool discovery and selection. It combines **hybrid search (BM25 + vector similarity)** with conversation-history-aware "sticky" tool selection to intelligently filter and prioritize relevant tools for LLM calls.
+
+**Search strategy:** BM25 handles exact keyword matches (e.g. tool names, parameter names), vector similarity handles semantic matches (e.g. "temperature" → `get_weather`). Orama merges both scores via RRF (Reciprocal Rank Fusion). Sticky context adds tools used in recent turns regardless of search score.
 
 **Location:** `electron/mcp/toolRAG.js`  
 **Dependencies:** `@xenova/transformers`, `@orama/orama`  
@@ -12,19 +14,32 @@
 
 ### Core Components
 
-1. **Semantic Search Engine** - Vector-based similarity search using transformer embeddings
-2. **Sticky Context Extractor** - Conversation history analysis for tool continuity
-3. **Debounced Re-indexing** - Automatic tool database updates with batching
-4. **Unified Selection Algorithm** - Combines semantic + sticky results
+1. **Hybrid Search Engine** - BM25 keyword search + vector similarity, merged via RRF
+2. **Richer Tool Embeddings** - Embeds `name + description + parameter names` for better semantic coverage
+3. **Sticky Context Extractor** - Conversation history analysis for tool continuity
+4. **Debounced Re-indexing** - Automatic tool database updates with batching
+5. **Unified Selection Algorithm** - Combines hybrid search + sticky results with fallback
+
+### Schema Fields
+
+| Field         | Type        | Purpose                              | BM25 indexed?          |
+| ------------- | ----------- | ------------------------------------ | ---------------------- |
+| `name`        | string      | Tool name                            | ✅ Yes                 |
+| `description` | string      | Tool description                     | ✅ Yes                 |
+| `schemaText`  | string      | Readable param names (`city, units`) | ✅ Yes                 |
+| `schemaJson`  | string      | Raw JSON inputSchema                 | ❌ No — retrieval only |
+| `embedding`   | vector[384] | Semantic embedding                   | — vector field         |
 
 ### Data Flow
 
 ```
-User Query → Embedding → Vector Search → Semantic Hits
-                                      ↓
-Conversation History → Sticky Extraction → Sticky Tools
-                                      ↓
-Merge & Deduplicate → Filtered Tools Object → LLM Agent
+User Query ──┬──→ BM25 keyword match ──────────┐
+             │                                  ├──→ RRF merge → Hybrid Hits
+             └──→ Embed → Vector similarity ───┘
+                                                        ↓
+Conversation History ──→ Sticky Extraction ──→ Sticky Tools
+                                                        ↓
+                              Merge & Deduplicate → Filtered Tools Object → LLM Agent
 ```
 
 ## Class Definition
@@ -102,18 +117,30 @@ async index(tools) {
         schema: {
             name: "string",
             description: "string",
-            schemaJson: "string",
+            schemaText: "string",  // human-readable param names for BM25
+            schemaJson: "string",  // raw JSON for retrieval only (excluded from BM25)
             embedding: `vector[${DIMS}]`,
         },
     });
 
     for (const tool of tools) {
         const desc = tool.description || "";
-        const vec = await this._embed(`${tool.name}: ${desc}`);
+
+        // Richer embedding: name + description + parameter names
+        const paramNames = Object.keys(
+            tool.inputSchema?.properties ||
+            tool.inputSchema?.jsonSchema?.properties || {}
+        ).join(", ");
+        const embedText = paramNames
+            ? `${tool.name}: ${desc}. Parameters: ${paramNames}`
+            : `${tool.name}: ${desc}`;
+
+        const vec = await this._embed(embedText);
         insert(this._db, {
             name: tool.name,
             description: desc,
-            schemaJson: JSON.stringify(tool.inputSchema || {}),
+            schemaText: paramNames,                       // clean readable — BM25 indexes this
+            schemaJson: JSON.stringify(tool.inputSchema || {}), // raw JSON — retrieval only
             embedding: vec,
         });
     }
@@ -132,9 +159,10 @@ async index(tools) {
 
 **Implementation Notes:**
 
-- Recreates database on each call (simple but effective)
-- Embeds: `"${tool.name}: ${description}"`
-- Stores inputSchema as JSON string for retrieval
+- Recreates database on each call
+- Embeds: `"${tool.name}: ${description}. Parameters: ${paramNames}"` — richer signal
+- `schemaText` stores clean param names for BM25 — avoids noisy JSON token matching
+- `schemaJson` stores raw JSON excluded from BM25, used only for retrieval
 
 #### `reindex(activeTools)`
 
@@ -177,7 +205,7 @@ reindex(activeTools) {
 
 #### `async search(query, limit?)`
 
-Performs semantic vector search over indexed tools.
+Performs **hybrid BM25 + vector search** over indexed tools. Orama merges both scores via RRF.
 
 ```javascript
 async search(query, limit = this.semanticLimit) {
@@ -187,10 +215,13 @@ async search(query, limit = this.semanticLimit) {
     const { search } = await import("@orama/orama");
     const vec = await this._embed(query);
 
+    // Hybrid: BM25 text search + vector similarity, scores merged by Orama
+    // properties scoped to avoid BM25 over raw schemaJson tokens
     const results = search(this._db, {
-        mode: "vector",
+        mode: "hybrid",
+        term: query,
+        properties: ["name", "description", "schemaText"],
         vector: { value: vec, property: "embedding" },
-        similarity: 0.25,
         limit,
         includeVectors: false,
     });
@@ -213,10 +244,20 @@ async search(query, limit = this.semanticLimit) {
 
 **Implementation Notes:**
 
-- Embeds query using same pipeline as indexing
-- Similarity threshold: 0.1 (configurable in Orama)
-- Parses stored JSON back to objects
+- `mode: "hybrid"` — runs BM25 and vector in parallel, merges via RRF
+- `properties` scoped to `["name", "description", "schemaText"]` — prevents BM25 matching raw JSON tokens in `schemaJson`
+- No hard similarity threshold — RRF handles relevance naturally
 - Rounds scores to 3 decimal places
+
+**Why hybrid over pure vector?**
+
+| Query type                         | BM25                     | Vector      |
+| ---------------------------------- | ------------------------ | ----------- |
+| `"get_weather"` (exact name)       | ✅ Strong                | ⚠️ Moderate |
+| `"temperature celsius"` (semantic) | ⚠️ Weak                  | ✅ Strong   |
+| `"city units"` (param name)        | ✅ Strong (`schemaText`) | ✅ Strong   |
+
+Hybrid covers both cases.
 
 ### Sticky Context Methods
 
@@ -285,28 +326,26 @@ async select(query, history, allTools, options = {}) {
     const limit = options.semanticLimit ?? this.semanticLimit;
     const window = options.stickyWindow ?? this.stickyWindow;
 
-    // 1. Semantic hits
+    // Fallback: if RAG not ready, return all tools
+    if (!this._pipeline || !this._db) {
+        console.warn("ToolRAG not ready, returning all tools");
+        return allTools;
+    }
+
+    // 1. Hybrid search hits (BM25 + vector)
     const hits = await this.search(query, limit);
     const selected = new Set();
-
-    console.log("-------------------------------------");
-    console.log(
-        "Semantic tools",
-        Array.from(hits, (h) => `${h.name} `),
-    );
 
     for (const t of hits) {
         selected.add(t.name);
     }
 
-    // 2. Sticky context
+    // 2. Sticky context — tools used in recent turns
     const sticky = this.extractSticky(history, window);
 
     for (const name of sticky) {
         selected.add(name);
     }
-
-    console.log("Sticky tools", sticky);
 
     // 3. Build result object in exact tools format
     const result = {};
@@ -327,14 +366,15 @@ async select(query, history, allTools, options = {}) {
 - `allTools`: `Object<string, object>` - Full tools map (MCP format)
 - `options`: `object` - Override `semanticLimit`/`stickyWindow`
 
-**Returns:** `Promise<Object<string, object>>` - Tools in MCP format
+**Returns:** `Promise<Object<string, object>>` - Tools in MCP format, ready for agent
 
 **Algorithm:**
 
-1. Get semantic hits from vector search
-2. Extract sticky tools from conversation history
-3. Merge and deduplicate using Set
-4. Return object with selected tools in original format
+1. **Fallback check** — if not initialized or not indexed, return `allTools` immediately
+2. **Hybrid search** — BM25 + vector on current query → top N tool names
+3. **Sticky extraction** — scan last K assistant turns for tool calls → tool names
+4. **Merge** — union of both sets, deduplicated
+5. **Build result** — return matching tools in original MCP format
 
 ### Utility Methods
 
