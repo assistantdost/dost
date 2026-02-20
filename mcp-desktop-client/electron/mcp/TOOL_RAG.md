@@ -22,13 +22,13 @@
 
 ### Schema Fields
 
-| Field         | Type        | Purpose                              | BM25 indexed?          |
-| ------------- | ----------- | ------------------------------------ | ---------------------- |
-| `name`        | string      | Tool name                            | ✅ Yes                 |
-| `description` | string      | Tool description                     | ✅ Yes                 |
-| `schemaText`  | string      | Readable param names (`city, units`) | ✅ Yes                 |
-| `schemaJson`  | string      | Raw JSON inputSchema                 | ❌ No — retrieval only |
-| `embedding`   | vector[384] | Semantic embedding                   | — vector field         |
+| Field            | Type        | Purpose                                | BM25 indexed?       |
+| ---------------- | ----------- | -------------------------------------- | ------------------- |
+| `name`           | string      | Tool name                              | ✅ Yes (boost ×3)   |
+| `description`    | string      | Tool description                       | ❌ No — vector only |
+| `schemaText`     | string      | Readable param names (`city, units`)   | ✅ Yes (boost ×1.5) |
+| `nameVariations` | string      | Individual words from name, lowercased | ✅ Yes (boost ×2)   |
+| `embedding`      | vector[384] | Semantic embedding                     | — vector field      |
 
 ### Data Flow
 
@@ -117,8 +117,8 @@ async index(tools) {
         schema: {
             name: "string",
             description: "string",
-            schemaText: "string",  // human-readable param names for BM25
-            schemaJson: "string",  // raw JSON for retrieval only (excluded from BM25)
+            schemaText: "string",     // human-readable param names for BM25
+            nameVariations: "string", // individual words from name, lowercased for BM25
             embedding: `vector[${DIMS}]`,
         },
     });
@@ -126,21 +126,22 @@ async index(tools) {
     for (const tool of tools) {
         const desc = tool.description || "";
 
-        // Richer embedding: name + description + parameter names
+        // Richer embedding: name variations + description + parameter names
         const paramNames = Object.keys(
             tool.inputSchema?.properties ||
             tool.inputSchema?.jsonSchema?.properties || {}
         ).join(", ");
+        const nameVariations = this._generateNameVariations(tool.name);
         const embedText = paramNames
-            ? `${tool.name}: ${desc}. Parameters: ${paramNames}`
-            : `${tool.name}: ${desc}`;
+            ? `${tool.name}. ${nameVariations.join(". ")}: ${desc}. Parameters: ${paramNames}`
+            : `${tool.name}. ${nameVariations.join(". ")}: ${desc}`;
 
         const vec = await this._embed(embedText);
         insert(this._db, {
             name: tool.name,
             description: desc,
-            schemaText: paramNames,                       // clean readable — BM25 indexes this
-            schemaJson: JSON.stringify(tool.inputSchema || {}), // raw JSON — retrieval only
+            schemaText: paramNames,                          // clean readable — BM25 indexes this
+            nameVariations: nameVariations.join(" ").toLowerCase(), // lowercased — BM25 indexes this
             embedding: vec,
         });
     }
@@ -160,9 +161,11 @@ async index(tools) {
 **Implementation Notes:**
 
 - Recreates database on each call
-- Embeds: `"${tool.name}: ${description}. Parameters: ${paramNames}"` — richer signal
+- Calls `_generateNameVariations()` to break name into individual words (e.g. `list_calendar_events` → `["list", "calendar", "events"]`)
+- Embeds: `"${tool.name}. ${nameVariations.join(". ")}: ${description}. Parameters: ${paramNames}"` — full name + individual words + description + params
 - `schemaText` stores clean param names for BM25 — avoids noisy JSON token matching
-- `schemaJson` stores raw JSON excluded from BM25, used only for retrieval
+- `nameVariations` stored **lowercased** for case-insensitive BM25 matching (e.g. query "calendar" matches `list_calendar_events`)
+- `description` excluded from BM25 — handled entirely by vector search
 
 #### `reindex(activeTools)`
 
@@ -216,11 +219,16 @@ async search(query, limit = this.semanticLimit) {
     const vec = await this._embed(query);
 
     // Hybrid: BM25 text search + vector similarity, scores merged by Orama
-    // properties scoped to avoid BM25 over raw schemaJson tokens
-    const results = search(this._db, {
+    // description excluded from BM25 — handled by vector search
+    const results = await search(this._db, {
         mode: "hybrid",
         term: query,
-        properties: ["name", "description", "schemaText"],
+        properties: ["name", "nameVariations", "schemaText"], // description handled by vector
+        boost: {
+            name: 3,           // exact name match ranks highest
+            nameVariations: 2, // partial word match ranks second
+            schemaText: 1.5,   // param name match ranks third
+        },
         vector: { value: vec, property: "embedding" },
         limit,
         includeVectors: false,
@@ -229,7 +237,6 @@ async search(query, limit = this.semanticLimit) {
     return (results.hits || []).map((h) => ({
         name: h.document.name,
         description: h.document.description,
-        inputSchema: JSON.parse(h.document.schemaJson || "{}"),
         score: Math.round(h.score * 1000) / 1000,
     }));
 }
@@ -245,19 +252,24 @@ async search(query, limit = this.semanticLimit) {
 **Implementation Notes:**
 
 - `mode: "hybrid"` — runs BM25 and vector in parallel, merges via RRF
-- `properties` scoped to `["name", "description", "schemaText"]` — prevents BM25 matching raw JSON tokens in `schemaJson`
+- `properties` scoped to `["name", "nameVariations", "schemaText"]` — `description` excluded from BM25, handled entirely by vector
+- `boost` — BM25 field weights: `name ×3 > nameVariations ×2 > schemaText ×1.5` for ranked exact/partial/param matching
 - No hard similarity threshold — RRF handles relevance naturally
 - Rounds scores to 3 decimal places
 
-**Why hybrid over pure vector?**
+**BM25 vs Vector responsibilities:**
 
-| Query type                         | BM25                     | Vector      |
-| ---------------------------------- | ------------------------ | ----------- |
-| `"get_weather"` (exact name)       | ✅ Strong                | ⚠️ Moderate |
-| `"temperature celsius"` (semantic) | ⚠️ Weak                  | ✅ Strong   |
-| `"city units"` (param name)        | ✅ Strong (`schemaText`) | ✅ Strong   |
+| Query type                         | BM25                   | Vector      |
+| ---------------------------------- | ---------------------- | ----------- |
+| `"get_weather"` (exact name)       | ✅ Strong (boost ×3)   | ⚠️ Moderate |
+| `"calendar"` (partial name word)   | ✅ Strong (boost ×2)   | ✅ Strong   |
+| `"city units"` (param name)        | ✅ Strong (boost ×1.5) | ✅ Strong   |
+| `"temperature celsius"` (semantic) | ❌ Not indexed         | ✅ Strong   |
+| `"show my schedule"` (semantic)    | ❌ Not indexed         | ✅ Strong   |
 
-Hybrid covers both cases.
+Clean separation: BM25 owns names/params, vector owns description semantics.
+
+> **Tool authoring tip:** For best retrieval, keep tool **names specific and action-oriented** (e.g. `get_weather`, `list_calendar_events`) and write **descriptions semantically** — use natural language, intent phrases, and synonyms (e.g. `"raining, snowing, sunny, temperature"`) rather than API documentation style (`Args:`, `Returns:`, type annotations). See [Tool Authoring Strategy](#tool-authoring-strategy) for details.
 
 ### Sticky Context Methods
 
@@ -377,6 +389,46 @@ async select(query, history, allTools, options = {}) {
 5. **Build result** — return matching tools in original MCP format
 
 ### Utility Methods
+
+#### `_generateNameVariations(name)`
+
+Breaks a tool name into individual words by splitting on `_`, `-`, space, and camelCase/PascalCase boundaries.
+
+```javascript
+_generateNameVariations(name) {
+    const words = new Set();
+
+    // Split by common separators: _ - space
+    const separators = /[_-\s]+/;
+    const sepWords = name.split(separators).filter(w => w.length > 0);
+    for (const word of sepWords) {
+        words.add(word);
+    }
+
+    // Also split the whole name on camelCase/PascalCase boundaries
+    const camelWords = name.split(/(?=[A-Z])/).filter(w => w.length > 0);
+    for (const cw of camelWords) {
+        words.add(cw);
+    }
+
+    return Array.from(words);
+}
+```
+
+**Parameters:** `name: string` — tool name in any convention
+
+**Returns:** `Array<string>` — individual words
+
+**Examples:**
+
+| Input                  | Output                           |
+| ---------------------- | -------------------------------- |
+| `list_calendar_events` | `["list", "calendar", "events"]` |
+| `list-calendar-events` | `["list", "calendar", "events"]` |
+| `listCalendarEvents`   | `["list", "Calendar", "Events"]` |
+| `ListCalendarEvents`   | `["List", "Calendar", "Events"]` |
+
+Enables partial-name BM25 matching — query `"calendar"` matches `list_calendar_events`.
 
 #### `async _embed(text)`
 
@@ -509,3 +561,58 @@ import { toolRAG } from "./electron/mcp/toolRAG.js";
 ```
 
 This provides a ready-to-use instance with optimized defaults for production use.
+
+## Tool Authoring Strategy
+
+ToolRAG's hybrid search has a clean division of responsibility — **names feed BM25, descriptions feed vector**. Writing tools with this in mind maximises retrieval accuracy.
+
+### Tool Names — Be Specific
+
+Names are BM25-indexed with high boost. Users often type tool names or fragments directly.
+
+| ✅ Good                | ❌ Avoid        | Why                        |
+| ---------------------- | --------------- | -------------------------- |
+| `get_weather`          | `weather_tool`  | Verb + noun — clear action |
+| `list_calendar_events` | `calendar`      | Full intent in the name    |
+| `send_email`           | `email_handler` | Unambiguous verb           |
+| `search_spotify`       | `spotify`       | Scoped to the action       |
+
+Name words are broken down (e.g. `list_calendar_events` → `list`, `calendar`, `events`) and stored in `nameVariations` — so partial queries like `"calendar"` or `"events"` match via BM25.
+
+### Tool Descriptions — Be Semantic
+
+Descriptions are **not BM25-indexed** — they feed vector embeddings only. Write them how users **think and speak**, not how code is documented.
+
+| ✅ Good (semantic)                                                                                                                           | ❌ Avoid (API docs)                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `"Retrieves the current weather forecast. Use this to check if it is raining, snowing, sunny, or to get the temperature in a specific city"` | `"Gets weather info. Args: city (str): Name of the city. Returns: dict"` |
+| `"Retrieves the user's personal daily agenda, upcoming meetings, and appointments"`                                                          | `"Calls Google Calendar API to list events"`                             |
+| `"Skips to the next song or track in the Spotify queue"`                                                                                     | `"Calls next_track endpoint"`                                            |
+
+**Tips:**
+
+- Include **synonyms and intent phrases** (`"warm or cold"`, `"is it raining"`, `"what's the weather like"`)
+- Use `"Use this to..."` phrasing — mirrors how users frame requests
+- Avoid `Args:`, `Returns:`, type annotations, and implementation details
+- Keep the first sentence the core intent — it carries the most embedding weight
+
+### Why This Matters
+
+```
+Query: "whats the feel in durgapur? warm or cold"
+
+  BM25:   no match ("warm", "cold" not in name/params)
+  Vector: "warm or cold" → "temperature, weather forecast" → ✅ get_weather
+
+Query: "list calendar"
+
+  BM25:   "calendar" → nameVariations of list_calendar_events → ✅ strong match
+  Vector: "list calendar" → "daily agenda, upcoming meetings" → ✅ strong match
+
+Query: "get_weather"
+
+  BM25:   exact name match → ✅ boost ×3
+  Vector: name in embedding → ✅ strong match
+```
+
+The combination ensures coverage for **exact**, **partial**, and **semantic** queries without any query preprocessing.

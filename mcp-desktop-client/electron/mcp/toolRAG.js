@@ -67,7 +67,7 @@ export class ToolRAG {
 				name: "string",
 				description: "string",
 				schemaText: "string", // human-readable param names for BM25
-				schemaJson: "string", // raw JSON for retrieval only (excluded from BM25)
+				nameVariations: "string", // individual words from name, lowercased for BM25
 				embedding: `vector[${DIMS}]`,
 			},
 		});
@@ -81,16 +81,18 @@ export class ToolRAG {
 					tool.inputSchema?.jsonSchema?.properties ||
 					{},
 			).join(", ");
+			const nameVariations = this._generateNameVariations(tool.name);
+
 			const embedText = paramNames
-				? `${tool.name}: ${desc}. Parameters: ${paramNames}`
-				: `${tool.name}: ${desc}`;
+				? `${tool.name}. ${nameVariations.join(". ")}: ${desc}. Parameters: ${paramNames}`
+				: `${tool.name}. ${nameVariations.join(". ")}: ${desc}`;
 
 			const vec = await this._embed(embedText);
 			insert(this._db, {
 				name: tool.name,
 				description: desc,
 				schemaText: paramNames, // clean readable text — BM25 indexes this
-				schemaJson: JSON.stringify(tool.inputSchema || {}), // raw JSON — retrieval only
+				nameVariations: nameVariations.join(" ").toLowerCase(), // individual words, lowercased — BM25 indexes this
 				embedding: vec,
 			});
 		}
@@ -144,10 +146,15 @@ export class ToolRAG {
 
 		// Hybrid: BM25 text search + vector similarity, scores merged by Orama
 		// properties scoped to avoid BM25 over raw schemaJson tokens
-		const results = search(this._db, {
+		const results = await search(this._db, {
 			mode: "hybrid",
 			term: query,
-			properties: ["name", "description", "schemaText"],
+			properties: ["name", "nameVariations", "schemaText"], // description handled by vector
+			boost: {
+				name: 3, // exact name match ranks highest
+				nameVariations: 2, // partial word match ranks second
+				schemaText: 1.5, // param name match ranks third
+			},
 			vector: { value: vec, property: "embedding" },
 			limit,
 			includeVectors: false,
@@ -156,7 +163,6 @@ export class ToolRAG {
 		return (results.hits || []).map((h) => ({
 			name: h.document.name,
 			description: h.document.description,
-			inputSchema: JSON.parse(h.document.schemaJson || "{}"),
 			score: Math.round(h.score * 1000) / 1000,
 		}));
 	}
@@ -238,7 +244,7 @@ export class ToolRAG {
 
 		console.log("-------------------------------------");
 		console.log(
-			"Semantic tools",
+			"Hybrid tools",
 			Array.from(hits, (h) => `${h.name} `),
 		);
 
@@ -320,6 +326,29 @@ export class ToolRAG {
 	}
 
 	// ── Internals ───────────────────────────────────────────────────────────────
+	/**
+	 * Generate name variations with common separators.
+	 * @param {string} name
+	 * @returns {Array<string>}
+	 */
+	_generateNameVariations(name) {
+		const words = new Set();
+
+		// Split by common separators: _ - space
+		const separators = /[_-\s]+/;
+		const sepWords = name.split(separators).filter((w) => w.length > 0);
+		for (const word of sepWords) {
+			words.add(word);
+		}
+
+		// Also split the whole name on camelCase/PascalCase boundaries
+		const camelWords = name.split(/(?=[A-Z])/).filter((w) => w.length > 0);
+		for (const cw of camelWords) {
+			words.add(cw);
+		}
+
+		return Array.from(words);
+	}
 
 	async _embed(text) {
 		const out = await this._pipeline(text, {
