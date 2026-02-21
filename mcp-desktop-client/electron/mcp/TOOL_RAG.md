@@ -4,7 +4,7 @@
 
 `ToolRAG` is a RAG (Retrieval-Augmented Generation) system for MCP (Model Context Protocol) tool discovery and selection. It combines **vector semantic search** with conversation-history-aware "sticky" tool selection to intelligently filter and prioritize relevant tools for LLM calls.
 
-**Search strategy:** Vector similarity handles all query types — exact names, partial name words, and semantic phrases (e.g. "temperature" → `get_weather`). Tool embeddings are enriched with name variations and parameter names so keyword-style queries are covered without BM25. Sticky context adds tools used in recent turns regardless of search score.
+**Search strategy:** Vector similarity handles all query types — exact names, partial name words, and semantic phrases (e.g. "temperature" → `get_weather`). Tool embeddings are enriched with name variations and parameter names so keyword-style queries are covered without BM25. Vague follow-up queries (e.g. "do it", "set it to 8") are automatically enriched with the previous user message as context before searching. Sticky context adds tools used in recent turns regardless of search score.
 
 **Location:** `electron/mcp/toolRAG.js`  
 **Dependencies:** `@xenova/transformers`, `@orama/orama`  
@@ -16,9 +16,10 @@
 
 1. **Vector Search Engine** - Semantic similarity via 384-dim embeddings
 2. **Enriched Tool Embeddings** - Embeds `name + name variations + description + parameter names` for broad query coverage
-3. **Sticky Context Extractor** - Conversation history analysis for tool continuity
-4. **Debounced Re-indexing** - Automatic tool database updates with batching
-5. **Unified Selection Algorithm** - Combines vector search + sticky results with fallback
+3. **Vague Query Enrichment** - Detects short/low-confidence queries and enriches with previous user message as context
+4. **Sticky Context Extractor** - Conversation history analysis for tool continuity
+5. **Debounced Re-indexing** - Automatic tool database updates with batching
+6. **Unified Selection Algorithm** - Combines vector search + sticky results with fallback
 
 ### Schema Fields
 
@@ -35,12 +36,19 @@ All string fields contribute to the `embedText` used to generate the embedding. 
 ### Data Flow
 
 ```
-User Query ──→ Embed → Vector similarity ──→ Semantic Hits
-                                                     ↓
-Conversation History ──→ Sticky Extraction ──→ Sticky Tools
-                                                     ↓
-                          Merge & Deduplicate → Filtered Tools Object → LLM Agent
+User Query ──→ Vague? ──yes──→ _getLastUserQuery() ──→ Enriched Query
+                 │                                            │
+                no                                           │
+                 └──────────────────────────────────────────→┤
+                                                             ↓
+                                           Embed → Vector similarity → Semantic Hits
+                                                                              ↓
+Conversation History ──────────────────────────→ Sticky Extraction → Sticky Tools
+                                                                              ↓
+                                                  Merge & Deduplicate → Filtered Tools Object → LLM Agent
 ```
+
+**Vague detection:** query has ≤ 6 words **OR** top search score < 0.4
 
 ## Class Definition
 
@@ -321,32 +329,41 @@ async select(query, history, allTools, options = {}) {
         return allTools;
     }
 
-    // 1. Semantic search hits
+    // 1. Semantic hits — enrich vague queries with conversation context
     const hits = await this.search(query, limit);
+    const topScore = hits.length > 0 ? hits[0].score : 0;
+    const isVague = query.split(/\s+/).length <= 6 || topScore < 0.4;
+
+    if (isVague) {
+        const prevQuery = this._getLastUserQuery(history);
+        if (prevQuery) {
+            const enrichedQuery = `${query}. Context: ${prevQuery}`;
+            const enrichedHits = await this.search(enrichedQuery, limit);
+            // Merge: keep enriched hits, add any original hits not already present
+            const seen = new Set(enrichedHits.map((h) => h.name));
+            for (const h of hits) {
+                if (!seen.has(h.name)) enrichedHits.push(h);
+            }
+            hits.length = 0;
+            hits.push(...enrichedHits);
+        }
+    }
+
     const selected = new Set();
-
-    console.log("-------------------------------------");
-    console.log("Semantic tools", Array.from(hits, (h) => `${h.name} `));
-
     for (const t of hits) {
         selected.add(t.name);
     }
 
     // 2. Sticky context — tools used in recent turns
     const sticky = this.extractSticky(history, window);
-
     for (const name of sticky) {
         selected.add(name);
     }
 
-    console.log("Sticky tools", sticky);
-
     // 3. Build result object in exact tools format
     const result = {};
     for (const name of selected) {
-        if (allTools[name]) {
-            result[name] = allTools[name];
-        }
+        if (allTools[name]) result[name] = allTools[name];
     }
 
     return result;
@@ -365,51 +382,32 @@ async select(query, history, allTools, options = {}) {
 **Algorithm:**
 
 1. **Fallback check** — if not initialized or not indexed, return `allTools` immediately
-2. **Semantic search** — vector similarity on current query → top N tool names
-3. **Sticky extraction** — scan last K assistant turns for tool calls → tool names
-4. **Merge** — union of both sets, deduplicated
-5. **Build result** — return matching tools in original MCP format
+2. **Initial search** — vector similarity on current query → top N hits
+3. **Vague detection** — query is vague if it has ≤ 6 words **OR** top hit score < 0.4
+4. **Query enrichment** (if vague) — fetches previous user message via `_getLastUserQuery()`, re-searches with `"${query}. Context: ${prevQuery}"`, merges results
+5. **Sticky extraction** — scan last K assistant turns for tool calls → tool names
+6. **Merge** — union of search + sticky, deduplicated
+7. **Build result** — return matching tools in original MCP format
+
+**Why enrichment matters:**
+
+```
+Turn 1 — User: "whats the weather in durgapur?"
+          → get_weather selected ✅
+
+Turn 2 — User: "do it for kolkata too"
+          → query alone: 5 words, vague
+          → enriched: "do it for kolkata too. Context: whats the weather in durgapur?"
+          → get_weather selected ✅ (would have missed without context)
+```
 
 #### `async testSelect(query, history, allTools, options?)`
 
-Debug/inspection variant of `select()`. Returns a sorted annotated array instead of the tools object, for evaluating retrieval quality.
-
-```javascript
-async testSelect(query, history, allTools, options = {}) {
-    // 1. Semantic hits
-    const hits = await this.search(query, limit);
-    const map = new Map();
-
-    for (const t of hits) {
-        map.set(t.name, { ...t, source: "semantic" });
-    }
-
-    // 2. Sticky context
-    const sticky = this.extractSticky(history, window);
-
-    for (const name of sticky) {
-        if (map.has(name)) {
-            map.get(name).source = "both";
-            continue;
-        }
-        const def = allTools[name];
-        if (def) {
-            map.set(name, { name, description: def.description || "", score: 0, source: "sticky" });
-        }
-    }
-
-    // 3. Sort: semantic/both first (by score desc), then sticky
-    return [...map.values()].sort((a, b) => {
-        if (a.source === "sticky" && b.source !== "sticky") return 1;
-        if (a.source !== "sticky" && b.source === "sticky") return -1;
-        return b.score - a.score;
-    });
-}
-```
+Debug/inspection variant of `select()`. Includes the same vague query enrichment logic. Returns a sorted annotated array instead of the tools object, for evaluating retrieval quality.
 
 **Returns:** `Promise<Array<{name, description, score, source}>>` — sorted by score descending, with `source` being `"semantic"`, `"sticky"`, or `"both"`
 
-**Use this for:** Debugging retrieval, evaluating query coverage, tuning `semanticLimit`/`stickyWindow`.
+**Use this for:** Debugging retrieval, evaluating query coverage, tuning `semanticLimit`/`stickyWindow`, verifying enrichment is firing correctly.
 
 ### Utility Methods
 
@@ -469,6 +467,53 @@ async _embed(text) {
 
 **Parameters:** `text: string`  
 **Returns:** `Promise<Array<number>>` - 384-dimensional embedding vector
+
+#### `_getLastUserQuery(history)`
+
+Returns the previous user message from conversation history. Used by `select()` to enrich vague follow-up queries.
+
+```javascript
+_getLastUserQuery(history) {
+    if (!history?.length) return null;
+
+    let userTurnsSeen = 0;
+    for (let i = history.length - 1; i >= 0; i--) {
+        const msg = history[i];
+        if (msg.role !== "user") continue;
+
+        userTurnsSeen++;
+        // Skip the first user message — that's the current query
+        if (userTurnsSeen < 2) continue;
+
+        // Extract text from the previous user message
+        if (Array.isArray(msg.content)) {
+            const text = msg.content
+                .filter((c) => c.type === "text")
+                .map((c) => c.text)
+                .join(" ")
+                .trim();
+            if (text) return text;
+        }
+
+        if (typeof msg.content === "string" && msg.content.trim()) {
+            return msg.content.trim();
+        }
+    }
+
+    return null;
+}
+```
+
+**Parameters:** `history: Array<object>` — conversation messages
+
+**Returns:** `string | null` — text of the previous user turn, or `null` if none exists
+
+**Implementation Notes:**
+
+- Scans history backwards, skipping the first user message found (the current query)
+- Returns the second user message encountered — the previous turn
+- Handles both array `content` format (`[{type: "text", text: "..."}]`) and plain string content
+- Returns `null` on first message in conversation (no previous context exists)
 
 #### `_assertReady()`
 
