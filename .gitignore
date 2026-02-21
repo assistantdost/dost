@@ -95,6 +95,8 @@ env.bak/
 venv.bak/
 .webserver/
 .mcpserver/
+.remotevenv/
+.packagevenv/
 
 # Spyder project settings
 .spyderproject
