@@ -62,14 +62,8 @@ def list_contacts(
     user_id: str = "default"
 ) -> str:
     """
-    Use this tool to find a person's contact details from the user's Google Contacts.
-    It is the best way to get a specific person's email address or phone number for other tasks.
-
-    Args:
-        query: (Optional) A search query to filter contacts. Use this to find a specific
-               person by their name, email, or phone number (e.g., "John Doe").
-        max_results: The maximum number of contacts to return (default: 10).
-        user_id: User identifier for multi-user support (default: "default").
+    Searches the user's Google Contacts address book.
+    Use this to find contact details like email addresses or phone numbers for a specific person (e.g., 'What is John's email?').
     """
     auth_result = _handle_google_auth_flow(CONTACTS_SCOPES, user_id)
     if "❌" in auth_result:

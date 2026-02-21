@@ -29,7 +29,7 @@ except ImportError:
     from config import config
 
 from .security import (
-    secure_operation, rate_limit, SecurityError, logger
+    _secure_operation, _rate_limit, SecurityError, logger
 )
 
 
@@ -42,8 +42,8 @@ class SystemController:
         self.min_brightness = 0
         self.max_brightness = 100
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=30, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=30, time_window=60)
     def control_volume(self, action: str, level: int = 0) -> str:
         """
         Controls the master system volume with security validation.
@@ -106,8 +106,8 @@ class SystemController:
             logger.error(f"Error controlling volume: {e}")
             return f"Error controlling volume: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=20, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=20, time_window=60)
     def control_brightness(self, action: str, level: int = 0) -> str:
         """
         Controls the screen brightness with security validation.
@@ -164,8 +164,8 @@ class SystemController:
             logger.error(f"Error controlling brightness: {e}")
             return f"Error controlling brightness: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=5, time_window=300)  # Very restrictive for power operations
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=5, time_window=300)  # Very restrictive for power operations
     def manage_power(self, action: str) -> str:
         """
         Performs a system power action like shutdown, restart, or lock with security validation.
@@ -232,16 +232,22 @@ system_controller = SystemController()
 
 
 # Public functions for compatibility
-def sound_control(action: Literal["SET", "INCREASE", "DECREASE"], value: int = 0) -> str:
-    """Controls master volume. 'value' is the target % for SET, or the amount to change by."""
+def volume_control(action: Literal["SET", "INCREASE", "DECREASE"], value: int = 0) -> str:
+    """
+    Adjusts the system audio volume. Use this to mute, unmute, increase, decrease, or set the volume to a specific level.
+    """
     return system_controller.control_volume(action, value)
 
 
 def brightness_control(action: Literal["SET", "INCREASE", "DECREASE"], value: int = 0) -> str:
-    """Controls screen brightness. 'value' is the target % for SET, or the amount to change by."""
+    """
+    Adjusts the screen brightness level. Use this to dim the screen, make it brighter, or set it to a specific percentage.
+    """
     return system_controller.control_brightness(action, value)
 
 
 def system_power(action: Literal["shutdown", "restart", "hibernate", "lock"]) -> str:
-    """Executes a system power command (e.g., shutdown, restart)."""
+    """
+    Controls system power states. Use this to shutdown, reboot, restart the computer, sleep, hibernate, or lock the PC.
+    """
     return system_controller.manage_power(action)

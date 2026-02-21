@@ -17,7 +17,7 @@ from .modules import (
     open_app, open_webpage, search_web, play_song,
 
     # System Control
-    sound_control, brightness_control, system_power,
+    volume_control, brightness_control, system_power,
 
     # File Operations
     create_note, find_files,
@@ -43,7 +43,7 @@ try:
 except ImportError:
     _PSUTIL_AVAILABLE = False
 
-from .modules.security import secure_operation, rate_limit, InputValidator, logger
+from .modules.security import _secure_operation, _rate_limit, InputValidator, logger
 
 
 # Maintain backward compatibility - export all functions
@@ -55,7 +55,7 @@ __all__ = [
     'open_app', 'open_webpage', 'search_web', 'play_song',
 
     # System Control
-    'sound_control', 'brightness_control', 'system_power',
+    'volume_control', 'brightness_control', 'system_power',
 
     # File Operations
     'create_note', 'find_files',
@@ -93,11 +93,11 @@ def _get_window_by_title(title: str):
     return windows[0] if windows else None
 
 
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=20, time_window=60)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=20, time_window=60)
 def list_open_windows() -> str:
     """
-    Lists the titles of all open and visible application windows.
+    Lists all currently open application windows. Use this to see what programs are running and visible on the desktop.
     """
     if not _PYGETWINDOW_AVAILABLE:
         return _handle_import_error("PyGetWindow", "Window Management")
@@ -111,11 +111,11 @@ def list_open_windows() -> str:
         return f"Error listing windows: {e}"
 
 
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=30, time_window=60)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=30, time_window=60)
 def focus_window(title: str) -> str:
     """
-    Brings a window to the foreground (activates it).
+    Brings an open window to the foreground. Use this to bring apps like 'Firefox', 'Chrome', or 'Spotify' to the front/focus.
     """
     if not _PYGETWINDOW_AVAILABLE:
         return _handle_import_error("PyGetWindow", "Window Management")
@@ -130,11 +130,11 @@ def focus_window(title: str) -> str:
         return f"Error focusing window: {e}"
 
 
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=20, time_window=60)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=20, time_window=60)
 def minimize_window(title: str) -> str:
     """
-    Minimizes a specific window.
+    Minimizes a window to the taskbar. Use this to hide an application window without closing it.
     """
     if not _PYGETWINDOW_AVAILABLE:
         return _handle_import_error("PyGetWindow", "Window Management")
@@ -149,11 +149,11 @@ def minimize_window(title: str) -> str:
         return f"Error minimizing window: {e}"
 
 
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=20, time_window=60)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=20, time_window=60)
 def maximize_window(title: str) -> str:
     """
-    Maximizes a specific window.
+    Maximizes a window to fill the screen. Use this to expand an application window.
     """
     if not _PYGETWINDOW_AVAILABLE:
         return _handle_import_error("PyGetWindow", "Window Management")
@@ -168,11 +168,11 @@ def maximize_window(title: str) -> str:
         return f"Error maximizing window: {e}"
 
 
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=10, time_window=60)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=10, time_window=60)
 def close_window(title: str) -> str:
     """
-    Closes a specific window.
+    Closes a specific application window. Use this to terminate or quit a window by its title.
     """
     if not _PYGETWINDOW_AVAILABLE:
         return _handle_import_error("PyGetWindow", "Window Management")
@@ -188,11 +188,11 @@ def close_window(title: str) -> str:
 
 
 # --- TASK SCHEDULING (Secured) ---
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=5, time_window=300)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=5, time_window=300)
 def schedule_task(task_name: str, command: str, time_str: str, date_str: str = "") -> str:
     """
-    Schedules a task using the Windows Task Scheduler with security validation.
+    Schedules a command or script to run at a specific time. Use this to automate tasks using Windows Task Scheduler.
     """
     try:
         # Validate inputs
@@ -249,11 +249,12 @@ def schedule_task(task_name: str, command: str, time_str: str, date_str: str = "
         return f"Failed to schedule task: {str(e)}"
 
 
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=10, time_window=60)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=10, time_window=60)
 def list_scheduled_tasks(filter_name: str = "") -> str:
     """
-    Lists tasks currently in the Windows Task Scheduler.
+    Lists technical background jobs and automated scripts in the Windows Task Scheduler.
+    Use this to manage system automation and cron-like tasks, NOT for personal meetings.
     """
     try:
         if filter_name:
@@ -294,11 +295,11 @@ def list_scheduled_tasks(filter_name: str = "") -> str:
         return f"Failed to list scheduled tasks: {str(e)}"
 
 
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=5, time_window=300)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=5, time_window=300)
 def delete_scheduled_task(task_name: str) -> str:
     """
-    Deletes a task from the Windows Task Scheduler.
+    Removes a scheduled task from Windows Task Scheduler. Use this to cancel future automated actions.
     """
     try:
         validator = InputValidator()
@@ -325,11 +326,11 @@ def delete_scheduled_task(task_name: str) -> str:
         return f"Failed to delete task '{task_name}': {str(e)}"
 
 
-@secure_operation(require_validation=True, log_operation=True)
-@rate_limit(max_calls=10, time_window=300)
+@_secure_operation(require_validation=True, log_operation=True)
+@_rate_limit(max_calls=10, time_window=300)
 def set_reminder(time_string: str, message: str) -> str:
     """
-    Sets a reminder that shows a notification after a specified time.
+    Sets a time-based alert or notification. Use this to get reminded at a specific time or after a duration. NOT for writing notes.
     """
     try:
         validator = InputValidator()
@@ -382,11 +383,11 @@ def set_reminder(time_string: str, message: str) -> str:
 
 
 # --- SYSTEM INFORMATION (Secured) ---
-@secure_operation(require_validation=False, log_operation=True)
-@rate_limit(max_calls=5, time_window=60)
+@_secure_operation(require_validation=False, log_operation=True)
+@_rate_limit(max_calls=5, time_window=60)
 def get_system_info() -> str:
     """
-    Retrieves and formats detailed system information.
+    Retrieves detailed hardware and software specifications. Use this to get information about the OS, CPU, memory (RAM), and disk space.
     """
     # if not _PSUTIL_AVAILABLE:
     #     return _handle_import_error("psutil", "System Information")

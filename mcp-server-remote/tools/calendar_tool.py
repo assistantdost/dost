@@ -68,12 +68,8 @@ def list_calendar_events(
     user_id: str = "default"
 ) -> str:
     """
-    Lists upcoming events from the user's primary Google Calendar.
-    Use this to check the user's schedule.
-
-    Args:
-        max_results: Maximum number of events to return (default: 5).
-        user_id: User identifier for multi-user support (default: "default").
+    Retrieves the user's personal daily agenda, upcoming meetings, and appointments from Google Calendar.
+    Use this to check availability, see what is planned for today or tomorrow, and manage time.
     """
     auth_result = _handle_google_auth_flow(CALENDAR_SCOPES, user_id)
     if "❌" in auth_result:
@@ -126,17 +122,8 @@ def create_calendar_event(
     user_id: str = "default"
 ) -> str:
     """
-    Creates a new event in the user's primary Google Calendar.
-    For multi-agent tasks, first find emails with 'list_contacts', then use them here.
-
-    Args:
-        summary: The title of the event (e.g., "Team Meeting").
-        start_datetime: The start time in ISO format (e.g., "2025-11-04T10:00:00").
-        end_datetime: The end time in ISO format (e.g., "2025-11-04T11:00:00").
-        time_zone: The IANA time zone (e.g., "Asia/Kolkata", "America/New_York"). Defaults to "Asia/Kolkata".
-        attendees: (Optional) A list of email addresses to invite (e.g., ["friend@example.com"]).
-        description: (Optional) A description or notes for the event.
-        user_id: User identifier for multi-user support (default: "default").
+    Schedules a new event, meeting, or appointment in Google Calendar.
+    Use this to book time slots, set up reminders for specific dates and times, and invite attendees.
     """
     auth_result = _handle_google_auth_flow(CALENDAR_SCOPES, user_id)
     if "❌" in auth_result:

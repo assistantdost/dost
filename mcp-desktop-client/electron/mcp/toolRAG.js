@@ -137,6 +137,7 @@ export class ToolRAG {
 	 * @param {number} [limit]
 	 * @returns {Promise<Array<{name, description, inputSchema, score}>>}
 	 */
+
 	async search(query, limit = this.semanticLimit) {
 		this._assertReady();
 		if (!this._db) return [];
@@ -144,18 +145,10 @@ export class ToolRAG {
 		const { search } = await import("@orama/orama");
 		const vec = await this._embed(query);
 
-		// Hybrid: BM25 text search + vector similarity, scores merged by Orama
-		// properties scoped to avoid BM25 over raw schemaJson tokens
 		const results = await search(this._db, {
-			mode: "hybrid",
-			term: query,
-			properties: ["name", "nameVariations", "schemaText"], // description handled by vector
-			boost: {
-				name: 3, // exact name match ranks highest
-				nameVariations: 2, // partial word match ranks second
-				schemaText: 1.5, // param name match ranks third
-			},
+			mode: "vector",
 			vector: { value: vec, property: "embedding" },
+			similarity: 0.25,
 			limit,
 			includeVectors: false,
 		});
@@ -244,7 +237,7 @@ export class ToolRAG {
 
 		console.log("-------------------------------------");
 		console.log(
-			"Hybrid tools",
+			"Semantic tools",
 			Array.from(hits, (h) => `${h.name} `),
 		);
 

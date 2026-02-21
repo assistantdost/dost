@@ -85,10 +85,8 @@ def _handle_spotify_api_error(e: httpx.HTTPStatusError) -> str:
 
 def get_current_playback(user_id: str = "default") -> str:
     """
-    Gets the user's currently playing track on Spotify.
-
-    Args:
-        user_id: User identifier for multi-user support (default: "default").
+    Checks what song or audio is currently playing on Spotify.
+    Use this to identify the active track, artist, and album.
     """
     required_scopes = ['user-read-playback-state', 'user-read-currently-playing']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
@@ -146,11 +144,8 @@ def get_current_playback(user_id: str = "default") -> str:
 
 def list_spotify_devices(user_id: str = "default") -> str:
     """
-    Lists all available devices (computers, phones, speakers) on the user's Spotify account.
-    Use this if a user needs to choose a device to play music on.
-
-    Args:
-        user_id: User identifier for multi-user support (default: "default").
+    Lists all available Spotify Connect devices.
+    Use this to see where music can be played (e.g., laptop, phone, smart speaker) and get device IDs for transfer.
     """
     required_scopes = ['user-read-playback-state']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
@@ -193,13 +188,8 @@ def list_spotify_devices(user_id: str = "default") -> str:
 
 def set_spotify_device(device_id: str, play: bool = False, user_id: str = "default") -> str:
     """
-    Transfers Spotify playback to a specific device ID.
-    Get the device_id from the 'list_spotify_devices' tool.
-
-    Args:
-        device_id: The ID of the device to transfer playback to.
-        play: (Optional) If true, playback will start on the new device (default: false).
-        user_id: User identifier for multi-user support (default: "default").
+    Transfers Spotify playback to a different device.
+    Use this to switch music from one device (e.g., phone) to another (e.g., speaker).
     """
     required_scopes = ['user-modify-playback-state']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
@@ -234,11 +224,8 @@ def set_spotify_device(device_id: str, play: bool = False, user_id: str = "defau
 
 def play_spotify(user_id: str = "default") -> str:
     """
-    Resumes playback on the user's active Spotify device.
-    If this fails with 'No active device', use 'list_spotify_devices' to ask the user to pick one.
-
-    Args:
-        user_id: User identifier for multi-user support (default: "default").
+    Resumes media playback on the active Spotify device.
+    Use this to unpause music or continue listening.
     """
     required_scopes = ['user-modify-playback-state']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
@@ -269,11 +256,8 @@ def play_spotify(user_id: str = "default") -> str:
 
 def pause_spotify(user_id: str = "default") -> str:
     """
-    Pauses playback on the user's active Spotify device.
-    If this fails with 'No active device', use 'list_spotify_devices'.
-
-    Args:
-        user_id: User identifier for multi-user support (default: "default").
+    Pauses the current media playback on Spotify.
+    Use this to stop music or audio temporarily.
     """
     required_scopes = ['user-modify-playback-state']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
@@ -304,11 +288,8 @@ def pause_spotify(user_id: str = "default") -> str:
 
 def next_track_spotify(user_id: str = "default") -> str:
     """
-    Skips to the next track on Spotify.
-    If this fails with 'No active device', use 'list_spotify_devices'.
-
-    Args:
-        user_id: User identifier for multi-user support (default: "default").
+    Skips to the next track in the Spotify playback queue.
+    Use this when the user wants to hear a different song.
     """
     required_scopes = ['user-modify-playback-state']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
@@ -339,11 +320,8 @@ def next_track_spotify(user_id: str = "default") -> str:
 
 def previous_track_spotify(user_id: str = "default") -> str:
     """
-    Skips to the previous track on Spotify.
-    If this fails with 'No active device', use 'list_spotify_devices'.
-
-    Args:
-        user_id: User identifier for multi-user support (default: "default").
+    Goes back to the previous track in the Spotify playback queue.
+    Use this to replay a song or return to an earlier track.
     """
     required_scopes = ['user-modify-playback-state']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
@@ -378,17 +356,8 @@ def start_spotify_playback(
     user_id: str = "default"
 ) -> str:
     """
-    Starts new playback on Spotify. Can play an album, artist, playlist, or specific track(s).
-    If this fails with 'No active device', use 'list_spotify_devices' to ask the user to pick one.
-
-    Examples:
-    - Play an album: context_uri="spotify:album:1Je1IMUlBXcx1Fz0WE7oPT"
-    - Play a track: uris=["spotify:track:4iV5W9uYEdYUVa79Axb7Rh"]
-
-    Args:
-        context_uri (Optional[str]): The Spotify URI of the context to play (album, artist, playlist).
-        uris (Optional[List[str]]): A list of Spotify track URIs to play.
-        user_id (str): User identifier for multi-user support (default: "default").
+    Starts new playback of a specific song, album, artist, or playlist on Spotify.
+    Use this to initiate playback of specific content using a Spotify URI.
     """
     required_scopes = ['user-modify-playback-state']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
@@ -436,17 +405,8 @@ def search_spotify(
     user_id: str = "default"
 ) -> str:
     """
-    Search for tracks, albums, artists, or playlists on Spotify.
-    Returns the names, URIs, and URLs for the search results.
-
-    Args:
-        query: Search query string (e.g., "Bohemian Rhapsody", "Queen", etc.)
-        search_type: Type to search for - "track", "album", "artist", or "playlist" (default: "track")
-        limit: Maximum number of results to return (1-50, default: 5)
-        user_id: User identifier for multi-user support (default: "default")
-
-    Returns:
-        List of results with names, Spotify URIs (for playback), and URLs (for sharing)
+    Searches the Spotify catalog for tracks, albums, artists, or playlists.
+    Use this to find a song, an artist's discography, or a curated playlist by name.
     """
     required_scopes = ['user-read-playback-state']
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)

@@ -19,8 +19,9 @@ BASE_URL = "http://api.openweathermap.org/data/2.5/weather"
 
 @mcp.tool()
 def calculator(numbers: list[float], operation: str) -> dict:
-    """Perform a calculation on a list of numbers.
-    Supported operations: sum, product, min, max, average
+    """
+    Perform mathematical calculations on a list of numbers.
+    Use this for finding the sum, product, minimum, maximum, or average (mean) of a dataset. Useful for basic statistics and arithmetic.
     """
     if not numbers:
         return {"error": "No numbers provided."}
@@ -44,14 +45,8 @@ def calculator(numbers: list[float], operation: str) -> dict:
 @mcp.tool()
 def get_weather(city: str, units: str = "metric") -> dict:
     """
-    Get weather info of a city using OpenWeatherMap API.
-
-    Args:
-        city (str): Name of the city.
-        units (str): "metric" for Celsius, "imperial" for Fahrenheit, "standard" for Kelvin.
-
-    Returns:
-        dict: Weather details (temperature, description, etc.) or error message.
+    Retrieves the current weather forecast.
+    Use this to check if it is raining, snowing, sunny, or to get the temperature in a specific city (e.g., Tokyo).
     """
     params = {
         "q": city,

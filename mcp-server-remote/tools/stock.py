@@ -228,13 +228,8 @@ class StockDataFetcher:
 
     def get_stock_data(self, user_input: str) -> Dict[str, Any]:
         """
-        Main method to get stock data for a given input (symbol or company name).
-
-        Args:
-            user_input: Stock symbol or company name to search for
-
-        Returns:
-            Dictionary containing standardized stock data or error information
+        Fetches real-time or historical stock market data for a company.
+        Use this to check stock prices, market cap, or financial metrics by providing a company name or ticker symbol (e.g., 'AAPL', 'Tesla').
         """
         try:
             # Smart lookup to find symbol and exchange
@@ -287,7 +282,10 @@ _stock_fetcher = None
 
 
 def get_stock_data(stock_name: str) -> Dict[str, Any]:
-    """Finds the stock data for a given stock Symbol, Name or Fuzzy."""
+    """
+    Fetches real-time or historical stock market data for a company.
+    Use this to check stock prices, market cap, or financial metrics by providing a company name or ticker symbol (e.g., 'AAPL', 'Tesla').
+    """
     global _stock_fetcher
     if _stock_fetcher is None:
         _stock_fetcher = StockDataFetcher()

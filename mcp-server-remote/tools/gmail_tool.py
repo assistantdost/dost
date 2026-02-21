@@ -70,13 +70,8 @@ def read_recent_emails(
     user_id: str = "default"
 ) -> str:
     """
-    Use this tool to read recent emails from the user's Gmail inbox.
-    You can use the 'query' parameter to search for specific emails.
-
-    Args:
-        max_results: The maximum number of emails to return (default: 5).
-        query: An optional Gmail search query (e.g., "is:unread", "from:boss@example.com").
-        user_id: User identifier for multi-user support (default: "default").
+    Retrieves recent emails from the user's Gmail inbox.
+    Use this to read the latest messages, check for unread emails, or search for specific emails from a sender or with a specific subject.
     """
     auth_result = _handle_google_auth_flow(GMAIL_SCOPES, user_id)
     if "❌" in auth_result:
@@ -135,15 +130,9 @@ def send_email(
     user_id: str = "default"
 ) -> str:
     """
-    Use this tool to send an email from the user's Gmail account.
-    Always ask or get the recipient's email address using the 'list_contacts' tool first,
-    unless the user provides the full email address directly.
-
-    Args:
-        to: The recipient's email address (e.g., "recipient@example.com").
-        subject: The subject line of the email.
-        body: The plain text content of the email.
-        user_id: User identifier for multi-user support (default: "default").
+    Sends a new email from the user's Gmail account.
+    Use this to compose and send messages to recipients.
+    Requires a recipient email address, subject, and body text. Always resolve the email address via 'list_contacts' first if only a name is given.
     """
     auth_result = _handle_google_auth_flow(GMAIL_SCOPES, user_id)
     if "❌" in auth_result:

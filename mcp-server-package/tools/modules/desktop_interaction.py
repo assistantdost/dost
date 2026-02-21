@@ -32,7 +32,7 @@ except ImportError:
     from config import config
 
 from .security import (
-    secure_operation, rate_limit, InputValidator,
+    _secure_operation, _rate_limit, InputValidator,
     SecurityError, security_config, logger
 )
 
@@ -43,8 +43,8 @@ class DesktopManager:
     def __init__(self):
         self.validator = InputValidator()
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=10, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=10, time_window=60)
     def take_screenshot(self, custom_path: str = "") -> str:
         """
         Takes a screenshot of the entire screen and saves it to a file with security validation.
@@ -100,8 +100,8 @@ class DesktopManager:
             logger.error(f"Failed to take screenshot: {e}")
             return f"Failed to take screenshot: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=30, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=30, time_window=60)
     def manage_clipboard(self, action: str, text: str = "") -> str:
         """
         Manages the system clipboard to get or set its content with security validation.
@@ -154,8 +154,8 @@ class DesktopManager:
             logger.error(f"Clipboard error: {e}")
             return f"Clipboard error: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=5, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=5, time_window=60)
     def show_notification(self, title: str, message: str, duration: int = 5) -> str:
         """
         Displays a Windows toast notification with security validation.
@@ -216,15 +216,21 @@ desktop_manager = DesktopManager()
 
 # Public functions for compatibility
 def screenshot() -> str:
-    """Captures the entire screen and returns the saved file path."""
+    """
+    Takes a screenshot of the entire screen. Use this to capture the current display state and save it as an image file.
+    """
     return desktop_manager.take_screenshot()
 
 
 def clipboard_manager(action: Literal["GET", "SET"], text_to_set: Optional[str] = "") -> str:
-    """Gets or sets the system clipboard's text content."""
+    """
+    Manages the system clipboard. Use this to read the current copied text (paste) or set new text into the clipboard (copy).
+    """
     return desktop_manager.manage_clipboard(action, text_to_set)
 
 
 def show_notification(title: str, message: str, duration_seconds: int = 5) -> str:
-    """Displays a desktop notification with a title and message."""
+    """
+    Displays a desktop notification. Use this to show a pop-up message to the user.
+    """
     return desktop_manager.show_notification(title, message, duration_seconds)

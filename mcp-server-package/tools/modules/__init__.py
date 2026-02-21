@@ -20,7 +20,7 @@ All modules implement comprehensive security controls including:
 
 from .security import SecurityError, security_config
 from .application_manager import open_app, open_webpage, search_web, play_song
-from .system_control import sound_control, brightness_control, system_power
+from .system_control import volume_control, brightness_control, system_power
 from .file_operations import create_note, find_files
 
 __all__ = [
@@ -35,7 +35,7 @@ __all__ = [
     'play_song',
 
     # System Control
-    'sound_control',
+    'volume_control',
     'brightness_control',
     'system_power',
 

@@ -2,9 +2,9 @@
 
 ## Overview
 
-`ToolRAG` is a comprehensive RAG (Retrieval-Augmented Generation) system for MCP (Model Context Protocol) tool discovery and selection. It combines **hybrid search (BM25 + vector similarity)** with conversation-history-aware "sticky" tool selection to intelligently filter and prioritize relevant tools for LLM calls.
+`ToolRAG` is a RAG (Retrieval-Augmented Generation) system for MCP (Model Context Protocol) tool discovery and selection. It combines **vector semantic search** with conversation-history-aware "sticky" tool selection to intelligently filter and prioritize relevant tools for LLM calls.
 
-**Search strategy:** BM25 handles exact keyword matches (e.g. tool names, parameter names), vector similarity handles semantic matches (e.g. "temperature" → `get_weather`). Orama merges both scores via RRF (Reciprocal Rank Fusion). Sticky context adds tools used in recent turns regardless of search score.
+**Search strategy:** Vector similarity handles all query types — exact names, partial name words, and semantic phrases (e.g. "temperature" → `get_weather`). Tool embeddings are enriched with name variations and parameter names so keyword-style queries are covered without BM25. Sticky context adds tools used in recent turns regardless of search score.
 
 **Location:** `electron/mcp/toolRAG.js`  
 **Dependencies:** `@xenova/transformers`, `@orama/orama`  
@@ -14,32 +14,32 @@
 
 ### Core Components
 
-1. **Hybrid Search Engine** - BM25 keyword search + vector similarity, merged via RRF
-2. **Richer Tool Embeddings** - Embeds `name + description + parameter names` for better semantic coverage
+1. **Vector Search Engine** - Semantic similarity via 384-dim embeddings
+2. **Enriched Tool Embeddings** - Embeds `name + name variations + description + parameter names` for broad query coverage
 3. **Sticky Context Extractor** - Conversation history analysis for tool continuity
 4. **Debounced Re-indexing** - Automatic tool database updates with batching
-5. **Unified Selection Algorithm** - Combines hybrid search + sticky results with fallback
+5. **Unified Selection Algorithm** - Combines vector search + sticky results with fallback
 
 ### Schema Fields
 
-| Field            | Type        | Purpose                                | BM25 indexed?       |
-| ---------------- | ----------- | -------------------------------------- | ------------------- |
-| `name`           | string      | Tool name                              | ✅ Yes (boost ×3)   |
-| `description`    | string      | Tool description                       | ❌ No — vector only |
-| `schemaText`     | string      | Readable param names (`city, units`)   | ✅ Yes (boost ×1.5) |
-| `nameVariations` | string      | Individual words from name, lowercased | ✅ Yes (boost ×2)   |
-| `embedding`      | vector[384] | Semantic embedding                     | — vector field      |
+| Field            | Type        | Purpose                                | Role                 |
+| ---------------- | ----------- | -------------------------------------- | -------------------- |
+| `name`           | string      | Tool name                              | Stored, in embedText |
+| `description`    | string      | Tool description                       | Stored, in embedText |
+| `schemaText`     | string      | Readable param names (`city, units`)   | Stored, in embedText |
+| `nameVariations` | string      | Individual words from name, lowercased | Stored, in embedText |
+| `embedding`      | vector[384] | Semantic embedding                     | Vector search target |
+
+All string fields contribute to the `embedText` used to generate the embedding. Only `embedding` is directly searched — vector similarity is the sole retrieval mechanism.
 
 ### Data Flow
 
 ```
-User Query ──┬──→ BM25 keyword match ──────────┐
-             │                                  ├──→ RRF merge → Hybrid Hits
-             └──→ Embed → Vector similarity ───┘
-                                                        ↓
+User Query ──→ Embed → Vector similarity ──→ Semantic Hits
+                                                     ↓
 Conversation History ──→ Sticky Extraction ──→ Sticky Tools
-                                                        ↓
-                              Merge & Deduplicate → Filtered Tools Object → LLM Agent
+                                                     ↓
+                          Merge & Deduplicate → Filtered Tools Object → LLM Agent
 ```
 
 ## Class Definition
@@ -117,8 +117,8 @@ async index(tools) {
         schema: {
             name: "string",
             description: "string",
-            schemaText: "string",     // human-readable param names for BM25
-            nameVariations: "string", // individual words from name, lowercased for BM25
+            schemaText: "string",     // readable param names — included in embedText
+            nameVariations: "string", // individual words from name — included in embedText
             embedding: `vector[${DIMS}]`,
         },
     });
@@ -140,8 +140,8 @@ async index(tools) {
         insert(this._db, {
             name: tool.name,
             description: desc,
-            schemaText: paramNames,                          // clean readable — BM25 indexes this
-            nameVariations: nameVariations.join(" ").toLowerCase(), // lowercased — BM25 indexes this
+            schemaText: paramNames,
+            nameVariations: nameVariations.join(" ").toLowerCase(),
             embedding: vec,
         });
     }
@@ -162,10 +162,8 @@ async index(tools) {
 
 - Recreates database on each call
 - Calls `_generateNameVariations()` to break name into individual words (e.g. `list_calendar_events` → `["list", "calendar", "events"]`)
-- Embeds: `"${tool.name}. ${nameVariations.join(". ")}: ${description}. Parameters: ${paramNames}"` — full name + individual words + description + params
-- `schemaText` stores clean param names for BM25 — avoids noisy JSON token matching
-- `nameVariations` stored **lowercased** for case-insensitive BM25 matching (e.g. query "calendar" matches `list_calendar_events`)
-- `description` excluded from BM25 — handled entirely by vector search
+- `embedText` format: `"${tool.name}. ${nameVariations.join(". ")}: ${description}. Parameters: ${paramNames}"` — packs full name, individual name words, description, and param names into one string so all query types are covered by vector similarity
+- `nameVariations` stored lowercased in schema for structural access; the embedding naturally handles case-insensitive matching
 
 #### `reindex(activeTools)`
 
@@ -208,7 +206,7 @@ reindex(activeTools) {
 
 #### `async search(query, limit?)`
 
-Performs **hybrid BM25 + vector search** over indexed tools. Orama merges both scores via RRF.
+Performs **vector semantic search** over indexed tools.
 
 ```javascript
 async search(query, limit = this.semanticLimit) {
@@ -218,18 +216,10 @@ async search(query, limit = this.semanticLimit) {
     const { search } = await import("@orama/orama");
     const vec = await this._embed(query);
 
-    // Hybrid: BM25 text search + vector similarity, scores merged by Orama
-    // description excluded from BM25 — handled by vector search
     const results = await search(this._db, {
-        mode: "hybrid",
-        term: query,
-        properties: ["name", "nameVariations", "schemaText"], // description handled by vector
-        boost: {
-            name: 3,           // exact name match ranks highest
-            nameVariations: 2, // partial word match ranks second
-            schemaText: 1.5,   // param name match ranks third
-        },
+        mode: "vector",
         vector: { value: vec, property: "embedding" },
+        similarity: 0.25,
         limit,
         includeVectors: false,
     });
@@ -247,29 +237,16 @@ async search(query, limit = this.semanticLimit) {
 - `query`: `string` - Search query text
 - `limit`: `number` - Maximum results (default: `this.semanticLimit`)
 
-**Returns:** `Promise<Array<{name, description, inputSchema, score}>>`
+**Returns:** `Promise<Array<{name, description, score}>>`
 
 **Implementation Notes:**
 
-- `mode: "hybrid"` — runs BM25 and vector in parallel, merges via RRF
-- `properties` scoped to `["name", "nameVariations", "schemaText"]` — `description` excluded from BM25, handled entirely by vector
-- `boost` — BM25 field weights: `name ×3 > nameVariations ×2 > schemaText ×1.5` for ranked exact/partial/param matching
-- No hard similarity threshold — RRF handles relevance naturally
+- `mode: "vector"` — pure cosine similarity on 384-dim embeddings
+- `similarity: 0.25` — minimum threshold; filters very weak matches
+- Keyword queries (exact name, partial words, param names) are covered because those tokens are baked into the embedding at index time via `embedText`
 - Rounds scores to 3 decimal places
 
-**BM25 vs Vector responsibilities:**
-
-| Query type                         | BM25                   | Vector      |
-| ---------------------------------- | ---------------------- | ----------- |
-| `"get_weather"` (exact name)       | ✅ Strong (boost ×3)   | ⚠️ Moderate |
-| `"calendar"` (partial name word)   | ✅ Strong (boost ×2)   | ✅ Strong   |
-| `"city units"` (param name)        | ✅ Strong (boost ×1.5) | ✅ Strong   |
-| `"temperature celsius"` (semantic) | ❌ Not indexed         | ✅ Strong   |
-| `"show my schedule"` (semantic)    | ❌ Not indexed         | ✅ Strong   |
-
-Clean separation: BM25 owns names/params, vector owns description semantics.
-
-> **Tool authoring tip:** For best retrieval, keep tool **names specific and action-oriented** (e.g. `get_weather`, `list_calendar_events`) and write **descriptions semantically** — use natural language, intent phrases, and synonyms (e.g. `"raining, snowing, sunny, temperature"`) rather than API documentation style (`Args:`, `Returns:`, type annotations). See [Tool Authoring Strategy](#tool-authoring-strategy) for details.
+> **Tool authoring tip:** Both **names** and **descriptions** feed the embedding. Keep names specific and action-oriented, and write descriptions using natural language and intent phrases rather than API documentation style. See [Tool Authoring Strategy](#tool-authoring-strategy) for details.
 
 ### Sticky Context Methods
 
@@ -344,9 +321,12 @@ async select(query, history, allTools, options = {}) {
         return allTools;
     }
 
-    // 1. Hybrid search hits (BM25 + vector)
+    // 1. Semantic search hits
     const hits = await this.search(query, limit);
     const selected = new Set();
+
+    console.log("-------------------------------------");
+    console.log("Semantic tools", Array.from(hits, (h) => `${h.name} `));
 
     for (const t of hits) {
         selected.add(t.name);
@@ -358,6 +338,8 @@ async select(query, history, allTools, options = {}) {
     for (const name of sticky) {
         selected.add(name);
     }
+
+    console.log("Sticky tools", sticky);
 
     // 3. Build result object in exact tools format
     const result = {};
@@ -383,10 +365,51 @@ async select(query, history, allTools, options = {}) {
 **Algorithm:**
 
 1. **Fallback check** — if not initialized or not indexed, return `allTools` immediately
-2. **Hybrid search** — BM25 + vector on current query → top N tool names
+2. **Semantic search** — vector similarity on current query → top N tool names
 3. **Sticky extraction** — scan last K assistant turns for tool calls → tool names
 4. **Merge** — union of both sets, deduplicated
 5. **Build result** — return matching tools in original MCP format
+
+#### `async testSelect(query, history, allTools, options?)`
+
+Debug/inspection variant of `select()`. Returns a sorted annotated array instead of the tools object, for evaluating retrieval quality.
+
+```javascript
+async testSelect(query, history, allTools, options = {}) {
+    // 1. Semantic hits
+    const hits = await this.search(query, limit);
+    const map = new Map();
+
+    for (const t of hits) {
+        map.set(t.name, { ...t, source: "semantic" });
+    }
+
+    // 2. Sticky context
+    const sticky = this.extractSticky(history, window);
+
+    for (const name of sticky) {
+        if (map.has(name)) {
+            map.get(name).source = "both";
+            continue;
+        }
+        const def = allTools[name];
+        if (def) {
+            map.set(name, { name, description: def.description || "", score: 0, source: "sticky" });
+        }
+    }
+
+    // 3. Sort: semantic/both first (by score desc), then sticky
+    return [...map.values()].sort((a, b) => {
+        if (a.source === "sticky" && b.source !== "sticky") return 1;
+        if (a.source !== "sticky" && b.source === "sticky") return -1;
+        return b.score - a.score;
+    });
+}
+```
+
+**Returns:** `Promise<Array<{name, description, score, source}>>` — sorted by score descending, with `source` being `"semantic"`, `"sticky"`, or `"both"`
+
+**Use this for:** Debugging retrieval, evaluating query coverage, tuning `semanticLimit`/`stickyWindow`.
 
 ### Utility Methods
 
@@ -428,7 +451,7 @@ _generateNameVariations(name) {
 | `listCalendarEvents`   | `["list", "Calendar", "Events"]` |
 | `ListCalendarEvents`   | `["List", "Calendar", "Events"]` |
 
-Enables partial-name BM25 matching — query `"calendar"` matches `list_calendar_events`.
+Name variations are included in `embedText` — so partial queries like `"calendar"` match `list_calendar_events` through vector similarity.
 
 #### `async _embed(text)`
 
@@ -564,11 +587,11 @@ This provides a ready-to-use instance with optimized defaults for production use
 
 ## Tool Authoring Strategy
 
-ToolRAG's hybrid search has a clean division of responsibility — **names feed BM25, descriptions feed vector**. Writing tools with this in mind maximises retrieval accuracy.
+All retrieval goes through vector similarity — both **names** and **descriptions** feed the embedding. Writing both well maximises coverage across all query types.
 
-### Tool Names — Be Specific
+### Tool Names — Be Specific and Action-Oriented
 
-Names are BM25-indexed with high boost. Users often type tool names or fragments directly.
+Name words are split (e.g. `list_calendar_events` → `list`, `calendar`, `events`) and baked into `embedText`. Specific verb-noun names put the right words into the embedding.
 
 | ✅ Good                | ❌ Avoid        | Why                        |
 | ---------------------- | --------------- | -------------------------- |
@@ -577,11 +600,9 @@ Names are BM25-indexed with high boost. Users often type tool names or fragments
 | `send_email`           | `email_handler` | Unambiguous verb           |
 | `search_spotify`       | `spotify`       | Scoped to the action       |
 
-Name words are broken down (e.g. `list_calendar_events` → `list`, `calendar`, `events`) and stored in `nameVariations` — so partial queries like `"calendar"` or `"events"` match via BM25.
-
 ### Tool Descriptions — Be Semantic
 
-Descriptions are **not BM25-indexed** — they feed vector embeddings only. Write them how users **think and speak**, not how code is documented.
+Descriptions are embedded alongside the name. Write them how users **think and speak**, not how code is documented.
 
 | ✅ Good (semantic)                                                                                                                           | ❌ Avoid (API docs)                                                      |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -601,18 +622,15 @@ Descriptions are **not BM25-indexed** — they feed vector embeddings only. Writ
 ```
 Query: "whats the feel in durgapur? warm or cold"
 
-  BM25:   no match ("warm", "cold" not in name/params)
   Vector: "warm or cold" → "temperature, weather forecast" → ✅ get_weather
 
 Query: "list calendar"
 
-  BM25:   "calendar" → nameVariations of list_calendar_events → ✅ strong match
-  Vector: "list calendar" → "daily agenda, upcoming meetings" → ✅ strong match
+  Vector: "list calendar" + nameVariations ("list", "calendar", "events") in embedText → ✅ list_calendar_events
 
 Query: "get_weather"
 
-  BM25:   exact name match → ✅ boost ×3
-  Vector: name in embedding → ✅ strong match
+  Vector: exact name in embedText → ✅ strong match
 ```
 
-The combination ensures coverage for **exact**, **partial**, and **semantic** queries without any query preprocessing.
+The enriched `embedText` format ensures coverage for **exact**, **partial**, and **semantic** queries without any query preprocessing.

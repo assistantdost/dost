@@ -21,7 +21,7 @@ except ImportError:
     from config import config
 
 from .security import (
-    secure_operation, rate_limit, CommandValidator,
+    _secure_operation, _rate_limit, CommandValidator,
     SecurityError, logger
 )
 
@@ -32,8 +32,8 @@ class ApplicationManager:
     def __init__(self):
         self.validator = CommandValidator()
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=10, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=10, time_window=60)
     def open_application(self, app_name: str) -> str:
         """
         Opens a Windows application using a smart path resolver from the config.
@@ -88,8 +88,8 @@ class WebManager:
         'wikipedia.org', 'w3schools.com'
     }
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=20, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=20, time_window=60)
     def open_webpage(self, url: str) -> str:
         """
         Opens a given URL in the default web browser with security validation.
@@ -125,8 +125,8 @@ class WebManager:
             logger.error(f"Failed to open webpage '{url}': {e}")
             return f"Failed to open webpage: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=15, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=15, time_window=60)
     def search_web(self, query: str, engine: str = "google") -> str:
         """
         Performs a web search using a specified search engine from the config.
@@ -156,8 +156,8 @@ class WebManager:
             logger.error(f"Search error: {e}")
             return f"Search failed: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=5, time_window=300)  # More restrictive for YouTube
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=5, time_window=300)  # More restrictive for YouTube
     def play_song(self, song: str) -> str:
         """
         Searches for and plays a song on YouTube in the default browser.
@@ -232,27 +232,28 @@ web_manager = WebManager()
 # Public functions for compatibility
 def open_app(app_name: str) -> str:
     """
-    Opens a Windows application using a smart path resolver from the config.
-
-    Args:
-        app_name (str): The alias or name of the application to open.
-
-    Returns:
-        str: A confirmation message or an error string.
+    Launches a desktop application executable. Use this to start or run programs like 'Firefox', 'Spotify', 'Calculator', 'Notepad', or 'Chrome'.
+    Use this to open the app window, not to control content inside it.
     """
     return app_manager.open_application(app_name)
 
 
 def open_webpage(url: str) -> str:
-    """Opens a given URL in the default web browser."""
+    """
+    Navigates to a specific URL or website address (e.g., google.com, youtube.com). Use this to visit a page directly, NOT to search for information.
+    """
     return web_manager.open_webpage(url)
 
 
 def search_web(query: str, engine: str = "google") -> str:
-    """Performs a web search using a specified search engine from the config."""
+    """
+    Queries a search engine (Google/Bing) to find answers, pasta recipes, or information. Use this when looking for facts or unknown websites.
+    """
     return web_manager.search_web(query, engine)
 
 
 def play_song(song: str) -> str:
-    """Searches for and plays a song on YouTube in the default browser."""
+    """
+    Searches for and plays a song on YouTube in the browser. Use this to listen to specific music or videos on the web.
+    """
     return web_manager.play_song(song)

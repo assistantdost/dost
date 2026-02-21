@@ -15,7 +15,7 @@ except ImportError:
     from config import config
 
 from .security import (
-    secure_operation, rate_limit, InputValidator,
+    _secure_operation, _rate_limit, InputValidator,
     SecurityError, security_config, logger
 )
 
@@ -26,8 +26,8 @@ class FileManager:
     def __init__(self):
         self.validator = InputValidator()
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=10, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=10, time_window=60)
     def create_note(self, note_text: str, filename: str = "") -> str:
         """
         Creates a new text file with the provided content in the notes directory.
@@ -92,8 +92,8 @@ class FileManager:
             logger.error(f"Failed to create note: {e}")
             return f"Failed to create note: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=5, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=5, time_window=60)
     def find_files(self, name: str, search_dir: str) -> str:
         """
         Recursively searches for files or folders within a given directory.
@@ -150,8 +150,8 @@ class FileManager:
             logger.error(f"Error finding files: {e}")
             return f"Error finding files: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=20, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=20, time_window=60)
     def list_directory(self, directory: str = "") -> str:
         """
         Lists the contents of a directory with security validation.
@@ -208,8 +208,8 @@ class FileManager:
             logger.error(f"Error listing directory: {e}")
             return f"Error listing directory: {e}"
 
-    @secure_operation(require_validation=True, log_operation=True)
-    @rate_limit(max_calls=10, time_window=60)
+    @_secure_operation(require_validation=True, log_operation=True)
+    @_rate_limit(max_calls=10, time_window=60)
     def read_file_content(self, filepath: str, max_lines: int = 100) -> str:
         """
         Safely reads the content of a text file with size and security limits.
@@ -267,10 +267,15 @@ file_manager = FileManager()
 
 # Public functions for compatibility
 def create_note(content: str, custom_filename: Optional[str] = "") -> str:
-    """Creates a text note with the given content and returns its file path."""
+    """
+    Creates a new text file. Use this to jot down quick thoughts, save memos, or use as a scratchpad.
+    Use this for text storage, NOT for time-based alerts.
+    """
     return file_manager.create_note(content, custom_filename)
 
 
 def find_files(query: str, start_directory: str) -> str:
-    """Recursively finds files/folders in a directory matching a query name."""
+    """
+    Searches the hard drive for specific files. Use this to find PDFs, invoices, documents, images, or executables by name.
+    """
     return file_manager.find_files(query, start_directory)

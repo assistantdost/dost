@@ -16,7 +16,7 @@ mcp = FastMCP("mcp-server-package")
 @mcp.tool()
 def get_time(location: str = "") -> str:
     """
-    Gets the current time in a specified timezone, country, or local time if not specified.
+    Retrieves the current local time for a specific location, city, or timezone. Use this to check 'What time is it in Tokyo?' or 'current time'.
     """
     try:
         if not location or location.strip() == "":

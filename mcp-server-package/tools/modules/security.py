@@ -212,7 +212,7 @@ class CommandValidator:
         return app_name
 
 
-def secure_operation(require_validation: bool = True, log_operation: bool = True):
+def _secure_operation(require_validation: bool = True, log_operation: bool = True):
     """
     Decorator for securing operations with input validation and logging.
 
@@ -263,7 +263,7 @@ def secure_operation(require_validation: bool = True, log_operation: bool = True
     return decorator
 
 
-def rate_limit(max_calls: int, time_window: int):
+def _rate_limit(max_calls: int, time_window: int):
     """
     Decorator for rate limiting operations.
 

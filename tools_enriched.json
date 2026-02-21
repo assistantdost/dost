@@ -790,7 +790,7 @@
     },
     "type": "dynamic"
   },
-  "sound_control": {
+  "volume_control": {
     "description": "Adjusts the system audio volume. Use this to mute, unmute, increase, decrease, or set the volume to a specific level.",
     "inputSchema": {
       "jsonSchema": {
