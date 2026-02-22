@@ -55,8 +55,7 @@ import { isWithinTokenLimit } from "gpt-tokenizer/model/gpt-4o";
 import axios from "axios";
 
 // ✅ Environment-based API URL
-const API_URL =
-	import.meta.env.REACT_APP_PUBLIC_API_URL || "http://localhost:5599";
+const API_URL = import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:5599";
 
 const SUMMARY_TRIGGER_TOKENS =
 	parseInt(import.meta.env.VITE_SUMMARY_TRIGGER_TOKENS) || 1000;

@@ -3,11 +3,9 @@ import { chatAgent } from "../ai/agent.js";
 import { tools } from "../mcp/tools.js";
 import { toolRAG } from "../mcp/toolRAG.js";
 import { generateText } from "ai";
-
 import { groq } from "@ai-sdk/groq";
-import { mode } from "d3";
 
-const SUMMARY_MAX_TOKENS = parseInt(process.env.VITE_SUMMARY_MAX_TOKENS) || 800;
+import { config } from "../config.js";
 
 export async function setupRoutes(server, mainWindow) {
 	// Await the agents
@@ -140,7 +138,7 @@ export async function setupRoutes(server, mainWindow) {
 			const summaryResponse = await generateText({
 				model: groq("llama-3.1-8b-instant"),
 				messages: summaryPrompt,
-				maxTokens: SUMMARY_MAX_TOKENS,
+				maxTokens: config.SUMMARY_MAX_TOKENS || 800,
 				temperature: 0.3, // Lower temperature for more focused summaries
 			});
 
@@ -181,8 +179,8 @@ export async function setupRoutes(server, mainWindow) {
 						"Content-Type": "application/x-www-form-urlencoded",
 					},
 					body: new URLSearchParams({
-						client_id: process.env.GOOGLE_CLIENT_ID,
-						client_secret: process.env.GOOGLE_CLIENT_SECRET,
+						client_id: config.GOOGLE_CLIENT_ID,
+						client_secret: config.GOOGLE_CLIENT_SECRET,
 						code,
 						grant_type: "authorization_code",
 						redirect_uri:

@@ -1,19 +1,15 @@
 import { app } from "electron";
-import path from "path";
-import fs from "fs/promises";
 import { EventEmitter } from "events";
 import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { config } from "dotenv";
 import { toolRAG } from "./toolRAG.js";
-
-config(); // Load environment variables from .env file
+import { config } from "../config.js";
+import path from "path";
+import fs from "fs/promises";
 
 const MCP_CONFIG_PATH = path.join(app.getPath("userData"), "mcp.json");
-const API_URL = process.env.VITE_API_URL
-	? process.env.VITE_API_URL + "/mcp_store/default-servers"
-	: "http://localhost:5000/api/v1/mcp_store/default-servers";
+const DEFAULT_SERVERS_URL = config.API_URL + "/mcp_store/default-servers";
 
 export class Tools extends EventEmitter {
 	constructor() {
@@ -243,7 +239,7 @@ export class Tools extends EventEmitter {
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-			const response = await fetch(API_URL, {
+			const response = await fetch(DEFAULT_SERVERS_URL, {
 				signal: controller.signal,
 			});
 
