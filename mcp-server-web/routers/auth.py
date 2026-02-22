@@ -10,6 +10,20 @@ from middleware.decorators import handle_route_exception
 
 router = APIRouter()
 
+def set_auth_cookie(response: Response, token: str, request: Request):
+    origin = request.headers.get("origin", "")
+    is_electron = origin.startswith("app://")
+
+    response.set_cookie(
+        key="refresh_token",
+        value=token,
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        httponly=True,
+        secure=is_electron,                      # False for localhost, True for app://
+        samesite="None" if is_electron else "Lax",
+        path="/",
+    )
+
 
 @router.post("/signup")
 @handle_route_exception
@@ -50,42 +64,27 @@ async def resend_otp(request: ResendOtpRequest, db: AsyncSession = Depends(get_d
 
 @router.post("/signin")
 @handle_route_exception
-async def signin(request: SigninRequest, response: Response, db: AsyncSession = Depends(get_db)):
+async def signin(request: SigninRequest, response: Response, raw_request: Request, db: AsyncSession = Depends(get_db)):
     result = await CRUDAuth.signin(request.email, request.password, db)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
 
     user = result["user"]
-    access_token = create_access_token(
-        data={"id": str(user.id)})  # Changed to "id"
-    refresh_token = create_refresh_token(
-        data={"id": str(user.id)})  # Changed to "id"
+    access_token = create_access_token(data={"id": str(user.id)})
+    refresh_token = create_refresh_token(data={"id": str(user.id)})
 
-    # Set refresh token in cookie
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
-        httponly=True,
-        secure=False,  # Set to True in production with HTTPS
-        path="/"  # Specify common domain for cross-host requests
-    )
-    content = {
+    set_auth_cookie(response, refresh_token, raw_request)
+
+    return {
         "message": "User Logged In!",
-        "user": {
-            "name": user.name,
-            "email": user.email
-        },
+        "user": {"name": user.name, "email": user.email},
         "token": access_token,
-
     }
-
-    return content
 
 
 @router.post("/google_signin")
 @handle_route_exception
-async def google_signin(log_google_user: LogGoogleUser, response: Response, db: AsyncSession = Depends(get_db)):
+async def google_signin(log_google_user: LogGoogleUser, response: Response, request: Request, db: AsyncSession = Depends(get_db)):
     result = await CRUDAuth.google_signin(log_google_user.payload, db)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
@@ -94,27 +93,13 @@ async def google_signin(log_google_user: LogGoogleUser, response: Response, db: 
     access_token = create_access_token(data={"id": str(user.id)})
     refresh_token = create_refresh_token(data={"id": str(user.id)})
 
-    # Set refresh token in cookie
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
-        httponly=True,
-        secure=False,  # Set to True in production with HTTPS
-        path="/"  # Specify common domain for cross-host requests
-    )
+    set_auth_cookie(response, refresh_token, request)
 
-    content = {
+    return {
         "message": "User Logged In via Google!",
-        "user": {
-            "name": user.name,
-            "email": user.email
-        },
+        "user": {"name": user.name, "email": user.email},
         "token": access_token,
-
     }
-
-    return content
 
 
 @router.post("/logout")

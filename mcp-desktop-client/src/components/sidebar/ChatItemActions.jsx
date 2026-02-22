@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateChatName, deleteChat } from "@/api/chat";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export function ChatItemActions({ chat, onDelete }) {
 	const [isRenameOpen, setIsRenameOpen] = useState(false);
@@ -26,6 +26,7 @@ export function ChatItemActions({ chat, onDelete }) {
 	const [newName, setNewName] = useState(chat.name);
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
+	const location = useLocation();
 
 	// Rename mutation
 	const renameMutation = useMutation({
@@ -49,7 +50,7 @@ export function ChatItemActions({ chat, onDelete }) {
 			toast.success("Chat deleted successfully");
 			setIsDeleteOpen(false);
 			// Navigate away if currently viewing this chat
-			if (window.location.pathname === `/chat/${chat.id}`) {
+			if (location.pathname === `/chat/${chat.id}`) {
 				navigate("/", { replace: true });
 			}
 		},

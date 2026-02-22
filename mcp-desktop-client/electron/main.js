@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain } from "electron";
+import { app, BrowserWindow, shell, ipcMain, protocol, net } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -11,6 +11,20 @@ import { tools } from "./mcp/tools.js";
 import { toolRAG } from "./mcp/toolRAG.js";
 
 const isDev = app.isPackaged === false;
+
+// 1. Register the scheme as privileged.
+// THIS MUST BE BEFORE app.whenReady()
+protocol.registerSchemesAsPrivileged([
+	{
+		scheme: "app",
+		privileges: {
+			standard: true,
+			secure: false,
+			supportFetchAPI: true,
+			corsEnabled: true,
+		},
+	},
+]);
 
 const store = new Store();
 
@@ -67,11 +81,23 @@ function createWindow() {
 	if (isDev) {
 		win.loadURL(process.env.VITE_DEV_SERVER_URL);
 	} else {
-		win.loadFile(path.join(__dirname, "../dist/index.html"));
+		// Load via custom protocol in production
+		win.loadURL("app://localhost/");
 	}
 }
 
 app.whenReady().then(async () => {
+	// 2. Handle 'app://' requests and serve from dist folder
+	protocol.handle("app", (request) => {
+		const urlPath = request.url.replace("app://localhost/", "");
+		const filePath = path.join(
+			__dirname,
+			"dist",
+			urlPath || "index.html", // Serves index.html for root "/"
+		);
+		return net.fetch("file://" + filePath);
+	});
+
 	createWindow();
 	await createServer(mainWindow);
 	await toolRAG.init();

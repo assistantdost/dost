@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import {
-	BrowserRouter as Router,
+	HashRouter as Router,
 	Routes,
 	Route,
 	Navigate,
@@ -64,7 +64,7 @@ function App() {
 	}, [refreshToken, logged]);
 
 	return (
-		<Router>
+		<Router basename="/">
 			<Toaster richColors />
 			{/* Temporary Navbar */}
 

@@ -10,7 +10,11 @@ app = FastAPI(title="MCP Server Web", version="1.0.0")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify allowed origins
+    allow_origins=[
+        "http://localhost:5173",   # Vite dev server
+        "http://localhost:5599",   # Electron Express server
+        "app://localhost",         # Packaged Electron app
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

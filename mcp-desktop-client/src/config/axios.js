@@ -29,7 +29,7 @@ apiClient.interceptors.request.use(
 		// Log request (excluding sensitive data)
 		if (import.meta.env.DEV) {
 			console.log(
-				`API Request: ${config.method?.toUpperCase()} ${config.url}`
+				`API Request: ${config.method?.toUpperCase()} ${config.url}`,
 			);
 
 			// Only log data if it doesn't contain sensitive information
@@ -52,7 +52,7 @@ apiClient.interceptors.request.use(
 	(error) => {
 		console.error("Request interceptor error:", error);
 		return Promise.reject(error);
-	}
+	},
 );
 
 // Response interceptor
@@ -77,12 +77,12 @@ apiClient.interceptors.response.use(
 				case 401:
 					// Unauthorized - clear token and redirect to login
 					unAuthorisedLogout(
-						data.message || "Session expired. Please log in again."
+						data.message || "Session expired. Please log in again.",
 					);
 
 					// Only redirect if not already on login page
-					if (!window.location.pathname.includes("/login")) {
-						window.location.href = "/login";
+					if (!window.location.pathname.includes("#/login")) {
+						window.location.href = "#/login";
 					}
 					break;
 
@@ -90,11 +90,11 @@ apiClient.interceptors.response.use(
 					// Forbidden - show appropriate message
 					toast.error(
 						data.message ||
-							"Access forbidden - insufficient permissions"
+							"Access forbidden - insufficient permissions",
 					);
 					console.error(
 						data.message ||
-							"Access forbidden - insufficient permissions"
+							"Access forbidden - insufficient permissions",
 					);
 					break;
 
@@ -102,52 +102,52 @@ apiClient.interceptors.response.use(
 					// Rate limited
 					console.error(
 						data.message ||
-							"Too many requests - please wait before trying again"
+							"Too many requests - please wait before trying again",
 					);
 					toast.error(
 						data.message ||
-							"Too many requests - please wait before trying again"
+							"Too many requests - please wait before trying again",
 					);
 					break;
 
 				case 500:
 					// Server error
 					console.error(
-						data.message || "Server error - please try again later"
+						data.message || "Server error - please try again later",
 					);
 					toast.error(
-						data.message || "Server error - please try again later"
+						data.message || "Server error - please try again later",
 					);
 					break;
 
 				default:
 					console.error(
 						`API Error ${status}:`,
-						data?.message || data?.detail || "Unknown error"
+						data?.message || data?.detail || "Unknown error",
 					);
 					toast.error(
-						data?.message || data?.detail || "An error occurred"
+						data?.message || data?.detail || "An error occurred",
 					);
 			}
 		} else if (error.request) {
 			// Network error
 			console.error(
-				data.message || "Network error - please check your connection"
+				data.message || "Network error - please check your connection",
 			);
 			toast.error(
-				data.message || "Network error - please check your connection"
+				data.message || "Network error - please check your connection",
 			);
 		} else {
 			// Request setup error
 			console.error(
 				data.message || "Request setup error:",
-				error.message
+				error.message,
 			);
 			toast.error(data.message || "Request setup error");
 		}
 
 		return Promise.reject(error);
-	}
+	},
 );
 
 // Helper functions for common API operations
