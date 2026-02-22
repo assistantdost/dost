@@ -1,7 +1,7 @@
 {
-	"name": "dost-electron",
-	"version": "1.0.0",
+	"name": "dost",
 	"private": true,
+	"version": "1.0.0",
 	"type": "module",
 	"main": "main.js",
 	"dependencies": {

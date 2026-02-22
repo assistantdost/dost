@@ -1,16 +1,56 @@
-# React + Vite
+# Dost — Desktop Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Electron + React desktop app for the Dost AI assistant.
 
-Currently, two official plugins are available:
+## Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```
+mcp-desktop-client/
+├── client/       # React frontend (Vite)
+├── electron/     # Electron main process + Express server
+├── resources/    # Bundled assets (desktop_server.exe, etc.)
+├── release/      # Build output (gitignored)
+└── .env          # Secrets — never committed
+```
 
-## React Compiler
+## Setup
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+```bash
+# Install all dependencies
+npm run install:all
+```
 
-## Expanding the ESLint configuration
+## .env
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Create a `.env` file at the root (`mcp-desktop-client/.env`):
+
+```env
+VITE_API_URL=http://localhost:5000/api/v1
+GROQ_API_KEY=gsk_...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+VITE_SUMMARY_MAX_TOKENS=800
+VITE_SUMMARY_TOKEN_THRESHOLD=1500
+```
+
+## Development
+
+```bash
+npm run dev
+```
+
+Starts the Vite dev server and Electron concurrently.
+
+## Build & Package
+
+```bash
+# Test build (unpacked, no installer)
+npm run dist:dir
+
+# Full NSIS installer
+npm run dist
+```
+
+Output is in `release/`.
+
+> Before packaging, ensure `.env` is filled with real values — it is copied into `resources/` at build time.
