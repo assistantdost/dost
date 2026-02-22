@@ -29,10 +29,6 @@
 			{
 				"from": "../dist",
 				"to": "dist"
-			},
-			{
-				"from": "..env",
-				"to": ".env"
 			}
 		],
 		"extraResources": [
@@ -42,6 +38,10 @@
 				"filter": [
 					"**/*"
 				]
+			},
+			{
+				"from": ".env",
+				"to": ".env"
 			}
 		],
 		"win": {

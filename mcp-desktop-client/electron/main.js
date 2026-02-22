@@ -53,8 +53,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const envPath = isDev
-	? path.resolve(__dirname, "../.env")
-	: path.resolve(__dirname, ".env");
+	? path.resolve(__dirname, "../.env") // dev: project root
+	: path.resolve(process.resourcesPath, ".env"); // prod: extraResources dir (outside asar)
 
 dotenv.config({ path: envPath });
 

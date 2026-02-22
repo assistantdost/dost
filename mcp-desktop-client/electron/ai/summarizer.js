@@ -8,7 +8,9 @@ import { generateText } from "ai";
 import axios from "axios";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5000/api/v1";
-const SUMMARY_TOKEN_THRESHOLD = 2000;
+const SUMMARY_TOKEN_THRESHOLD =
+	parseInt(process.env.VITE_SUMMARY_TOKEN_THRESHOLD) || 1500;
+const SUMMARY_MAX_TOKENS = parseInt(process.env.VITE_SUMMARY_MAX_TOKENS) || 800;
 
 /**
  * Count tokens in messages
@@ -46,7 +48,7 @@ async function generateSummary(messages, existingSummary) {
 		model: groq("llama-3.3-70b-versatile"),
 		prompt,
 		temperature: 0.3,
-		maxTokens: 1000,
+		maxTokens: SUMMARY_MAX_TOKENS,
 	});
 
 	return text;
