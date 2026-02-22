@@ -10,6 +10,8 @@ import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
 import { tools } from "./mcp/tools.js";
 import { toolRAG } from "./mcp/toolRAG.js";
 
+const isDev = app.isPackaged === false;
+
 const store = new Store();
 
 // IPC listeners
@@ -36,7 +38,11 @@ registerMcpIpcHandlers();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+const envPath = isDev
+	? path.resolve(__dirname, "../.env")
+	: path.resolve(__dirname, ".env");
+
+dotenv.config({ path: envPath });
 
 let mainWindow;
 
@@ -58,7 +64,7 @@ function createWindow() {
 
 	mainWindow = win;
 
-	if (process.env.VITE_DEV_SERVER_URL) {
+	if (isDev) {
 		win.loadURL(process.env.VITE_DEV_SERVER_URL);
 	} else {
 		win.loadFile(path.join(__dirname, "../dist/index.html"));
