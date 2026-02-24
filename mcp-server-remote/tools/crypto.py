@@ -219,13 +219,13 @@ class CryptoDataFetcher:
             }
 
     def get_crypto_history(
-        self, user_input: str, days: int = 7, currency: str = "usd"
+        self, user_input: str, period: str = "weekly", currency: str = "usd"
     ) -> Dict[str, Any]:
         """
-        Fetches historical price data for a cryptocurrency, suitable for charts.
-        Returns timestamped arrays of prices, market caps, and volumes.
-        Use days=1 for hourly data, days=7/14/30 for daily data,
-        days=365 for full year, or days=max for all-time history.
+        Fetches historical price data for charting.
+        period: 'daily' (24h, every 2hrs, 12 pts), 'weekly' (7d, 1/day, 7 pts),
+                'monthly' (1yr, 1/month, 12 pts).
+        Returns a compact list of {date, price} objects.
         """
         try:
             coin_id, display_name = self.smart_lookup(user_input)
@@ -237,87 +237,80 @@ class CryptoDataFetcher:
                     "success": False,
                 }
 
-            # Validate days
-            valid_days = [1, 7, 14, 30, 90, 180, 365]
-            if days not in valid_days and days != 0:
-                # Snap to nearest valid value
-                days = min(valid_days, key=lambda x: abs(x - days))
+            # Map period to API days + target point count
+            period_map = {
+                "daily": (1, 12),        # 24h → 1 per 2hrs = 12 pts
+                "weekly": (7, 7),        # 7d → 1 per day
+                "monthly": (365, 12),    # 1yr → 1 per month = 12 pts
+            }
+
+            period = period.lower().strip()
+            if period not in period_map:
+                period = "weekly"
+
+            days, target_points = period_map[period]
 
             url = f"{self.BASE_URL}/coins/{coin_id}/market_chart"
-            params = {
-                "vs_currency": currency.lower(),
-                "days": days,
-            }
+            params = {"vs_currency": currency.lower(), "days": days}
             response = requests.get(
                 url, headers=self.HEADERS, params=params, timeout=15
             )
             response.raise_for_status()
             data = response.json()
 
-            # Format the data points: [[timestamp_ms, value], ...]
-            prices = data.get("prices", [])
-            volumes = data.get("total_volumes", [])
+            raw_prices = data.get("prices", [])
+            if not raw_prices:
+                return {"error": "No data returned", "success": False}
 
-            # Convert to more readable format
+            # Downsample to target_points
             from datetime import datetime, timezone
 
-            def _fmt(points):
-                return [
-                    {
-                        "date": datetime.fromtimestamp(
-                            p[0] / 1000, tz=timezone.utc
-                        ).strftime("%Y-%m-%d %H:%M"),
-                        "value": round(p[1], 2),
-                    }
-                    for p in points
-                ]
+            step = max(1, len(raw_prices) // target_points)
+            sampled = raw_prices[::step]
+            # Always include the last point
+            if sampled[-1] != raw_prices[-1]:
+                sampled.append(raw_prices[-1])
 
-            formatted_prices = _fmt(prices)
+            date_fmt = "%Y-%m-%d %H:%M" if period == "daily" else "%Y-%m-%d"
+            prices = [
+                {
+                    "date": datetime.fromtimestamp(
+                        p[0] / 1000, tz=timezone.utc
+                    ).strftime(date_fmt),
+                    "price": round(p[1], 2),
+                }
+                for p in sampled
+            ]
 
-            # Summary stats
-            price_values = [p[1] for p in prices]
-            high = max(price_values) if price_values else 0
-            low = min(price_values) if price_values else 0
-            start = price_values[0] if price_values else 0
-            end = price_values[-1] if price_values else 0
-            change_pct = (
-                ((end - start) / start * 100) if start else 0
-            )
-
+            # Summary
+            all_vals = [p[1] for p in raw_prices]
+            high = max(all_vals)
+            low = min(all_vals)
+            start = all_vals[0]
+            end = all_vals[-1]
+            change = ((end - start) / start * 100) if start else 0
             cur = currency.upper()
+
             return {
                 "name": display_name or coin_id,
-                "symbol": self.coin_db.get(coin_id, {}).get(
-                    "symbol", ""
-                ).upper(),
-                "coingecko_id": coin_id,
-                "currency": cur,
-                "days": days,
-                "data_points": len(formatted_prices),
+                "symbol": self.coin_db.get(coin_id, {}).get("symbol", "").upper(),
+                "period": period,
+                "data_points": len(prices),
                 "summary": {
                     "high": f"{high:,.2f} {cur}",
                     "low": f"{low:,.2f} {cur}",
                     "start": f"{start:,.2f} {cur}",
                     "end": f"{end:,.2f} {cur}",
-                    "change_percent": f"{change_pct:+.2f}%",
+                    "change": f"{change:+.2f}%",
                 },
-                "prices": formatted_prices,
-                "volumes": _fmt(volumes),
+                "prices": prices,
                 "success": True,
             }
 
         except requests.exceptions.RequestException as e:
-            return {
-                "error": f"Network error: {str(e)}",
-                "input": user_input,
-                "success": False,
-            }
+            return {"error": f"Network error: {str(e)}", "success": False}
         except Exception as e:
-            return {
-                "error": f"Unexpected error: {str(e)}",
-                "input": user_input,
-                "success": False,
-            }
+            return {"error": f"Unexpected error: {str(e)}", "success": False}
 
 
 # Module-level convenience functions for MCP registration
@@ -341,16 +334,15 @@ def get_crypto_price(coin_name: str) -> Dict[str, Any]:
 
 
 def get_crypto_history(
-    coin_name: str, days: int = 7, currency: str = "usd"
+    coin_name: str, period: str = "weekly", currency: str = "usd"
 ) -> Dict[str, Any]:
     """
-    Fetches historical price data for a cryptocurrency, suitable for charts.
-    Returns timestamped price and volume arrays plus a summary with
-    high, low, start, end, and percent change.
-    Use days=1 for hourly, 7/14/30 for daily, 365 for yearly history.
-    Example: get_crypto_history('bitcoin', days=30)
+    Fetches historical price data for charting.
+    period: 'daily' (24h, 12 pts), 'weekly' (7 daily pts),
+            'monthly' (1yr, 12 monthly pts).
+    Example: get_crypto_history('bitcoin', period='monthly')
     """
-    return _get_fetcher().get_crypto_history(coin_name, days, currency)
+    return _get_fetcher().get_crypto_history(coin_name, period, currency)
 
 
 # Interactive testing
@@ -365,6 +357,6 @@ if __name__ == "__main__":
         if not user_input or user_input.lower() == "exit":
             break
 
-        result = fetcher.get_crypto_price(user_input)
+        result = fetcher.get_crypto_history(user_input)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         print("-" * 50)
