@@ -4,7 +4,7 @@ import requests
 import os
 import dotenv
 import inspect
-from tools import stock, gmail_tool, calendar_tool, spotify_tool, contacts_tool
+from tools import stock, crypto, metal, currency, gmail_tool, calendar_tool, spotify_tool, contacts_tool
 from auth.endpoints import router as auth_router
 
 dotenv.load_dotenv()
@@ -88,6 +88,9 @@ def register_tools(module):
 
 # ---------------- Register Tools ----------------
 register_tools(stock)
+register_tools(crypto)
+register_tools(metal)
+register_tools(currency)
 
 # Register Gmail and Calendar tools with OAuth
 mcp.tool()(gmail_tool.read_recent_emails)
@@ -141,6 +144,9 @@ def root():
             "calculator",
             "get_weather",
             "get_stock_data",
+            "get_crypto_price",
+            "get_metal_price",
+            "convert_currency",
             "read_recent_emails",
             "send_email",
             "list_calendar_events",
@@ -184,6 +190,9 @@ if __name__ == "__main__":
     print("   - calculator")
     print("   - get_weather")
     print("   - get_stock_data (from stock module)")
+    print("   - get_crypto_price (from crypto module)")
+    print("   - get_metal_price (from metal module)")
+    print("   - convert_currency (from currency module)")
     print("   - read_recent_emails (requires OAuth)")
     print("   - send_email (requires Google OAuth)")
     print("   - list_calendar_events (requires OAuth)")
