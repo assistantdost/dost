@@ -72,7 +72,7 @@ export const useMcpStore = create((set, get) => ({
 
 		console.log("👂 Listening for MCP state updates from main process...");
 
-		window.mcp.onStateUpdated((state) => {
+		const cleanup = window.mcp.onStateUpdated((state) => {
 			set({
 				mcpServers: state.mcpServers || {},
 				toolCount: state.toolCount || 0,
@@ -81,6 +81,7 @@ export const useMcpStore = create((set, get) => ({
 			});
 			console.log("🔄 MCP state updated:", state);
 		});
+		return cleanup;
 	},
 
 	// ========== SERVER MANAGEMENT ==========

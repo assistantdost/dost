@@ -8,7 +8,31 @@
 
 **Location:** `electron/mcp/toolRAG.js`  
 **Dependencies:** `@xenova/transformers`, `@orama/orama`  
-**Model:** Xenova/all-MiniLM-L6-v2 (384-dimensional embeddings)
+**Model:** Xenova/all-MiniLM-L6-v2 (384-dimensional embeddings, quantized)  
+**Cache Directory:** `~/.cache/dost-models` (downloads ~80MB on first run)
+
+## Model Selection
+
+The system uses **Xenova/all-MiniLM-L6-v2**, a compact sentence transformer optimized for semantic similarity tasks.
+
+**Specifications:**
+
+- **Dimensions:** 384
+- **Architecture:** 6-layer transformer (MiniLM)
+- **Training Data:** General-purpose sentence pairs
+- **Performance:** High accuracy on semantic similarity benchmarks (e.g., STS tasks)
+- **Size:** ~80MB quantized model
+- **Inference Speed:** Fast on CPU (~10-20ms per embedding)
+
+**Why this model:**
+
+- **Efficiency:** Small footprint suitable for desktop applications
+- **Accuracy:** Strong performance on semantic search without large model overhead
+- **Compatibility:** Works well with @xenova/transformers for client-side inference
+- **Quantization:** Supports quantized loading for reduced memory usage
+- **Task Fit:** Designed for sentence similarity, perfect for tool discovery queries
+
+Alternatives considered: Larger models like all-mpnet-base-v2 (768 dims, ~400MB) were too heavy for desktop use. Smaller models like all-MiniLM-L12-v2 (12 layers) offered marginal gains over L6-v2 but with higher latency.
 
 ## Architecture
 

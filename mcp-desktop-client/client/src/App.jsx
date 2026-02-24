@@ -28,7 +28,6 @@ function App() {
 	const {
 		initialize,
 		listenForUpdates,
-		// cleanup: cleanupMcpStore,
 		// readConfig,
 		// connectToServers,
 		// isInitialized,
@@ -37,11 +36,11 @@ function App() {
 	// Initialize MCP store and listen for updates
 	useEffect(() => {
 		initialize();
-		listenForUpdates();
+		const cleanup = listenForUpdates();
 
-		// return () => {
-		// 	cleanupMcpStore();
-		// };
+		return () => {
+			if (cleanup) cleanup();
+		};
 	}, []);
 
 	useEffect(() => {
