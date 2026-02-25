@@ -60,6 +60,23 @@ const API_URL = import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:5599";
 const SUMMARY_TRIGGER_TOKENS =
 	parseInt(import.meta.env.VITE_SUMMARY_TRIGGER_TOKENS) || 1000;
 
+/**
+ * Number of recent conversations to keep OUTSIDE the summary window.
+ * A "conversation" = one user message + one assistant response (a pair).
+ *
+ * Example with SUMMARY_WINDOW_CONVERSATIONS = 2:
+ *
+ *   BEFORE (6 conversations accumulated):
+ *   [U1][A1] [U2][A2] [U3][A3] [U4][A4] [U5][A5] [U6][A6] [U7 - current query]
+ *
+ *   AFTER summarization:
+ *   [summary of U1A1..U4A4] [U5][A5] [U6][A6] [U7 - current query]
+ *
+ * Set via .env: VITE_SUMMARY_WINDOW_CONVERSATIONS=2
+ */
+const SUMMARY_WINDOW_CONVERSATIONS =
+	parseInt(import.meta.env.VITE_SUMMARY_WINDOW_CONVERSATIONS) || 2;
+
 const partsToText = (parts) => {
 	return parts
 		.map((part) => {
@@ -161,10 +178,20 @@ export default function ChatWindow({ chatId, initialMessages = [] }) {
 		transport: new DefaultChatTransport({
 			api: `${API_URL}/api/chat`,
 			async prepareSendMessagesRequest({ messages, id }) {
-				// ✅ Read fresh values from store every time
+				// Read fresh values from store every time (avoids stale closure)
 				const { summary, lastSummarizedMessageId, setSummary } =
 					useChatStore.getState();
+
 				let recentMessages = messages;
+
+				// ── Step 1: Inject existing summary ──────────────────────────────────
+				// If a summary exists in the store:
+				//   - Slice messages to only those AFTER the last summarized message
+				//   - Prepend the summary as a system message at index 0
+				//
+				// The summaryMessage will end up in messagesToSummarize (Step 2) —
+				// this is intentional. The old summary gets merged into the new one.
+				let summaryMessage = null;
 
 				if (summary && lastSummarizedMessageId) {
 					const index = messages.findIndex(
@@ -174,64 +201,127 @@ export default function ChatWindow({ chatId, initialMessages = [] }) {
 						recentMessages = messages.slice(index + 1);
 					}
 
-					const summaryMessage = {
+					summaryMessage = {
 						role: "system",
-						parts: [
-							{
-								type: "text",
-								text: summary,
-							},
-						],
+						parts: [{ type: "text", text: summary }],
 					};
 
 					recentMessages = [summaryMessage, ...recentMessages];
 				}
 
-				// ✅ Convert ALL parts to comprehensive text content
-				const convertedMessages = recentMessages.map((msg) => {
+				// ── Step 2: Split into window + older ────────────────────────────────
+				// currentQuery        = recentMessages[-1]  (current user input)
+				// historyWithoutQuery = everything before it, including summaryMessage
+				//
+				// Walk backwards counting user messages (each = one conversation start).
+				// Stop at SUMMARY_WINDOW_CONVERSATIONS to find the split point:
+				//
+				//   historyWithoutQuery:
+				//   [oldSummary][U3][A3][U4][A4][U5][A5]
+				//                              ↑
+				//                        windowStartIndex (2nd user msg from end)
+				//
+				//   messagesToSummarize = [oldSummary][U3][A3][U4][A4]  ← token checked + summarized
+				//   windowMessages      = [U5][A5]                      ← kept as-is
+				//
+				//   if summarized → [newSummary][U5][A5][query]
+				//   else as-is   → [oldSummary][U3][A3][U4][A4][U5][A5][query]
+
+				const currentQuery = recentMessages[recentMessages.length - 1];
+				const historyWithoutQuery = recentMessages.slice(
+					0,
+					recentMessages.length - 1,
+				);
+
+				let conversationCount = 0;
+				let windowStartIndex = historyWithoutQuery.length; // default: keep all
+
+				for (let i = historyWithoutQuery.length - 1; i >= 0; i--) {
+					// Only count user messages — summaryMessage is "system" so never counted
+					if (historyWithoutQuery[i].role === "user") {
+						conversationCount++;
+						if (
+							conversationCount === SUMMARY_WINDOW_CONVERSATIONS
+						) {
+							windowStartIndex = i;
+							break;
+						}
+					}
+				}
+
+				// Last N conversations — always kept as-is
+				const windowMessages =
+					historyWithoutQuery.slice(windowStartIndex);
+
+				// Everything before the window — old summary (if any) + older conversations
+				const messagesToSummarize = historyWithoutQuery.slice(
+					0,
+					windowStartIndex,
+				);
+
+				// console.log("windowMessages", windowMessages);
+				// console.log("messagesToSummarize", messagesToSummarize);
+
+				// ── Step 3: Token check on messagesToSummarize ────────────────────────
+				// Convert parts → plain text for gpt-tokenizer
+				const convertedToSummarize = messagesToSummarize.map((msg) => {
 					if (msg.content) return msg;
 					if (msg.parts) {
-						// Include ALL part types as text (reasoning, tools, etc.)
-						const textContent = partsToText(msg.parts);
 						return {
 							role: msg.role,
-							content: textContent,
+							content: partsToText(msg.parts),
 						};
 					}
 					return msg;
 				});
 
-				const withinTokenLimit = isWithinTokenLimit(
-					convertedMessages,
-					SUMMARY_TRIGGER_TOKENS, // Adjust token limit as needed
-				);
+				const withinTokenLimit =
+					messagesToSummarize.length === 0 ||
+					isWithinTokenLimit(
+						convertedToSummarize,
+						SUMMARY_TRIGGER_TOKENS,
+					);
 
+				// ── Step 4: Summarize if over token limit ─────────────────────────────
 				if (!withinTokenLimit) {
 					setSummarizing(true);
-					const summarisedMessage = await axios.post(
-						`${API_URL}/api/summarize`,
-						{ messages: recentMessages.slice(0, -1) },
-					);
-					setSummarizing(false);
+					try {
+						const summarisedMessage = await axios.post(
+							`${API_URL}/api/summarize`,
+							{ messages: messagesToSummarize },
+						);
 
-					const summaryText = summarisedMessage.data.parts
-						.map((part) => part.text)
-						.join("\n");
-					const lastSummarizedMessageId =
-						recentMessages[recentMessages.length - 2].id;
+						const summaryText = summarisedMessage.data.parts
+							.map((part) => part.text)
+							.join("\n");
 
-					updateChatSummary(
-						chatId,
-						summaryText,
-						lastSummarizedMessageId,
-					);
+						// Last message that got summarized — used next cycle to slice from here
+						const newLastSummarizedId =
+							messagesToSummarize[messagesToSummarize.length - 1]
+								.id;
 
-					setSummary(summaryText, lastSummarizedMessageId);
+						// Persist to backend first, then update store
+						await updateChatSummary(
+							chatId,
+							summaryText,
+							newLastSummarizedId,
+						);
+						setSummary(summaryText, newLastSummarizedId);
 
-					recentMessages = [
-						summarisedMessage.data,
-						...recentMessages.slice(-1),
-					];
+						// [newSummary] + [windowMessages] + [query]
+						recentMessages = [
+							summarisedMessage.data,
+							...windowMessages,
+							currentQuery,
+						];
+					} finally {
+						// Always clear spinner — even if summarize API throws
+						setSummarizing(false);
+					}
+				} else {
+					// Within token limit — send everything as-is
+					// [oldSummary/nothing][U3][A3]...[U5][A5][query]
+					recentMessages = [...historyWithoutQuery, currentQuery];
 				}
 
 				return {

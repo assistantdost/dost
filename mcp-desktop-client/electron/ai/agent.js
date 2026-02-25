@@ -1,51 +1,51 @@
 import {
-  convertToModelMessages,
-  Experimental_Agent as Agent,
-  stepCountIs,
+	convertToModelMessages,
+	Experimental_Agent as Agent,
+	stepCountIs,
 } from "ai";
 import { groq } from "@ai-sdk/groq";
 import { tools } from "../mcp/tools.js";
 import os from "os";
 
 function getSystemEnv() {
-  const platform = os.platform(); // 'win32', 'darwin', 'linux'
-  const release = os.release(); // e.g. '10.0.22631'
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // e.g. 'Asia/Kolkata'
-  const locale = Intl.DateTimeFormat().resolvedOptions().locale; // e.g. 'en-IN'
-  const arch = os.arch(); // e.g. 'x64'
+	const platform = os.platform(); // 'win32', 'darwin', 'linux'
+	const release = os.release(); // e.g. '10.0.22631'
+	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // e.g. 'Asia/Kolkata'
+	const locale = Intl.DateTimeFormat().resolvedOptions().locale; // e.g. 'en-IN'
+	const arch = os.arch(); // e.g. 'x64'
 
-  const osName =
-    platform === "win32"
-      ? `Windows (Build ${release})`
-      : platform === "darwin"
-        ? `macOS ${release}`
-        : `Linux ${release}`;
+	const osName =
+		platform === "win32"
+			? `Windows (Build ${release})`
+			: platform === "darwin"
+				? `macOS ${release}`
+				: `Linux ${release}`;
 
-  return { osName, arch, timezone, locale };
+	return { osName, arch, timezone, locale };
 }
 
 // Cache at module level — computed once on startup
 const env = getSystemEnv();
 
 export const providerOptions = {
-  groq: {
-    reasoningFormat: "parsed",
-    reasoningEffort: "low",
-    parallelToolCalls: true,
-    maxTokens: 3000,
-  },
+	groq: {
+		reasoningFormat: "parsed",
+		reasoningEffort: "low",
+		parallelToolCalls: true,
+		maxTokens: 3000,
+	},
 };
 
 export async function chatAgent(tools) {
-  const cachedAgent = new Agent({
-    model: groq("openai/gpt-oss-120b"),
-    tools: {
-      ...tools,
-      browser_search: groq.tools.browserSearch({}),
-    },
-    toolChoice: "auto",
-    stopWhen: stepCountIs(8),
-    system: `You are **Dost** — a smart, proactive personal desktop assistant running on the user's PC.
+	const cachedAgent = new Agent({
+		model: groq("openai/gpt-oss-20b"),
+		tools: {
+			...tools,
+			browser_search: groq.tools.browserSearch({}),
+		},
+		toolChoice: "auto",
+		stopWhen: stepCountIs(8),
+		system: `You are **Dost** — a smart, proactive personal desktop assistant running on the user's PC.
 You are powered by MCP (Model Context Protocol) and have access to a dynamic set of tools that can be expanded at any time by connecting new MCP servers. Always read tool names and descriptions carefully — new tools may appear that you haven't seen before. Use them confidently based on their descriptions.
 
 ## Environment
@@ -74,7 +74,7 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 - Diagrams (Graphviz/DOT): Render compact, modern diagrams (rounded nodes, pastel colors, Helvetica font, light grey edges, fit for display). Keep description to one line.
 - Authorization/OAuth links: Always render as clickable hyperlinks → [Authorize here](url).
 - Keep token usage low. Be efficient.`,
-  });
+	});
 
-  return cachedAgent;
+	return cachedAgent;
 }

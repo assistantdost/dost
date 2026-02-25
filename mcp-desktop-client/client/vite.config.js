@@ -7,6 +7,7 @@ import path from "path";
 export default defineConfig({
 	plugins: [react(), tailwindcss()],
 	base: "./",
+	envDir: path.resolve(__dirname, ".."), // ← reads from mcp-desktop-client/
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),

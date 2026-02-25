@@ -123,14 +123,19 @@ export async function setupRoutes(server, mainWindow) {
 			const summaryPrompt = [
 				{
 					role: "system",
-					content:
-						"You are a helpful assistant that summarizes conversations. Extract and remember key facts, figures, and data from the conversation, especially tool results like weather data, system specs, etc. Then provide a concise summary of the key points discussed, including any tool usage and results.",
+					content: `You are an exacting Data Extraction and Summarization AI. Your primary directive is the comprehensive, lossless retention of all hard facts, figures, and context from the conversation. 
+
+You must extract and preserve EVERY specific detail: numbers, dates, IDs, financial figures, names, and exact measurements. Do not paraphrase or generalize hard data.
+
+Format your response STRICTLY using the following sections:
+- NARRATIVE SUMMARY: A thorough overview of the interaction, detailing the core topics discussed, the user's intent, and the overall conversational context.
+- CRITICAL DATA: A comprehensive bulleted list of every specific number, metric, constraint, and factual entity mentioned in the conversation.`,
 				},
 				...simplifiedMessages,
 				{
 					role: "user",
 					content:
-						"Please summarize the above conversation in 2-3 sentences, highlighting the main topics, important tool results, and key facts/figures to remember.",
+						"Please process the conversation above. Generate a comprehensive summary and extract all key data following the required structure. Ensure absolutely no loss of numbers, figures, or specific factual details.",
 				},
 			];
 
