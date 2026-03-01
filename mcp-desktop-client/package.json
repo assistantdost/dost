@@ -67,5 +67,8 @@
 			"oneClick": false,
 			"allowToChangeInstallationDirectory": true
 		}
+	},
+	"dependencies": {
+		"node-machine-id": "^1.1.12"
 	}
 }
