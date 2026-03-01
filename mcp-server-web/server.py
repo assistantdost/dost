@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 import asyncio
-from routers import users, auth, chat, mcp_store
+from routers import users, auth, chat, mcp_store, llm_models
 from middleware.helper import optional_header_accessToken
 
 app = FastAPI(title="MCP Server Web", version="1.0.0")
@@ -38,6 +38,8 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(chat.router, prefix="/api/v1/chats", tags=["chats"])
 app.include_router(
     mcp_store.router, prefix="/api/v1/mcp_store", tags=["mcp_store"])
+app.include_router(
+    llm_models.router, prefix="/api/v1/llm_models", tags=["llm_models"])
 
 
 @app.get("/")

@@ -2,13 +2,18 @@ import { app, BrowserWindow, shell, ipcMain, protocol, net } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import Store from "electron-store";
+import store from "./store.js";
 import "./ipcStore.js";
 import { createServer } from "./server/server.js";
-import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
 
+// MCP imports
+import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
 import { tools } from "./mcp/tools.js";
 import { toolRAG } from "./mcp/toolRAG.js";
+
+// AI imports
+import { registerAiIpcHandlers } from "./ai/ipcHandlers.js";
+import { aiModel } from "./ai/models.js";
 
 const isDev = app.isPackaged === false;
 
@@ -25,8 +30,6 @@ protocol.registerSchemesAsPrivileged([
 		},
 	},
 ]);
-
-const store = new Store();
 
 // IPC listeners
 ipcMain.on("electron-store-get", async (event, val) => {
@@ -48,6 +51,9 @@ ipcMain.on("electron-store-delete-all", (event) => {
 
 // ✅ Register MCP IPC handlers
 registerMcpIpcHandlers();
+
+// ✅ Register AI IPC handlers
+registerAiIpcHandlers();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -102,6 +108,7 @@ app.whenReady().then(async () => {
 	await createServer(mainWindow);
 	await toolRAG.init();
 	await tools.init();
+	await aiModel.init();
 	// const results = await tools.initializeMcpClients(true);
 	// console.log(
 	// 	"MCP clients initialized on startup:",

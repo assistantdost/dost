@@ -1,20 +1,6 @@
 import { ipcMain, app, shell } from "electron";
-import { jsonStore } from "./jsonStore.js";
 
 import { config } from "./config.js";
-
-// Store IPC handlers
-ipcMain.handle("store:get", (_, key) => {
-	return jsonStore.get(key);
-});
-
-ipcMain.handle("store:set", (_, key, value) => {
-	jsonStore.set(key, value);
-});
-
-ipcMain.handle("store:delete", (_, key) => {
-	jsonStore.delete(key);
-});
 
 // Test IPC handlers
 ipcMain.handle("get-app-version", () => {

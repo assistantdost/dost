@@ -1,0 +1,139 @@
+{
+	"providers": {
+		"groq": {
+			"models": {
+				"openai/gpt-oss-120b": {
+					"id": "openai/gpt-oss-120b",
+					"name": "GPT OSS 120B",
+					"capabilities": {
+						"tool_use": true,
+						"browser_search": true,
+						"code_execution": true,
+						"JSON_object_mode": true,
+						"JSON_schema_mode": true,
+						"reasoning": true
+					},
+					"input": "text",
+					"output": "text"
+				},
+				"openai/gpt-oss-20b": {
+					"id": "openai/gpt-oss-20b",
+					"name": "GPT OSS 20B",
+					"capabilities": {
+						"tool_use": true,
+						"browser_search": true,
+						"code_execution": true,
+						"JSON_object_mode": true,
+						"JSON_schema_mode": true,
+						"reasoning": true
+					},
+					"input": "text",
+					"output": "text"
+				},
+				"llama-3.1-8b-instant": {
+					"id": "llama-3.1-8b-instant",
+					"name": "Llama 3.1 8B",
+					"capabilities": {
+						"tool_use": true,
+						"JSON_object_mode": true
+					},
+					"input": "text",
+					"output": "text"
+				},
+				"llama-3.3-70b-versatile": {
+					"id": "llama-3.3-70b-versatile",
+					"name": "Llama 3.3 70B",
+					"capabilities": {
+						"tool_use": true,
+						"JSON_object_mode": true
+					},
+					"input": "text",
+					"output": "text"
+				},
+				"qwen/qwen3-32b": {
+					"id": "qwen/qwen3-32b",
+					"name": "Qwen3-32B",
+					"capabilities": {
+						"tool_use": true,
+						"JSON_object_mode": true,
+						"reasoning": true
+					},
+					"input": "text",
+					"output": "text"
+				}
+			},
+			"default_model": "openai/gpt-oss-120b",
+			"summary_model": "llama-3.1-8b-instant",
+			"env_var": "GROQ_API_KEY"
+		},
+		"gemini": {
+			"models": {
+				"gemini-3.1-pro-preview": {
+					"id": "gemini-3.1-pro-preview",
+					"name": "Gemini 3.1 Pro Preview",
+					"capabilities": {
+						"tool_use": true,
+						"batch_api": true,
+						"caching": true,
+						"code_execution": true,
+						"file_search": true,
+						"function_calling": true,
+						"search_grounding": true,
+						"structured_outputs": true,
+						"thinking": true,
+						"url_context": true
+					},
+					"input": ["text", "image", "video", "audio", "pdf"],
+					"output": "text",
+					"token_limits": {
+						"input": 1048576,
+						"output": 65536
+					}
+				},
+				"gemini-3-flash-preview": {
+					"id": "gemini-3-flash-preview",
+					"name": "Gemini 3 Flash Preview",
+					"capabilities": {
+						"tool_use": true,
+						"batch_api": true,
+						"caching": true,
+						"code_execution": true,
+						"computer_use": true,
+						"file_search": true,
+						"function_calling": true,
+						"search_grounding": true,
+						"structured_outputs": true,
+						"thinking": true,
+						"url_context": true
+					},
+					"input": ["text", "image", "video", "audio", "pdf"],
+					"output": "text",
+					"token_limits": {
+						"input": 1048576,
+						"output": 65536
+					}
+				},
+				"gemini-3.1-flash-image-preview": {
+					"id": "gemini-3.1-flash-image-preview",
+					"name": "Nano Banana 2",
+					"capabilities": {
+						"batch_api": true,
+						"image_generation": true,
+						"search_grounding": true,
+						"thinking": true
+					},
+					"input": ["text", "image", "pdf"],
+					"output": ["text", "image"],
+					"token_limits": {
+						"input": 131072,
+						"output": 32768
+					}
+				}
+			},
+			"default_model": "gemini-3-flash-preview",
+			"summary_model": "gemini-3-flash-preview",
+			"env_var": "GEMINI_API_KEY"
+		}
+	},
+	"default_provider": "groq"
+}
