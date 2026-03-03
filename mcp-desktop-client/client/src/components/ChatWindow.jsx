@@ -6,6 +6,7 @@ import {
 } from "@/components/ai/conversation";
 import { Message, MessageContent } from "@/components/ai/message";
 import {
+	PromptInputToolbar,
 	PromptInput,
 	PromptInputTextarea,
 	PromptInputSubmit,
@@ -35,6 +36,9 @@ import {
 import { SummarizingMessages } from "@/components/chat/SummarizingMessages";
 
 import { Response } from "@/components/ai/response";
+
+import AiModelSelector from "@/components/ai/model-selector";
+
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import {
@@ -575,10 +579,15 @@ export default function ChatWindow({ chatId, initialMessages = [] }) {
 					// disabled={status === "streaming"}
 					aria-label="Message input"
 				/>
-				<PromptInputSubmit
-					disabled={!input.trim() || status === "streaming"}
-					status={status}
-				/>
+				<PromptInputToolbar>
+					<div className="flex-1 flex justify-between">
+						<AiModelSelector />
+						<PromptInputSubmit
+							disabled={!input.trim() || status === "streaming"}
+							status={status}
+						/>
+					</div>
+				</PromptInputToolbar>
 			</PromptInput>
 
 			{/* ✅ Error display */}

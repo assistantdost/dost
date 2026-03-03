@@ -8,6 +8,7 @@ import {
 	PromptInputToolbar,
 	PromptInputSubmit,
 } from "@/components/ai/prompt-input";
+import AiModelSelector from "@/components/ai/model-selector";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createChat } from "@/api/chat";
@@ -93,13 +94,15 @@ function Home() {
 							disabled={createChatMutation.isPending}
 						/>
 						<PromptInputToolbar>
-							<div className="flex-1" />
-							<PromptInputSubmit
-								disabled={
-									!input.trim() ||
-									createChatMutation.isPending
-								}
-							/>
+							<div className="flex-1 flex justify-between">
+								<AiModelSelector />
+								<PromptInputSubmit
+									disabled={
+										!input.trim() ||
+										createChatMutation.isPending
+									}
+								/>
+							</div>
 						</PromptInputToolbar>
 					</PromptInput>
 				</div>
