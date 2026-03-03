@@ -88,7 +88,7 @@ import { Button } from "@/components/ui/button";
 /** AI Model Selector component using dynamic providers from aiStore */
 export default function AiModelSelector() {
 	const [open, setOpen] = useState(false);
-	const { providers, chatModel, selectChatModel } = useAiStore();
+	const { providers, chatModel, selectChatModel, envStore } = useAiStore();
 
 	// Wait for providers to load
 	if (!providers) {
@@ -115,6 +115,14 @@ export default function AiModelSelector() {
 		(model) => model.id === chatModel?.id,
 	);
 	const chefs = Array.from(new Set(models.map((model) => model.chef)));
+
+	const hasApiKey = (chef) => {
+		return (
+			envStore &&
+			envStore[chef] &&
+			envStore[chef][providers[chef].env_var]
+		);
+	};
 
 	return (
 		<div className="">
@@ -145,17 +153,30 @@ export default function AiModelSelector() {
 						</ModelSelectorEmpty>
 						{chefs.map((chef) => (
 							<ModelSelectorGroup heading={chef} key={chef}>
+								{!hasApiKey(chef) && (
+									<div className="px-2 py-1 text-xs text-muted-foreground">
+										Add API key to use these models
+									</div>
+								)}
 								{models
 									.filter((model) => model.chef === chef)
 									.map((model) => (
 										<ModelSelectorItem
 											key={model.id}
+											disabled={!hasApiKey(chef)}
+											className={
+												!hasApiKey(chef)
+													? "opacity-50"
+													: ""
+											}
 											onSelect={() => {
-												selectChatModel(
-													model.providers[0],
-													model.id,
-												);
-												setOpen(false);
+												if (hasApiKey(chef)) {
+													selectChatModel(
+														model.providers[0],
+														model.id,
+													);
+													setOpen(false);
+												}
 											}}
 											value={model.id}
 										>

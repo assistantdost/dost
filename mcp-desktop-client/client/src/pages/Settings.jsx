@@ -8,9 +8,10 @@ import { toast } from "sonner";
 import { useAiStore } from "@/store/aiStore";
 
 export default function Settings() {
-	const { envStore, setEnvStore, initialize, listenForUpdates } =
+	const { envStore, providers, setEnvStore, initialize, listenForUpdates } =
 		useAiStore();
 	const [values, setValues] = useState({});
+	const [keyToProvider, setKeyToProvider] = useState({});
 	const [visibility, setVisibility] = useState({});
 	const [saving, setSaving] = useState(false);
 
@@ -21,10 +22,24 @@ export default function Settings() {
 	}, [initialize, listenForUpdates]);
 
 	useEffect(() => {
-		if (envStore) {
-			setValues(envStore);
+		if (envStore && providers) {
+			// Flatten envStore for UI
+			const flattened = {};
+			const keyProviderMap = {};
+			for (const [providerName, providerKeys] of Object.entries(
+				envStore,
+			)) {
+				if (providerKeys && typeof providerKeys === "object") {
+					for (const [key, value] of Object.entries(providerKeys)) {
+						flattened[key] = value;
+						keyProviderMap[key] = providerName;
+					}
+				}
+			}
+			setValues(flattened);
+			setKeyToProvider(keyProviderMap);
 			// Initialize visibility to false (password mode) for all keys
-			const initialVisibility = Object.keys(envStore).reduce(
+			const initialVisibility = Object.keys(flattened).reduce(
 				(acc, key) => {
 					acc[key] = false;
 					return acc;
@@ -33,7 +48,7 @@ export default function Settings() {
 			);
 			setVisibility(initialVisibility);
 		}
-	}, [envStore]);
+	}, [envStore, providers]);
 
 	const handleValueChange = (key, value) => {
 		setValues((prev) => ({ ...prev, [key]: value }));
@@ -46,17 +61,22 @@ export default function Settings() {
 	const handleSave = async () => {
 		setSaving(true);
 		try {
-			// Collect only changed values
-			const changedValues = {};
+			// Group changed values by provider
+			const changedByProvider = {};
 			Object.entries(values).forEach(([key, value]) => {
-				if (value !== envStore[key]) {
-					changedValues[key] = value;
+				const originalValue = getOriginalValue(key);
+				if (value !== originalValue) {
+					const provider = keyToProvider[key];
+					if (!changedByProvider[provider]) {
+						changedByProvider[provider] = {};
+					}
+					changedByProvider[provider][key] = value;
 				}
 			});
 
 			// If there are changes, save them in bulk
-			if (Object.keys(changedValues).length > 0) {
-				await setEnvStore(changedValues);
+			if (Object.keys(changedByProvider).length > 0) {
+				await setEnvStore(changedByProvider);
 			}
 
 			toast.success("API keys saved successfully!");
@@ -65,6 +85,12 @@ export default function Settings() {
 		} finally {
 			setSaving(false);
 		}
+	};
+
+	const getOriginalValue = (key) => {
+		if (!envStore || !keyToProvider[key]) return undefined;
+		const provider = keyToProvider[key];
+		return envStore[provider] ? envStore[provider][key] : undefined;
 	};
 
 	if (!envStore) {
@@ -85,10 +111,13 @@ export default function Settings() {
 				<CardHeader>
 					<CardTitle>Bring Your Own Keys (BYOK)</CardTitle>
 				</CardHeader>
-				<CardContent className="space-y-6">
+				<CardContent className="space-y-4">
 					{Object.entries(values).map(([key, value]) => (
 						<div key={key} className="space-y-2">
-							<Label htmlFor={key}>
+							<Label
+								htmlFor={key}
+								className="text-muted-foreground"
+							>
 								{key.replace(/_/g, " ").toUpperCase()}
 							</Label>
 							<div className="relative">

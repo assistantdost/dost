@@ -13,10 +13,12 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createChat } from "@/api/chat";
 import { toast } from "sonner";
+import { useAiStore } from "@/store/aiStore";
 
 function Home() {
 	const { logged, user } = useAuthStore();
 	const { addChat } = useChatStore();
+	const { envStore, initialize, listenForUpdates } = useAiStore();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [welcomeMessage, setWelcomeMessage] = useState("");
@@ -42,6 +44,25 @@ function Home() {
 		setWelcomeMessage(welcomeMessages[randomIndex]);
 	}, []);
 
+	// useEffect(() => {
+	// 	initialize();
+	// 	const cleanup = listenForUpdates();
+	// 	return cleanup;
+	// }, [initialize, listenForUpdates]);
+
+	// Check if any API keys are set
+	const hasApiKeys = () => {
+		if (!envStore) return false;
+		for (const providerKeys of Object.values(envStore)) {
+			if (providerKeys && typeof providerKeys === "object") {
+				for (const value of Object.values(providerKeys)) {
+					if (value && value.trim()) return true;
+				}
+			}
+		}
+		return false;
+	};
+
 	// Create chat mutation
 	const createChatMutation = useMutation({
 		mutationFn: (chatData) => createChat(chatData),
@@ -58,7 +79,8 @@ function Home() {
 
 	const handleCreateChat = async (e) => {
 		e.preventDefault();
-		if (!input.trim() || createChatMutation.isPending) return;
+		if (!input.trim() || createChatMutation.isPending || !hasApiKeys())
+			return;
 
 		createChatMutation.mutate({
 			first_message: {
@@ -86,25 +108,46 @@ function Home() {
 						</p>
 					</div>
 
-					<PromptInput onSubmit={handleCreateChat}>
-						<PromptInputTextarea
-							placeholder="Type your message here..."
-							value={input}
-							onChange={(e) => setInput(e.currentTarget.value)}
-							disabled={createChatMutation.isPending}
-						/>
-						<PromptInputToolbar>
-							<div className="flex-1 flex justify-between">
-								<AiModelSelector />
-								<PromptInputSubmit
-									disabled={
-										!input.trim() ||
-										createChatMutation.isPending
-									}
-								/>
+					<div className="space-y-4">
+						<PromptInput onSubmit={handleCreateChat}>
+							<PromptInputTextarea
+								placeholder="Type your message here..."
+								value={input}
+								onChange={(e) =>
+									setInput(e.currentTarget.value)
+								}
+								disabled={createChatMutation.isPending}
+							/>
+							<PromptInputToolbar>
+								<div className="flex-1 flex justify-between">
+									<AiModelSelector />
+									<PromptInputSubmit
+										disabled={
+											!input.trim() ||
+											createChatMutation.isPending ||
+											!hasApiKeys()
+										}
+									/>
+								</div>
+							</PromptInputToolbar>
+						</PromptInput>
+
+						{!hasApiKeys() && (
+							<div className="text-center flex w-full justify-center items-center space-x-2">
+								<p className="text-xs text-muted-foreground">
+									Set up your API keys to start chatting
+								</p>
+								<Button
+									// variant="secondary"
+									size="xs"
+									className="text-xs px-2 cursor-pointer"
+									onClick={() => navigate("/settings")}
+								>
+									Settings
+								</Button>
 							</div>
-						</PromptInputToolbar>
-					</PromptInput>
+						)}
+					</div>
 				</div>
 			</div>
 		);

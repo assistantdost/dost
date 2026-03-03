@@ -40,29 +40,33 @@ export class AIModel extends EventEmitter {
 
 		let aiConfig = store.get("aiConfig") || {};
 
-		// Collect all unique env vars from providers
-		const envVars = new Set();
-		for (const provider of Object.values(this.state.providers)) {
-			if (provider.env_var) {
-				envVars.add(provider.env_var);
-			}
-		}
-
+		// Collect env vars grouped by provider
 		const envStore = aiConfig.envStore;
 
 		if (!envStore) {
 			// First load: no envStore in aiConfig
-			const newEnvStore = Object.fromEntries(
-				Array.from(envVars).map((envVar) => [envVar, null]),
-			);
+			const newEnvStore = {};
+			for (const [providerName, provider] of Object.entries(
+				this.state.providers,
+			)) {
+				if (provider.env_var) {
+					newEnvStore[providerName] = { [provider.env_var]: null };
+				}
+			}
 			aiConfig.envStore = newEnvStore;
 			this.state.envStore = newEnvStore; // Set in state
 		} else {
 			// Load existing envs and set process.env
-			for (const envVar of envVars) {
-				const value = envStore[envVar];
-				if (value !== null && value !== undefined) {
-					process.env[envVar] = value;
+			for (const [providerName, provider] of Object.entries(
+				this.state.providers,
+			)) {
+				if (
+					provider.env_var &&
+					envStore[providerName] &&
+					envStore[providerName][provider.env_var]
+				) {
+					process.env[provider.env_var] =
+						envStore[providerName][provider.env_var];
 				}
 			}
 			this.state.envStore = envStore; // Set in state
@@ -264,21 +268,74 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 		if (!aiConfig.envStore) aiConfig.envStore = {};
 		if (!this.state.envStore) this.state.envStore = {};
 
-		// envData can be { key: value, ... } or single key, value
+		// envData can be { provider: { key: value, ... }, ... } or legacy { key: value, ... }
 		if (typeof envData === "object" && envData !== null) {
-			// Multiple
-			for (const [key, value] of Object.entries(envData)) {
-				aiConfig.envStore[key] = value;
-				this.state.envStore[key] = value;
-				if (value !== null && value !== undefined) {
-					process.env[key] = value;
+			// Check if it's nested (has provider keys)
+			const isNested = Object.values(envData).some(
+				(value) => typeof value === "object" && value !== null,
+			);
+			if (isNested) {
+				// Nested: { provider: { key: value } }
+				for (const [provider, keys] of Object.entries(envData)) {
+					if (!aiConfig.envStore[provider])
+						aiConfig.envStore[provider] = {};
+					if (!this.state.envStore[provider])
+						this.state.envStore[provider] = {};
+					for (const [key, value] of Object.entries(keys)) {
+						aiConfig.envStore[provider][key] = value;
+						this.state.envStore[provider][key] = value;
+						if (value !== null && value !== undefined) {
+							process.env[key] = value;
+						}
+					}
+				}
+			} else {
+				// Legacy flat: { key: value }
+				for (const [key, value] of Object.entries(envData)) {
+					// Find which provider this key belongs to
+					let providerName = null;
+					for (const [prov, provData] of Object.entries(
+						this.state.providers,
+					)) {
+						if (provData.env_var === key) {
+							providerName = prov;
+							break;
+						}
+					}
+					if (providerName) {
+						if (!aiConfig.envStore[providerName])
+							aiConfig.envStore[providerName] = {};
+						if (!this.state.envStore[providerName])
+							this.state.envStore[providerName] = {};
+						aiConfig.envStore[providerName][key] = value;
+						this.state.envStore[providerName][key] = value;
+					}
+					if (value !== null && value !== undefined) {
+						process.env[key] = value;
+					}
 				}
 			}
 		} else {
 			// Legacy single
 			const [key, value] = arguments;
-			aiConfig.envStore[key] = value;
-			this.state.envStore[key] = value;
+			// Find provider
+			let providerName = null;
+			for (const [prov, provData] of Object.entries(
+				this.state.providers,
+			)) {
+				if (provData.env_var === key) {
+					providerName = prov;
+					break;
+				}
+			}
+			if (providerName) {
+				if (!aiConfig.envStore[providerName])
+					aiConfig.envStore[providerName] = {};
+				if (!this.state.envStore[providerName])
+					this.state.envStore[providerName] = {};
+				aiConfig.envStore[providerName][key] = value;
+				this.state.envStore[providerName][key] = value;
+			}
 			if (value !== null && value !== undefined) {
 				process.env[key] = value;
 			}
@@ -288,18 +345,53 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 	}
 
 	getEnvStore(key) {
-		return this.state.envStore ? this.state.envStore[key] : null;
+		if (this.state.envStore) {
+			// Search across all providers
+			for (const provider of Object.values(this.state.envStore)) {
+				if (
+					provider &&
+					typeof provider === "object" &&
+					key in provider
+				) {
+					return provider[key];
+				}
+			}
+		}
+		return null;
 	}
 
 	deleteEnvStore(key) {
 		let aiConfig = store.get("aiConfig") || {};
 		if (aiConfig.envStore) {
-			delete aiConfig.envStore[key];
-			store.set("aiConfig", aiConfig);
+			// Find and delete from the correct provider
+			for (const [providerName, providerKeys] of Object.entries(
+				aiConfig.envStore,
+			)) {
+				if (
+					providerKeys &&
+					typeof providerKeys === "object" &&
+					key in providerKeys
+				) {
+					delete aiConfig.envStore[providerName][key];
+					store.set("aiConfig", aiConfig);
+					break;
+				}
+			}
 		}
 		// Update state (triggers emit)
 		if (this.state.envStore) {
-			delete this.state.envStore[key];
+			for (const [providerName, providerKeys] of Object.entries(
+				this.state.envStore,
+			)) {
+				if (
+					providerKeys &&
+					typeof providerKeys === "object" &&
+					key in providerKeys
+				) {
+					delete this.state.envStore[providerName][key];
+					break;
+				}
+			}
 		}
 		// Also remove from process.env
 		delete process.env[key];
