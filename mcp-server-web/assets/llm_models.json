@@ -132,7 +132,7 @@
 			},
 			"default_model": "gemini-3-flash-preview",
 			"summary_model": "gemini-3-flash-preview",
-			"env_var": "GEMINI_API_KEY"
+			"env_var": "GOOGLE_GENERATIVE_AI_API_KEY"
 		}
 	},
 	"default_provider": "groq"

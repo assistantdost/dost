@@ -1,8 +1,4 @@
-import {
-	convertToModelMessages,
-	Experimental_Agent as Agent,
-	stepCountIs,
-} from "ai";
+import { convertToModelMessages, ToolLoopAgent, stepCountIs } from "ai";
 import { groq } from "@ai-sdk/groq";
 import { google } from "@ai-sdk/google";
 import { EventEmitter } from "events";
@@ -171,13 +167,13 @@ export class AIModel extends EventEmitter {
 		let model;
 		if (this.state.provider === "groq") {
 			model = groq(this.state.chatModel.id);
-		} else if (this.state.provider === "gemini") {
+		} else if (this.state.provider === "google") {
 			model = google(this.state.chatModel.id);
 		} else {
 			throw new Error(`Unsupported provider: ${this.state.provider}`);
 		}
 
-		const agent = new Agent({
+		const agent = new ToolLoopAgent({
 			model,
 			tools: {
 				...tools,

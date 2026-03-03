@@ -1,4 +1,4 @@
-import { convertToModelMessages } from "ai";
+import { convertToModelMessages, pipeAgentUIStreamToResponse } from "ai";
 // import { chatAgent } from "../ai/agent.js";
 import { aiModel } from "../ai/models.js";
 import { tools } from "../mcp/tools.js";
@@ -19,39 +19,36 @@ export async function setupRoutes(server, mainWindow) {
 			res.setHeader("Cache-Control", "no-cache");
 			res.setHeader("Connection", "keep-alive");
 
+			// ============= Preprocess messages for Optimal Tool Selection============
 			// Filter messages to only include role and parts
 			const filteredMessages = messages.map((msg) => ({
 				role: msg.role,
 				parts: msg.parts,
 			}));
-			const modelMessages = convertToModelMessages(filteredMessages);
+
+			const modelMessages =
+				await convertToModelMessages(filteredMessages);
 
 			const activeTools = tools.getTools();
 
 			const query =
 				modelMessages[modelMessages.length - 1].content[0].text || "";
 
-			// console.log("Received chat request with query:", query);
-
+			// Optimal Tool Selection
 			const filteredTools = await toolRAG.select(
 				query,
 				modelMessages,
 				activeTools,
 			);
 
-			// console.log(
-			// 	"Tools filtered by Rag : ",
-			// 	JSON.stringify(filteredTools),
-			// );
+			// ============================================================================
 
 			const agent = await aiModel.chatAgent(filteredTools);
-			const stream = agent.stream({
-				messages: modelMessages,
-			});
 
-			stream.pipeUIMessageStreamToResponse(res, {
-				sendReasoning: true,
-				sendSources: true,
+			await pipeAgentUIStreamToResponse({
+				response: res,
+				agent,
+				uiMessages: messages,
 			});
 		} catch (error) {
 			console.error("Error in /api/chat:", error);

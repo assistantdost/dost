@@ -336,7 +336,15 @@ export default function ChatWindow({ chatId, initialMessages = [] }) {
 				};
 			},
 		}),
-		onFinish: async ({ messages }) => {
+		onFinish: async ({ messages, isError, isAbort, isDisconnect }) => {
+			if (isError || isAbort || isDisconnect) {
+				console.error("Chat Error Occured");
+				toast.error("Chat Failed", {
+					description:
+						"An error occurred during the chat session. Please try again.",
+				});
+				return;
+			}
 			try {
 				// ✅ Update backend with only the last message
 				const temp =
