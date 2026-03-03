@@ -20,26 +20,30 @@ import Tools from "@/pages/Tools";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 import { useAuthStore } from "@/store/authStore";
-import { useChatStore } from "./store/chatStore";
-import { useMcpStore } from "./store/mcpStore";
+import { useChatStore } from "@/store/chatStore";
+import { useMcpStore } from "@/store/mcpStore";
+import { useAiStore } from "@/store/aiStore";
 
 function App() {
 	const { refreshToken, logged } = useAuthStore();
-	const {
-		initialize,
-		listenForUpdates,
-		// readConfig,
-		// connectToServers,
-		// isInitialized,
-	} = useMcpStore();
+
+	// Initialize MCP and AI stores and set up listeners for updates from main process
+	const mcpInitialize = useMcpStore((state) => state.initialize);
+	const mcpListenForUpdates = useMcpStore((state) => state.listenForUpdates);
+
+	const aiInitialize = useAiStore((state) => state.initialize);
+	const aiListenForUpdates = useAiStore((state) => state.listenForUpdates);
 
 	// Initialize MCP store and listen for updates
 	useEffect(() => {
-		initialize();
-		const cleanup = listenForUpdates();
+		mcpInitialize();
+		aiInitialize();
+		const cleanup = mcpListenForUpdates();
+		const aiCleanup = aiListenForUpdates();
 
 		return () => {
 			if (cleanup) cleanup();
+			if (aiCleanup) aiCleanup();
 		};
 	}, []);
 

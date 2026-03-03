@@ -74,3 +74,20 @@ contextBridge.exposeInMainWorld("mcp", {
 		return () => ipcRenderer.removeListener("mcp-state-updated", wrapped);
 	},
 });
+
+// AI API - expose all handlers directly under "ai"
+contextBridge.exposeInMainWorld("ai", {
+	init: () => ipcRenderer.invoke("ai-init"),
+	selectChatModel: (provider, model) =>
+		ipcRenderer.invoke("ai-select-chat-model", provider, model),
+	setEnvStore: (key, value) =>
+		ipcRenderer.invoke("ai-set-env-store", key, value),
+	getEnvStore: (key) => ipcRenderer.invoke("ai-get-env-store", key),
+	deleteEnvStore: (key) => ipcRenderer.invoke("ai-delete-env-store", key),
+	getState: () => ipcRenderer.invoke("ai-get-state"),
+	onStateUpdated: (callback) => {
+		const wrapped = (event, ...args) => callback(...args);
+		ipcRenderer.on("ai-state-updated", wrapped);
+		return () => ipcRenderer.removeListener("ai-state-updated", wrapped);
+	},
+});

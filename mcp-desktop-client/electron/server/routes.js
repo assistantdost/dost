@@ -1,9 +1,9 @@
 import { convertToModelMessages } from "ai";
-import { chatAgent } from "../ai/agent.js";
+// import { chatAgent } from "../ai/agent.js";
+import { aiModel } from "../ai/models.js";
 import { tools } from "../mcp/tools.js";
 import { toolRAG } from "../mcp/toolRAG.js";
 import { generateText } from "ai";
-import { groq } from "@ai-sdk/groq";
 
 import { config } from "../config.js";
 
@@ -44,7 +44,7 @@ export async function setupRoutes(server, mainWindow) {
 			// 	JSON.stringify(filteredTools),
 			// );
 
-			const agent = await chatAgent(filteredTools);
+			const agent = await aiModel.chatAgent(filteredTools);
 			const stream = agent.stream({
 				messages: modelMessages,
 			});
@@ -141,7 +141,7 @@ Format your response STRICTLY using the following sections:
 
 			// ✅ Use llama-3.1-8b-instant with simple text messages
 			const summaryResponse = await generateText({
-				model: groq("llama-3.1-8b-instant"),
+				model: aiModel.getSummaryModel(),
 				messages: summaryPrompt,
 				maxTokens: config.SUMMARY_MAX_TOKENS || 800,
 				temperature: 0.3, // Lower temperature for more focused summaries

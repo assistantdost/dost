@@ -106,9 +106,9 @@ app.whenReady().then(async () => {
 
 	createWindow();
 	await createServer(mainWindow);
+	await aiModel.init();
 	await toolRAG.init();
 	await tools.init();
-	await aiModel.init();
 	// const results = await tools.initializeMcpClients(true);
 	// console.log(
 	// 	"MCP clients initialized on startup:",
