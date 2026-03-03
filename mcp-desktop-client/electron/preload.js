@@ -80,8 +80,7 @@ contextBridge.exposeInMainWorld("ai", {
 	init: () => ipcRenderer.invoke("ai-init"),
 	selectChatModel: (provider, model) =>
 		ipcRenderer.invoke("ai-select-chat-model", provider, model),
-	setEnvStore: (key, value) =>
-		ipcRenderer.invoke("ai-set-env-store", key, value),
+	setEnvStore: (envData) => ipcRenderer.invoke("ai-set-env-store", envData),
 	getEnvStore: (key) => ipcRenderer.invoke("ai-get-env-store", key),
 	deleteEnvStore: (key) => ipcRenderer.invoke("ai-delete-env-store", key),
 	getState: () => ipcRenderer.invoke("ai-get-state"),

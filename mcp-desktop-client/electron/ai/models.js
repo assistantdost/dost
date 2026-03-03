@@ -18,6 +18,7 @@ export class AIModel extends EventEmitter {
 				chatModel: null,
 				summaryModel: null,
 				provider: null, // Now stores provider name (string)
+				envStore: null, // Added envStore to state
 			},
 			{
 				set: (target, prop, value) => {
@@ -55,6 +56,7 @@ export class AIModel extends EventEmitter {
 				Array.from(envVars).map((envVar) => [envVar, null]),
 			);
 			aiConfig.envStore = newEnvStore;
+			this.state.envStore = newEnvStore; // Set in state
 		} else {
 			// Load existing envs and set process.env
 			for (const envVar of envVars) {
@@ -63,6 +65,7 @@ export class AIModel extends EventEmitter {
 					process.env[envVar] = value;
 				}
 			}
+			this.state.envStore = envStore; // Set in state
 		}
 
 		if (
@@ -233,6 +236,7 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 			chatModel: this.state.chatModel,
 			summaryModel: this.state.summaryModel,
 			providers: this.state.providers,
+			envStore: this.state.envStore, // Include envStore in state
 		};
 	}
 
@@ -255,28 +259,47 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 	}
 
 	// Methods for store.aiConfig.envStore
-	setEnvStore(key, value) {
-		const aiConfig = store.get("aiConfig") || {};
+	setEnvStore(envData) {
+		let aiConfig = store.get("aiConfig") || {};
 		if (!aiConfig.envStore) aiConfig.envStore = {};
-		aiConfig.envStore[key] = value;
-		store.set("aiConfig", aiConfig);
-		// Also update process.env if setting a value
-		if (value !== null && value !== undefined) {
-			process.env[key] = value;
+		if (!this.state.envStore) this.state.envStore = {};
+
+		// envData can be { key: value, ... } or single key, value
+		if (typeof envData === "object" && envData !== null) {
+			// Multiple
+			for (const [key, value] of Object.entries(envData)) {
+				aiConfig.envStore[key] = value;
+				this.state.envStore[key] = value;
+				if (value !== null && value !== undefined) {
+					process.env[key] = value;
+				}
+			}
+		} else {
+			// Legacy single
+			const [key, value] = arguments;
+			aiConfig.envStore[key] = value;
+			this.state.envStore[key] = value;
+			if (value !== null && value !== undefined) {
+				process.env[key] = value;
+			}
 		}
+
+		store.set("aiConfig", aiConfig);
 	}
 
 	getEnvStore(key) {
-		const aiConfig = store.get("aiConfig") || {};
-		const envStore = aiConfig.envStore || {};
-		return envStore[key];
+		return this.state.envStore ? this.state.envStore[key] : null;
 	}
 
 	deleteEnvStore(key) {
-		const aiConfig = store.get("aiConfig") || {};
+		let aiConfig = store.get("aiConfig") || {};
 		if (aiConfig.envStore) {
 			delete aiConfig.envStore[key];
 			store.set("aiConfig", aiConfig);
+		}
+		// Update state (triggers emit)
+		if (this.state.envStore) {
+			delete this.state.envStore[key];
 		}
 		// Also remove from process.env
 		delete process.env[key];

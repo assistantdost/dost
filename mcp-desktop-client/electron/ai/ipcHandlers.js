@@ -14,9 +14,9 @@ export function registerAiIpcHandlers() {
 	});
 
 	// Handler for setEnvStore
-	ipcMain.handle("ai-set-env-store", async (event, key, value) => {
+	ipcMain.handle("ai-set-env-store", async (event, envData) => {
 		try {
-			aiModel.setEnvStore(key, value);
+			aiModel.setEnvStore(envData);
 			return { success: true };
 		} catch (error) {
 			console.error("Error setting env store:", error);

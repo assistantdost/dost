@@ -10,6 +10,7 @@ export const useAiStore = create((set, get) => ({
 	chatModel: null,
 	summaryModel: null,
 	provider: null, // Provider name (string)
+	envStore: null, // Added envStore
 
 	// ========== INITIALIZATION ==========
 
@@ -23,6 +24,7 @@ export const useAiStore = create((set, get) => ({
 				chatModel: state.chatModel || null,
 				summaryModel: state.summaryModel || null,
 				provider: state.provider || null,
+				envStore: state.envStore || null, // Added
 			});
 			console.log("✅ AI Store initialized with state:", state);
 		} catch (error) {
@@ -62,6 +64,7 @@ export const useAiStore = create((set, get) => ({
 				chatModel: state.chatModel || null,
 				summaryModel: state.summaryModel || null,
 				provider: state.provider || null,
+				envStore: state.envStore || null, // Added
 			});
 			console.log("🔄 AI state updated:", state);
 		});
@@ -93,21 +96,25 @@ export const useAiStore = create((set, get) => ({
 	// ========== ENV STORE MANAGEMENT ==========
 
 	// Set env store
-	setEnvStore: async (key, value) => {
+	setEnvStore: async (envData) => {
 		if (!isRenderer) return { success: false };
 
 		try {
-			const result = await window.ai.setEnvStore(key, value);
+			const result = await window.ai.setEnvStore(envData);
 			if (result.success) {
-				toast.success(`Environment variable "${key}" set`);
-				console.log(`✅ Set env: ${key}`);
+				toast.success(`Environment variables updated`);
+				console.log(`✅ Set env:`, envData);
+				// Update local state immediately for UI responsiveness
+				set((state) => ({
+					envStore: { ...state.envStore, ...envData },
+				}));
 			} else {
 				toast.error(`Failed to set env: ${result.error}`);
 			}
 			return result;
 		} catch (error) {
 			console.error("❌ Error setting env store:", error);
-			toast.error("Failed to set environment variable");
+			toast.error("Failed to set environment variables");
 			return { success: false, error: error.message };
 		}
 	},
@@ -160,6 +167,7 @@ export const useAiStore = create((set, get) => ({
 			chatModel: get().chatModel,
 			summaryModel: get().summaryModel,
 			provider: get().provider,
+			envStore: get().envStore, // Added
 		};
 	},
 }));
