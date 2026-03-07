@@ -3,6 +3,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "sonner";
 
+import RefreshToken from "@/hooks/refreshToken";
+
 const geistSans = Geist({
 	variable: "--font-geist-sans",
 	subsets: ["latin"],
@@ -28,6 +30,7 @@ export default function RootLayout({ children }) {
 				<Navbar />
 				{children}
 				<Toaster position="top-center" richColors />
+				<RefreshToken />
 			</body>
 		</html>
 	);
