@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional, Any
+from typing import Optional
 
 
 class UserBase(BaseModel):
@@ -11,15 +11,13 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: Optional[str] = None
-    google_sub: Optional[str] = None
+    password_hash: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
-    password: Optional[str] = None
-    google_sub: Optional[str] = None
+    password_hash: Optional[str] = None
     role: Optional[str] = None
     email_verified: Optional[bool] = None
     last_login: Optional[datetime] = None
@@ -27,14 +25,25 @@ class UserUpdate(BaseModel):
 
 class User(UserBase):
     id: str
-    password: Optional[str] = None
-    google_sub: Optional[str] = None
+    password_hash: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class OAuthAccountCreate(BaseModel):
+    user_id: str
+    provider: str
+    provider_user_id: str
+
+
+class APIKeyResponse(BaseModel):
+    id: str
+    name: str
+    key: str  # raw key, only shown once at creation
 
 
 class GoogleUser(BaseModel):
@@ -49,15 +58,7 @@ class LogGoogleUser(BaseModel):
 
     async def get_user(self):
         from crud.auth import CRUDAuth
-        user = await CRUDAuth.verify_google_token(self.payload)
-
-        user_data = {
-            "name": user["token_info"]["name"],
-            "email": user["token_info"]["email"],
-            "sub": user["token_info"]["sub"],
-            "picture": user["token_info"]["picture"],
-        }
-
+        user_data = await CRUDAuth.verify_google_token(self.payload)
         return GoogleUser(**user_data)
 
 

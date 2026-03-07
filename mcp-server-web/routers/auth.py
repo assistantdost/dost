@@ -34,7 +34,6 @@ async def signup(user_data: SignupRequest, db: AsyncSession = Depends(get_db)):
     return {
         "message": "User registered successfully. Please check your email for OTP.",
         "user_id": result["user_id"],
-
     }
 
 
