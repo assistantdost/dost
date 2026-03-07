@@ -11,6 +11,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import APIKeysSection from "@/components/dashboard/APIKeysSection";
 
 export default function DashboardPage() {
 	const router = useRouter();
@@ -38,7 +39,7 @@ export default function DashboardPage() {
 					</p>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					<Card>
 						<CardHeader>
 							<CardTitle>Profile</CardTitle>
@@ -69,32 +70,9 @@ export default function DashboardPage() {
 									</p>
 								</div>
 							)}
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>Quick Actions</CardTitle>
-							<CardDescription>
-								Manage your account
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-2">
 							<Button
 								variant="outline"
-								className="w-full justify-start"
-							>
-								View Services
-							</Button>
-							<Button
-								variant="outline"
-								className="w-full justify-start"
-							>
-								Settings
-							</Button>
-							<Button
-								variant="outline"
-								className="w-full justify-start text-red-500 hover:text-red-600"
+								className="w-full mt-4 text-red-500 hover:text-red-600"
 								onClick={() => {
 									logout();
 									router.push("/");
@@ -105,62 +83,8 @@ export default function DashboardPage() {
 						</CardContent>
 					</Card>
 
-					<Card>
-						<CardHeader>
-							<CardTitle>Getting Started</CardTitle>
-							<CardDescription>
-								Explore DOST-MCP features
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-2">
-							<p className="text-sm text-muted-foreground">
-								Welcome to the Multi-Service AI Platform. Start
-								exploring our features and integrations.
-							</p>
-							<Button className="w-full">
-								View Documentation
-							</Button>
-						</CardContent>
-					</Card>
+					<APIKeysSection />
 				</div>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Available Services</CardTitle>
-						<CardDescription>
-							Integrated APIs and Tools
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-							{[
-								{ name: "Gmail", status: "Available" },
-								{ name: "Calendar", status: "Available" },
-								{ name: "Spotify", status: "Available" },
-								{ name: "Weather", status: "Available" },
-								{
-									name: "Local Automation",
-									status: "Available",
-								},
-								{ name: "LangGraph", status: "Available" },
-								{ name: "Redis Cache", status: "Active" },
-								{ name: "OAuth2", status: "Active" },
-							].map((service, index) => (
-								<div
-									key={index}
-									className="p-4 border rounded-lg text-center hover:border-primary transition-colors"
-								>
-									<p className="font-medium">
-										{service.name}
-									</p>
-									<p className="text-xs text-green-500">
-										{service.status}
-									</p>
-								</div>
-							))}
-						</div>
-					</CardContent>
-				</Card>
 			</div>
 		</div>
 	);

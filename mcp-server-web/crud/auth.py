@@ -2,19 +2,30 @@ import random
 import valkey
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from crud.users import CRUDUser
-from schemas.users import UserCreate, UserUpdate, GoogleUser
+from crud.users import CRUDUser, CRUDOAuthAccount
+from schemas.users import UserCreate, UserUpdate, GoogleUser, OAuthAccountCreate
 from middleware.send_email import create_message
 from middleware import gmail_service
 import os
 import bcrypt
-from google.auth.transport import requests
-from google.oauth2 import id_token
-import google.auth.exceptions
+import httpx
+from authlib.jose import JsonWebToken
 
 # Redis connection
 redis_client = valkey.Valkey.from_url(
     os.getenv("REDIS_URL", "redis://localhost:6379"))
+
+_google_jwks_cache = None
+
+
+async def _get_google_jwks() -> dict:
+    global _google_jwks_cache
+    if _google_jwks_cache is None:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://www.googleapis.com/oauth2/v3/certs")
+            resp.raise_for_status()
+            _google_jwks_cache = resp.json()
+    return _google_jwks_cache
 
 
 class CRUDAuth:
@@ -51,50 +62,52 @@ class CRUDAuth:
 
     @staticmethod
     async def verify_google_token(payload: dict) -> dict:
+        id_token_str = payload.get("credential") or payload.get("id_token")
+        if not id_token_str:
+            raise ValueError("No ID token found in payload")
+
+        CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+        if not CLIENT_ID:
+            raise ValueError("GOOGLE_CLIENT_ID not set")
+
+        jwks = await _get_google_jwks()
+        jwt_obj = JsonWebToken(algorithms=["RS256"])
         try:
-            # Extract the ID token from the payload
-            id_token_str = payload.get("credential") or payload.get("id_token")
-            if not id_token_str:
-                raise ValueError("No ID token found in payload")
-
-            # Verify the token
-            CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-            if not CLIENT_ID:
-                raise ValueError("GOOGLE_CLIENT_ID not set")
-
-            request = requests.Request()
-            token_info = id_token.verify_oauth2_token(
-                id_token_str, request, CLIENT_ID)
-
-            return {
-                "token_info": token_info,
-                "user": {
-                    "name": token_info.get("name"),
-                    "email": token_info.get("email"),
-                    "sub": token_info.get("sub"),
-                    "picture": token_info.get("picture"),
-                }
-            }
-        except google.auth.exceptions.GoogleAuthError as e:
-            raise ValueError(f"Invalid Google token: {str(e)}")
+            claims = jwt_obj.decode(id_token_str, jwks)
+            claims.validate()
         except Exception as e:
-            raise ValueError(f"Error verifying Google token: {str(e)}")
+            raise ValueError(f"Invalid Google token: {str(e)}")
+
+        aud = claims.get("aud")
+        if isinstance(aud, str):
+            aud = [aud]
+        if CLIENT_ID not in aud:
+            raise ValueError("Token audience mismatch")
+
+        return {
+            "name": claims.get("name"),
+            "email": claims.get("email"),
+            "sub": claims.get("sub"),
+            "picture": claims.get("picture"),
+        }
 
     @staticmethod
     async def signup(user_data: dict, db: AsyncSession):
+        password = user_data.pop("password", None)
         user_create = UserCreate(**user_data)
+
         db_user = await CRUDUser.get_user_by_email(db, user_create.email)
         if db_user:
             if db_user.email_verified:
                 return {"error": "Email already registered"}
             else:
-                # Delete unverified user
+                # Delete unverified user and start fresh
                 await CRUDUser.delete_user(db, db_user.id)
 
-        if user_create.password:
-            hashed_password = bcrypt.hashpw(
-                user_create.password.encode('utf-8'), bcrypt.gensalt())
-            user_create.password = hashed_password.decode('utf-8')
+        if password:
+            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            user_create.password_hash = hashed.decode('utf-8')
+
         created_user = await CRUDUser.create_user(db, user_create)
 
         otp = CRUDAuth.generate_otp()
@@ -103,7 +116,7 @@ class CRUDAuth:
 
         return {
             "message": "Signup successful. Check your email for OTP to verify.",
-            "user_id": str(created_user.id)  # Added user_id to response
+            "user_id": str(created_user.id),
         }
 
     @staticmethod
@@ -120,9 +133,9 @@ class CRUDAuth:
         db_user = await CRUDUser.get_user_by_email(db, email)
         if not db_user:
             return {"error": "User not found"}
-        if not db_user.password and db_user.google_sub:
-            return {"error": "Please sign in with Google"}
-        if not bcrypt.checkpw(password.encode('utf-8'), db_user.password.encode('utf-8')):
+        if not db_user.password_hash:
+            return {"error": "This account uses OAuth login. Please sign in with your provider."}
+        if not bcrypt.checkpw(password.encode('utf-8'), db_user.password_hash.encode('utf-8')):
             return {"error": "Invalid credentials"}
         if not db_user.email_verified:
             return {"error": "Email not verified"}
@@ -133,30 +146,45 @@ class CRUDAuth:
     @staticmethod
     async def google_signin(payload: dict, db: AsyncSession):
         try:
-            verified_data = await CRUDAuth.verify_google_token(payload)
-            google_user_data = verified_data["user"]
-
+            google_user_data = await CRUDAuth.verify_google_token(payload)
             google_user = GoogleUser(**google_user_data)
 
-            # Check if user exists by google_sub
-            db_user = await CRUDUser.get_user_by_google_sub(db, google_user.sub)
-            if not db_user:
-                # Check if user exists by email
+            # Check if this OAuth account is already linked
+            oauth_account = await CRUDOAuthAccount.get_by_provider(
+                db, "google", google_user.sub
+            )
+            if oauth_account:
+                db_user = await CRUDUser.get_user_by_id(db, oauth_account.user_id)
+            else:
                 db_user = await CRUDUser.get_user_by_email(db, google_user.email)
                 if db_user:
-                    # Link Google account to existing user
-                    await CRUDUser.update_user(db, db_user.id, UserUpdate(google_sub=google_user.sub, email_verified=True))
+                    # Link Google to existing user
+                    await CRUDOAuthAccount.create(db, OAuthAccountCreate(
+                        user_id=str(db_user.id),
+                        provider="google",
+                        provider_user_id=google_user.sub,
+                    ))
+                    if not db_user.email_verified:
+                        await CRUDUser.update_user(
+                            db, db_user.id, UserUpdate(email_verified=True)
+                        )
                 else:
-                    # Create new user
+                    # New user via Google
                     user_create = UserCreate(
                         name=google_user.name,
                         email=google_user.email,
-                        google_sub=google_user.sub,
-                        email_verified=True
+                        email_verified=True,
                     )
                     db_user = await CRUDUser.create_user(db, user_create)
+                    await CRUDOAuthAccount.create(db, OAuthAccountCreate(
+                        user_id=str(db_user.id),
+                        provider="google",
+                        provider_user_id=google_user.sub,
+                    ))
 
-            await CRUDUser.update_user(db, db_user.id, UserUpdate(last_login=datetime.now(timezone.utc)))
+            await CRUDUser.update_user(
+                db, db_user.id, UserUpdate(last_login=datetime.now(timezone.utc))
+            )
             return {"user": db_user}
         except ValueError as e:
             return {"error": str(e)}
@@ -190,12 +218,10 @@ class CRUDAuth:
         if CRUDAuth.verify_otp(email, otp):
             db_user = await CRUDUser.get_user_by_email(db, email)
             if db_user:
-                # Hash the new password
-                hashed_password = bcrypt.hashpw(
-                    new_password.encode('utf-8'), bcrypt.gensalt())
-                hashed_password_str = hashed_password.decode('utf-8')
-
-                # Update user password
-                await CRUDUser.update_user(db, db_user.id, UserUpdate(password=hashed_password_str))
+                hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+                await CRUDUser.update_user(
+                    db, db_user.id,
+                    UserUpdate(password_hash=hashed.decode('utf-8'))
+                )
                 return {"message": "Password reset successfully"}
         return {"error": "Invalid or expired OTP"}

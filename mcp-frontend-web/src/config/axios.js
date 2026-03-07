@@ -19,6 +19,8 @@ apiClient.interceptors.request.use(
 	(config) => {
 		// Add auth token if available
 		const token = useAuthStore.getState().token;
+		console.log("Token in interceptor:", token);
+
 		if (token) {
 			config.headers.Authorization = `Bearer ${token}`;
 		}
@@ -29,7 +31,7 @@ apiClient.interceptors.request.use(
 		// Log request (excluding sensitive data)
 		if (process.env.NODE_ENV === "development") {
 			console.log(
-				`API Request: ${config.method?.toUpperCase()} ${config.url}`
+				`API Request: ${config.method?.toUpperCase()} ${config.url}`,
 			);
 
 			// Only log data if it doesn't contain sensitive information
@@ -52,7 +54,7 @@ apiClient.interceptors.request.use(
 	(error) => {
 		console.error("Request interceptor error:", error);
 		return Promise.reject(error);
-	}
+	},
 );
 
 // Response interceptor
@@ -77,7 +79,8 @@ apiClient.interceptors.response.use(
 				case 401:
 					// Unauthorized - clear token and redirect to login
 					unAuthorisedLogout(
-						data?.message || "Session expired. Please log in again."
+						data?.message ||
+							"Session expired. Please log in again.",
 					);
 
 					// Only redirect if not already on login page
@@ -90,11 +93,11 @@ apiClient.interceptors.response.use(
 					// Forbidden - show appropriate message
 					toast.error(
 						data?.message ||
-							"Access forbidden - insufficient permissions"
+							"Access forbidden - insufficient permissions",
 					);
 					console.error(
 						data?.message ||
-							"Access forbidden - insufficient permissions"
+							"Access forbidden - insufficient permissions",
 					);
 					break;
 
@@ -102,31 +105,33 @@ apiClient.interceptors.response.use(
 					// Rate limited
 					console.error(
 						data?.message ||
-							"Too many requests - please wait before trying again"
+							"Too many requests - please wait before trying again",
 					);
 					toast.error(
 						data?.message ||
-							"Too many requests - please wait before trying again"
+							"Too many requests - please wait before trying again",
 					);
 					break;
 
 				case 500:
 					// Server error
 					console.error(
-						data?.message || "Server error - please try again later"
+						data?.message ||
+							"Server error - please try again later",
 					);
 					toast.error(
-						data?.message || "Server error - please try again later"
+						data?.message ||
+							"Server error - please try again later",
 					);
 					break;
 
 				default:
 					console.error(
 						`API Error ${status}:`,
-						data?.message || data?.detail || "Unknown error"
+						data?.message || data?.detail || "Unknown error",
 					);
 					toast.error(
-						data?.message || data?.detail || "An error occurred"
+						data?.message || data?.detail || "An error occurred",
 					);
 			}
 		} else if (error.request) {
@@ -140,7 +145,7 @@ apiClient.interceptors.response.use(
 		}
 
 		return Promise.reject(error);
-	}
+	},
 );
 
 // Helper functions for common API operations

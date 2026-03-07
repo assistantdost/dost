@@ -75,16 +75,20 @@ async def protected_route_cache_user(credentials: HTTPAuthorizationCredentials =
 
             # Cache until token expires
             user = serialize_user(user)
+            if not user:
+                raise HTTPException(status_code=401, detail="Invalid Auth Token")
             user_dict = user.dict()
-            user_dict.pop('password', None)  # Remove password from cache
+            user_dict.pop('password_hash', None)  # Remove password_hash from cache
             redis_client.set(f"user:{user_id}",
                              json.dumps(user_dict, default=str), ex=expiry_seconds)
+            return user_dict
         else:
             print("User found in cache")
             user = json.loads(user_key.decode('utf-8'))
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid Auth Token")
-        return user
+            if not user:
+                raise HTTPException(status_code=401, detail="Invalid Auth Token")
+            user.pop('password_hash', None)  # Ensure password_hash is removed
+            return user
 
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")

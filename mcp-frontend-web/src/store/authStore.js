@@ -42,7 +42,7 @@ export const useAuthStore = create(
 					const response = await auth.signup(userData);
 					set({ loading: false });
 					toast.success(
-						response?.message || "OTP sent successfully!"
+						response?.message || "OTP sent successfully!",
 					);
 					return response;
 				} catch (error) {
@@ -111,6 +111,7 @@ export const useAuthStore = create(
 				try {
 					const response = await auth.login(credentials);
 					const { token, user, message } = response;
+					console.log("Login response:", response);
 					set({ token, user, loading: false, logged: true });
 					toast.success(message || "Login successful!");
 					return response;
@@ -174,7 +175,7 @@ export const useAuthStore = create(
 					const response = await auth.forgotPassword(email);
 					set({ loading: false, resetPasswordEmail: email });
 					toast.success(
-						response?.message || "Password reset OTP sent!"
+						response?.message || "Password reset OTP sent!",
 					);
 					return response;
 				} catch (error) {
@@ -232,6 +233,6 @@ export const useAuthStore = create(
 			onRehydrateStorage: () => (state) => {
 				state.hydrated = true;
 			},
-		}
-	)
+		},
+	),
 );
