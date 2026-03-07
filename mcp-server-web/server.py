@@ -14,6 +14,7 @@ app.add_middleware(
         "http://localhost:5173",   # Vite dev server
         "http://localhost:5599",   # Electron Express server
         "app://localhost",         # Packaged Electron app
+        "http://localhost:3000",   # Next.js dev server project frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],

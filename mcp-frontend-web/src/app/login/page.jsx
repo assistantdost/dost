@@ -16,7 +16,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
@@ -88,134 +88,124 @@ export default function LoginPage() {
 	};
 
 	return (
-		<GoogleOAuthProvider
-			clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
-		>
-			<div className="flex px-4 items-center justify-center min-h-screen">
-				<Card className="w-full max-w-md">
-					<CardHeader>
-						<CardTitle>Login to DOST MCP</CardTitle>
-						<CardDescription>
-							Enter your credentials to access your account.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<form onSubmit={handleSubmit} className="space-y-4">
-							<div>
-								<Label htmlFor="email" className="mb-1">
-									Email
-								</Label>
-								<Input
-									id="email"
-									name="email"
-									type="email"
-									placeholder="Enter your email"
-									value={formData.email}
-									onChange={handleChange}
-									required
-								/>
-							</div>
-
-							<div>
-								<Label htmlFor="password" className="mb-1">
-									Password
-								</Label>
-								<div className="relative">
-									<Input
-										id="password"
-										name="password"
-										placeholder="Enter your password"
-										type={
-											showPassword ? "text" : "password"
-										}
-										value={formData.password}
-										onChange={handleChange}
-										required
-										className="pr-10"
-									/>
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-										onClick={() =>
-											setShowPassword(!showPassword)
-										}
-										aria-label={
-											showPassword
-												? "Hide password"
-												: "Show password"
-										}
-									>
-										{showPassword ? (
-											<EyeOff className="h-4 w-4" />
-										) : (
-											<Eye className="h-4 w-4" />
-										)}
-									</Button>
-								</div>
-								<div className="flex justify-end mt-1">
-									<Link
-										href="/forgot-password"
-										className="text-sm text-primary hover:underline"
-									>
-										Forgot password?
-									</Link>
-								</div>
-							</div>
-
-							{error && (
-								<Alert variant="destructive">
-									<AlertDescription>{error}</AlertDescription>
-								</Alert>
-							)}
-							<Button
-								type="submit"
-								className="w-full"
-								disabled={loading}
-							>
-								{loading ? (
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								) : null}
-								Login
-							</Button>
-						</form>
-
-						<div className="relative my-4">
-							<div className="absolute inset-0 flex items-center">
-								<Separator />
-							</div>
-							<div className="relative flex justify-center text-xs uppercase">
-								<span className="bg-background px-2 text-muted-foreground">
-									Or continue with
-								</span>
-							</div>
-						</div>
-
-						<div className="flex justify-center">
-							<GoogleLogin
-								onSuccess={handleGoogleSuccess}
-								onError={handleGoogleError}
-								theme="outline"
-								size="large"
-								text="signin_with"
-								shape="rectangular"
-								logo_alignment="left"
+		<div className="flex px-4 items-center justify-center min-h-screen">
+			<Card className="w-full max-w-md">
+				<CardHeader>
+					<CardTitle>Login to DOST MCP</CardTitle>
+					<CardDescription>
+						Enter your credentials to access your account.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<form onSubmit={handleSubmit} className="space-y-4">
+						<div>
+							<Label htmlFor="email" className="mb-1">
+								Email
+							</Label>
+							<Input
+								id="email"
+								name="email"
+								type="email"
+								placeholder="Enter your email"
+								value={formData.email}
+								onChange={handleChange}
+								required
 							/>
 						</div>
 
-						<div className="mt-4 text-center text-sm text-muted-foreground">
-							Don't have an account?{" "}
-							<Link
-								href="/signup"
-								className="text-primary hover:underline"
-							>
-								Sign up
-							</Link>
+						<div>
+							<Label htmlFor="password" className="mb-1">
+								Password
+							</Label>
+							<div className="relative">
+								<Input
+									id="password"
+									name="password"
+									placeholder="Enter your password"
+									type={showPassword ? "text" : "password"}
+									value={formData.password}
+									onChange={handleChange}
+									required
+									className="pr-10"
+								/>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+									onClick={() =>
+										setShowPassword(!showPassword)
+									}
+									aria-label={
+										showPassword
+											? "Hide password"
+											: "Show password"
+									}
+								>
+									{showPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
+								</Button>
+							</div>
+							<div className="flex justify-end mt-1">
+								<Link
+									href="/forgot-password"
+									className="text-sm text-primary hover:underline"
+								>
+									Forgot password?
+								</Link>
+							</div>
 						</div>
-					</CardContent>
-				</Card>
-			</div>
-		</GoogleOAuthProvider>
+
+						{error && (
+							<Alert variant="destructive">
+								<AlertDescription>{error}</AlertDescription>
+							</Alert>
+						)}
+						<Button
+							type="submit"
+							className="w-full"
+							disabled={loading}
+						>
+							{loading ? (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							) : null}
+							Login
+						</Button>
+					</form>
+
+					<div className="relative my-4">
+						<div className="absolute inset-0 flex items-center">
+							<Separator />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-background px-2 text-muted-foreground">
+								Or continue with
+							</span>
+						</div>
+					</div>
+
+					<div className="flex justify-center">
+						<GoogleSignInButton
+							onSuccess={handleGoogleSuccess}
+							onError={handleGoogleError}
+							text="signin_with"
+						/>
+					</div>
+
+					<div className="mt-4 text-center text-sm text-muted-foreground">
+						Don't have an account?{" "}
+						<Link
+							href="/signup"
+							className="text-primary hover:underline"
+						>
+							Sign up
+						</Link>
+					</div>
+				</CardContent>
+			</Card>
+		</div>
 	);
 }
