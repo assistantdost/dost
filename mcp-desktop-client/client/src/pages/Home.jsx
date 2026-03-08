@@ -18,7 +18,9 @@ import { useAiStore } from "@/store/aiStore";
 function Home() {
 	const { logged, user } = useAuthStore();
 	const { addChat } = useChatStore();
-	const { envStore, initialize, listenForUpdates } = useAiStore();
+	const chatModel = useAiStore((state) => state.chatModel);
+	const provider = useAiStore((state) => state.provider);
+	const envStore = useAiStore((state) => state.envStore);
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [welcomeMessage, setWelcomeMessage] = useState("");
@@ -83,6 +85,8 @@ function Home() {
 			return;
 
 		createChatMutation.mutate({
+			chat_model_id: chatModel?.id,
+			chat_model_provider: provider,
 			first_message: {
 				role: "user",
 				parts: [

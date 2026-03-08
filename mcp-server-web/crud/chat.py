@@ -44,7 +44,9 @@ async def create_chat(db: AsyncSession, chat_data: ChatCreate, user_id: str) -> 
     # Create chat
     db_chat = ChatModel(
         user_id=user_id,
-        name=chat_name
+        name=chat_name,
+        chat_model_id=chat_data.chat_model_id,
+        chat_model_provider=chat_data.chat_model_provider
     )
     db.add(db_chat)
     await db.flush()  # Get chat.id

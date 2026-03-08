@@ -15,8 +15,9 @@ class Chat(Base):
     id = Column(String, default=generate_ulid.__func__,
                 primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    name = Column(String(255), nullable=False)
-
+    name = Column(String(50), nullable=False)
+    chat_model_id = Column(String(60), nullable=False)
+    chat_model_provider = Column(String(60), nullable=True)  
     summary = Column(Text, nullable=True)
     last_summarized_message_id = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

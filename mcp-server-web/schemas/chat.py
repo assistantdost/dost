@@ -36,6 +36,8 @@ class ChatBase(BaseModel):
 
 
 class ChatCreate(BaseModel):
+    chat_model_id: str
+    chat_model_provider : str
     first_message: MessageCreate
 
 
@@ -56,6 +58,7 @@ class ChatSummaryUpdate(BaseModel):
 class Chat(ChatBase):
     id: str
     user_id: str
+    chat_model_id: str
     created_at: datetime
     updated_at: datetime
     summary: Optional[str] = None
@@ -69,10 +72,10 @@ class Chat(ChatBase):
 class ChatMeta(BaseModel):
     id: str
     name: str
+    chat_model_id: str
+    chat_model_provider: str
     created_at: datetime
     updated_at: datetime
-    last_message: Optional[str] = None
-    message_count: int = 0
     summary: Optional[str] = None
     last_summarized_message_id: Optional[str] = None
 
