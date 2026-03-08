@@ -37,7 +37,7 @@ import { SummarizingMessages } from "@/components/chat/SummarizingMessages";
 
 import { Response } from "@/components/ai/response";
 
-import AiModelSelector from "@/components/ai/model-selector";
+import { ChatLockedModel } from "@/components/ai/model-selector";
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -171,7 +171,11 @@ const MemoizedMessagePart = memo(({ part, messageId, index, status, role }) => {
 
 MemoizedMessagePart.displayName = "MemoizedMessagePart";
 
-export default function ChatWindow({ chatId, initialMessages = [] }) {
+export default function ChatWindow({
+	chatId,
+	initialMessages = [],
+	chatLockedModel = {},
+}) {
 	const [input, setInput] = useState("");
 	const [isUserScrolling, setIsUserScrolling] = useState(false);
 	const [summarizing, setSummarizing] = useState(false);
@@ -589,7 +593,10 @@ export default function ChatWindow({ chatId, initialMessages = [] }) {
 				/>
 				<PromptInputToolbar>
 					<div className="flex-1 flex justify-between">
-						<AiModelSelector />
+						<ChatLockedModel
+							provider={chatLockedModel.provider}
+							modelId={chatLockedModel.modelId}
+						/>
 						<PromptInputSubmit
 							disabled={!input.trim() || status === "streaming"}
 							status={status}

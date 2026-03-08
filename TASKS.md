@@ -1,4 +1,3 @@
-- Model selector in chat
 - api key handling in mcp-server-remote
 - logout flow
 - multi user client handling

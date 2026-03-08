@@ -238,3 +238,28 @@ export default function AiModelSelector() {
 		</div>
 	);
 }
+
+export function ChatLockedModel({ provider, modelId }) {
+	const providers = useAiStore((state) => state.providers);
+	const model = providers?.[provider]?.models?.[modelId];
+
+	if (!model) {
+		return (
+			<Button className="min-w-20 justify-between" variant="outline">
+				Unknown Model
+			</Button>
+		);
+	}
+
+	const data = {
+		name: model?.name || "Unknown Model",
+		chefSlug: provider,
+	};
+
+	return (
+		<Button className="min-w-20 justify-between" variant="ghost">
+			{data?.chefSlug && <ModelSelectorLogo provider={data.chefSlug} />}
+			{data?.name && <ModelSelectorName>{data.name}</ModelSelectorName>}
+		</Button>
+	);
+}

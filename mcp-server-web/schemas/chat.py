@@ -59,6 +59,7 @@ class Chat(ChatBase):
     id: str
     user_id: str
     chat_model_id: str
+    chat_model_provider: str
     created_at: datetime
     updated_at: datetime
     summary: Optional[str] = None

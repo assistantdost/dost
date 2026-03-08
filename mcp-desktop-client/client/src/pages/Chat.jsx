@@ -43,6 +43,10 @@ function Chat() {
 				key={chatId}
 				chatId={chatId}
 				initialMessages={chat?.messages || []}
+				chatLockedModel={{
+					provider: chat?.chat_model_provider,
+					modelId: chat?.chat_model_id,
+				}}
 			/>
 		</section>
 	);
