@@ -16,6 +16,7 @@ class Chat(Base):
                 primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
+
     summary = Column(Text, nullable=True)
     last_summarized_message_id = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

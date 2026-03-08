@@ -11,7 +11,6 @@ async def get_user_chats(db: AsyncSession, user_id: str) -> List[ChatModel]:
     """Get all chats for a user"""
     result = await db.execute(
         select(ChatModel)
-        .options(selectinload(ChatModel.messages))
         .where(ChatModel.user_id == user_id)
         .order_by(ChatModel.updated_at.desc())  # ✅ most recently updated first
     )

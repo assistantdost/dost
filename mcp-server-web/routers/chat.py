@@ -19,27 +19,11 @@ async def get_user_chats(
 
     result = []
     for chat in chats:
-        last_message = None
-        if chat.messages:
-            # Get the last assistant message text
-            assistant_messages = [
-                m for m in chat.messages if m.role == "assistant"]
-            if assistant_messages:
-                last_msg = assistant_messages[-1]
-                # Extract text from parts
-                for item in last_msg.parts:
-                    if item.get("type") == "text":
-                        last_message = item.get("text", "")[
-                            :100]  # First 100 chars
-                        break
-
         result.append(ChatMeta(
             id=chat.id,
             name=chat.name,
             created_at=chat.created_at,
             updated_at=chat.updated_at,
-            last_message=last_message,
-            message_count=len(chat.messages),
             summary=chat.summary,
             last_summarized_message_id=chat.last_summarized_message_id
         ))
