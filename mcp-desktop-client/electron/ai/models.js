@@ -172,8 +172,15 @@ export class AIModel extends EventEmitter {
 	async chatAgent(tools) {
 		// Dynamically select model based on this.state.provider and this.state.chatModel
 		let model;
+		let includedTools = {};
 		if (this.state.provider === "groq") {
 			model = groq(this.state.chatModel.id);
+			if (this.state.chatModel.capabilities.browser_search === true) {
+				console.log(
+					"Including browser_search tool based on model capabilities",
+				);
+				includedTools.browser_search = groq.tools.browserSearch({});
+			}
 		} else if (this.state.provider === "google") {
 			model = google(this.state.chatModel.id);
 		} else {
@@ -184,7 +191,7 @@ export class AIModel extends EventEmitter {
 			model,
 			tools: {
 				...tools,
-				browser_search: groq.tools.browserSearch({}),
+				...includedTools,
 			},
 			toolChoice: "auto",
 			stopWhen: stepCountIs(8),

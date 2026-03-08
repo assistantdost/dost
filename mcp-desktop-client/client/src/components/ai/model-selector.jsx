@@ -15,6 +15,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useAiStore } from "@/store/aiStore";
 
@@ -105,6 +106,7 @@ export default function AiModelSelector() {
 			Object.values(provider.models).map((model) => ({
 				id: model.id,
 				name: model.name,
+				capabilities: model.capabilities,
 				chef: providerKey,
 				chefSlug: providerKey,
 				providers: [providerKey],
@@ -186,7 +188,7 @@ export default function AiModelSelector() {
 											<ModelSelectorName>
 												{model.name}
 											</ModelSelectorName>
-											<ModelSelectorLogoGroup>
+											{/* <ModelSelectorLogoGroup>
 												{model.providers.map(
 													(provider) => (
 														<ModelSelectorLogo
@@ -195,7 +197,32 @@ export default function AiModelSelector() {
 														/>
 													),
 												)}
-											</ModelSelectorLogoGroup>
+											</ModelSelectorLogoGroup> */}
+											<div className="flex space-x-1">
+												{Object.entries(
+													model.capabilities,
+												)
+													.filter(
+														([key, value]) =>
+															value &&
+															[
+																"tool_use",
+																"reasoning",
+																"browser_search",
+															].includes(key),
+													)
+													.map(([key]) => (
+														<Badge
+															variant="outline"
+															className=""
+															key={key}
+														>
+															{key}
+														</Badge>
+													))}
+											</div>
+											{/* <p>{model.capabilities}</p> */}
+
 											{chatModel?.id === model.id ? (
 												<CheckIcon className="ml-auto size-4" />
 											) : (
