@@ -75,7 +75,37 @@ export const useAiStore = create((set, get) => ({
 
 	// Select chat model
 	selectChatModel: async (provider, model) => {
+		const envStore = get().envStore;
+		const providers = get().providers;
+		const chatModel = get().chatModel;
+		const currentProvider = get().provider;
+
 		if (!isRenderer) return { success: false };
+
+		const hasApiKey =
+			envStore &&
+			envStore[provider] &&
+			envStore[provider][providers[provider].env_var];
+
+		if (!hasApiKey) {
+			toast.warning(`API key not set for ${provider}.`, {
+				description: `Please add your API key for ${provider} in the settings to use this model.`,
+			});
+			return { success: false, error: "API key not set" };
+		}
+
+		// To skip re-selecting the current model
+		if (
+			chatModel &&
+			provider === currentProvider &&
+			model === chatModel.id
+		) {
+			// toast.info(`Already using ${provider} - ${chatModel.name}`);
+			// console.log(
+			// 	`ℹ️ Model ${provider} - ${chatModel.name} is already selected.`,
+			// );
+			return { success: true };
+		}
 
 		try {
 			const result = await window.ai.selectChatModel(provider, model);

@@ -57,6 +57,8 @@ import { updateChatSummary, updateChat } from "@/api/chat";
 
 import { isWithinTokenLimit } from "gpt-tokenizer/model/gpt-4o";
 
+import { ulid } from "ulid";
+
 import axios from "axios";
 
 // ✅ Environment-based API URL
@@ -191,6 +193,7 @@ export default function ChatWindow({
 	const { messages, setMessages, sendMessage, status, error } = useChat({
 		id: chatId,
 		initialMessages,
+		generateId: () => ulid(),
 		transport: new DefaultChatTransport({
 			api: `${API_URL}/api/chat`,
 			async prepareSendMessagesRequest({ messages, id }) {
