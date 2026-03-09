@@ -239,20 +239,19 @@ export default function AiModelSelector() {
 	);
 }
 
-export function ChatLockedModel({ provider, modelId }) {
-	const providers = useAiStore((state) => state.providers);
-	const model = providers?.[provider]?.models?.[modelId];
+export function ChatLockedModel({ model }) {
+	const { id, name, provider } = model || {};
 
 	if (!model) {
 		return (
-			<Button className="min-w-20 justify-between" variant="outline">
+			<Button className="min-w-20 justify-between" variant="ghost">
 				Unknown Model
 			</Button>
 		);
 	}
 
 	const data = {
-		name: model?.name || "Unknown Model",
+		name: name || "Unknown Model",
 		chefSlug: provider,
 	};
 

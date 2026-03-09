@@ -1,14 +1,18 @@
 import React, { useEffect } from "react";
+import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ChatWindow from "@/components/ChatWindow";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
+import { useAiStore } from "@/store/aiStore";
 import { getChat } from "@/api/chat";
 
 function Chat() {
 	const { chatId } = useParams();
 	const { setMessages, setSummary, setActiveChatId } = useChatStore();
+	const selectChatModel = useAiStore((state) => state.selectChatModel);
+	const providers = useAiStore((state) => state.providers);
 	const { logged, token } = useAuthStore();
 
 	// Fetch chat with React Query - only when logged and has token
@@ -33,6 +37,17 @@ function Chat() {
 		if (chat?.summary !== undefined) {
 			setSummary(chat.summary, chat.last_summarized_message_id);
 		}
+
+		// If chat has a locked model, try to select it
+		if (chat?.chat_model !== undefined) {
+			const { provider, name, id } = chat?.chat_model;
+			const modelFound = providers?.[provider].models?.[id] !== null;
+			if (modelFound) {
+				selectChatModel(provider, id);
+			} else {
+				toast.warning(`Chat model ${provider} - ${name} not found.`);
+			}
+		}
 		setActiveChatId(chatId);
 	}, [chat]);
 
@@ -43,10 +58,7 @@ function Chat() {
 				key={chatId}
 				chatId={chatId}
 				initialMessages={chat?.messages || []}
-				chatLockedModel={{
-					provider: chat?.chat_model_provider,
-					modelId: chat?.chat_model_id,
-				}}
+				chatLockedModel={chat?.chat_model || null}
 			/>
 		</section>
 	);

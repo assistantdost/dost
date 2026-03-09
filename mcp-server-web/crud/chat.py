@@ -45,8 +45,7 @@ async def create_chat(db: AsyncSession, chat_data: ChatCreate, user_id: str) -> 
     db_chat = ChatModel(
         user_id=user_id,
         name=chat_name,
-        chat_model_id=chat_data.chat_model_id,
-        chat_model_provider=chat_data.chat_model_provider
+        chat_model=chat_data.chat_model.model_dump()
     )
     db.add(db_chat)
     await db.flush()  # Get chat.id
@@ -56,7 +55,7 @@ async def create_chat(db: AsyncSession, chat_data: ChatCreate, user_id: str) -> 
         id=chat_data.first_message.id,
         chat_id=db_chat.id,
         role=chat_data.first_message.role,
-        parts=[item.dict() for item in chat_data.first_message.parts]
+        parts=[item.model_dump() for item in chat_data.first_message.parts]
     )
     db.add(db_message)
 
@@ -86,7 +85,7 @@ async def update_chat_messages(db: AsyncSession, chat_id: str, user_id: str, cha
                 id=message_data.id,
                 chat_id=chat.id,
                 role=message_data.role,
-                parts=[item.dict() for item in message_data.parts],
+                parts=[item.model_dump() for item in message_data.parts],
                 created_at=base_time +
                 timedelta(milliseconds=i)  # ✅ +0ms, +1ms
             )

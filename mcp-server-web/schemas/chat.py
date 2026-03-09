@@ -3,6 +3,11 @@ from typing import List, Optional, Any, Dict
 from datetime import datetime
 
 
+class ChatModelInfo(BaseModel):
+    id: str
+    name: str
+    provider: str
+
 class PartsItem(BaseModel):
     type: str  # text, reasoning, tool-call, tool-result
     text: Optional[str] = None
@@ -36,8 +41,7 @@ class ChatBase(BaseModel):
 
 
 class ChatCreate(BaseModel):
-    chat_model_id: str
-    chat_model_provider : str
+    chat_model: ChatModelInfo
     first_message: MessageCreate
 
 
@@ -58,8 +62,7 @@ class ChatSummaryUpdate(BaseModel):
 class Chat(ChatBase):
     id: str
     user_id: str
-    chat_model_id: str
-    chat_model_provider: str
+    chat_model: ChatModelInfo
     created_at: datetime
     updated_at: datetime
     summary: Optional[str] = None
@@ -73,8 +76,7 @@ class Chat(ChatBase):
 class ChatMeta(BaseModel):
     id: str
     name: str
-    chat_model_id: str
-    chat_model_provider: str
+    chat_model: ChatModelInfo
     created_at: datetime
     updated_at: datetime
     summary: Optional[str] = None

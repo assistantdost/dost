@@ -22,8 +22,7 @@ async def get_user_chats(
         result.append(ChatMeta(
             id=chat.id,
             name=chat.name,
-            chat_model_id=chat.chat_model_id,
-            chat_model_provider=chat.chat_model_provider,
+            chat_model=chat.chat_model,
             created_at=chat.created_at,
             updated_at=chat.updated_at,
             summary=chat.summary,

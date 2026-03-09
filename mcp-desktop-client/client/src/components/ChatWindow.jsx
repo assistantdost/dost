@@ -52,6 +52,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useChatStore } from "@/store/chatStore";
+import { useAiStore } from "@/store/aiStore";
 import { updateChatSummary, updateChat } from "@/api/chat";
 
 import { isWithinTokenLimit } from "gpt-tokenizer/model/gpt-4o";
@@ -179,6 +180,13 @@ export default function ChatWindow({
 	const [input, setInput] = useState("");
 	const [isUserScrolling, setIsUserScrolling] = useState(false);
 	const [summarizing, setSummarizing] = useState(false);
+
+	const providers = useAiStore((state) => state.providers);
+
+	const modelFound =
+		providers?.[chatLockedModel?.provider]?.models?.[
+			chatLockedModel?.id
+		] !== null;
 
 	const { messages, setMessages, sendMessage, status, error } = useChat({
 		id: chatId,
@@ -438,6 +446,14 @@ export default function ChatWindow({
 			e.preventDefault();
 			if (!input.trim()) return;
 
+			if (!modelFound) {
+				toast.info("Chat model not available.", {
+					description:
+						"The model locked to this chat is not currently available. Please start a new chat.",
+				});
+				return;
+			}
+
 			try {
 				sendMessage({ text: input });
 				setInput("");
@@ -593,10 +609,7 @@ export default function ChatWindow({
 				/>
 				<PromptInputToolbar>
 					<div className="flex-1 flex justify-between">
-						<ChatLockedModel
-							provider={chatLockedModel.provider}
-							modelId={chatLockedModel.modelId}
-						/>
+						<ChatLockedModel model={chatLockedModel} />
 						<PromptInputSubmit
 							disabled={!input.trim() || status === "streaming"}
 							status={status}

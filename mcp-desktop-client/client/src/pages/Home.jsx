@@ -85,8 +85,11 @@ function Home() {
 			return;
 
 		createChatMutation.mutate({
-			chat_model_id: chatModel?.id,
-			chat_model_provider: provider,
+			chat_model: {
+				id: chatModel?.id || "default-model",
+				name: chatModel?.name || "Default Model",
+				provider: provider || "unknown",
+			},
 			first_message: {
 				role: "user",
 				parts: [

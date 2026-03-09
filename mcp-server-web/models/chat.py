@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -16,8 +17,7 @@ class Chat(Base):
                 primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     name = Column(String(50), nullable=False)
-    chat_model_id = Column(String(60), nullable=False)
-    chat_model_provider = Column(String(60), nullable=True)  
+    chat_model = Column(JSONB, nullable=False)
     summary = Column(Text, nullable=True)
     last_summarized_message_id = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
