@@ -1,6 +1,6 @@
 # MCP Server Remote
 
-HTTP-based MCP server that exposes 20+ tools via [FastMCP](https://github.com/jlowin/fastmcp) + [FastAPI](https://fastapi.tiangolo.com/). Handles weather, finance, Google services, and Spotify - all behind OAuth 2.0 where needed.
+HTTP-based MCP server that exposes 25+ tools via [FastMCP](https://github.com/jlowin/fastmcp) + [FastAPI](https://fastapi.tiangolo.com/). Handles weather, math, finance, Google services, and Spotify — all behind OAuth 2.0 where needed.
 
 ## How It Works
 
@@ -11,7 +11,7 @@ The server starts a FastAPI app, mounts a FastMCP streamable-HTTP endpoint at `/
 | Category     | Tool                                                                                                                                                                                              | Auth Required |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
 | **Weather**  | `get_weather`                                                                                                                                                                                     | No            |
-| **Math**     | `calculator`                                                                                                                                                                                      | No            |
+| **Math**     | `basic_math`, `evaluate_expression`, `statistics_calc`, `unit_converter`, `date_calculator`, `base_converter`                                                                                     | No            |
 | **Stocks**   | `get_stock_data`                                                                                                                                                                                  | No            |
 | **Crypto**   | `get_crypto_price`, `get_crypto_price_history`                                                                                                                                                    | No            |
 | **Metals**   | `get_metal_price`                                                                                                                                                                                 | No            |
@@ -33,6 +33,7 @@ mcp-server-remote/
 │   ├── spotify_oauth_flow.py  # Spotify OAuth helpers
 │   └── google_config.py   #   Scopes & service config
 └── tools/                 # Tool modules
+    ├── calculator.py      #   Math, expressions, stats, units, dates, base conversion
     ├── stock.py           #   Stock market data
     ├── crypto.py          #   Cryptocurrency prices + history
     ├── metal.py           #   Precious metal prices
