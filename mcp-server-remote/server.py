@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
 from fastmcp import FastMCP
 import requests
 import os
@@ -6,6 +8,7 @@ import dotenv
 import inspect
 from tools import stock, crypto, metal, currency, calculator, gmail_tool, calendar_tool, spotify_tool, contacts_tool
 from auth.endpoints import router as auth_router
+from auth.api_key_auth import verify_api_key
 
 dotenv.load_dotenv()
 
@@ -144,6 +147,19 @@ def root():
             "search_spotify"
         ]
     }
+
+
+@app.middleware("http")
+async def api_key_middleware(request: Request, call_next):
+    if request.url.path.startswith("/remote_mcp"):
+        api_key = request.headers.get("X-API-Key")
+        if not api_key:
+            return JSONResponse(status_code=401, content={"detail": "X-API-Key header is required"})
+        try:
+            await verify_api_key(api_key)
+        except Exception as e:
+            return JSONResponse(status_code=403, content={"detail": "Invalid or revoked API key"})
+    return await call_next(request)
 
 
 # Mount MCP using the app we already created

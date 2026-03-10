@@ -44,7 +44,7 @@ class APIKey(Base):
     id = Column(String, primary_key=True, default=lambda: str(ULID()))
     user_id = Column(String, ForeignKey("users.id"))
     name = Column(String)
-    key_hash = Column(String, nullable=False)
+    key_hash = Column(String, nullable=False, unique=True, index=True)
     revoked = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_used = Column(DateTime(timezone=True))

@@ -1,5 +1,5 @@
 import secrets
-import bcrypt
+import hashlib
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update, delete
@@ -97,8 +97,18 @@ class CRUDAPIKey:
     def generate_key() -> Tuple[str, str]:
         """Returns (raw_key, key_hash). Raw key is shown only once."""
         raw_key = f"dost_{secrets.token_urlsafe(32)}"
-        key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         return raw_key, key_hash
+
+    @staticmethod
+    async def get_by_key_hash(db: AsyncSession, key_hash: str) -> Optional[APIKey]:
+        result = await db.execute(
+            select(APIKey).where(
+                APIKey.key_hash == key_hash,
+                APIKey.revoked == False,  # noqa: E712
+            )
+        )
+        return result.scalars().first()
 
     @staticmethod
     async def revoke(db: AsyncSession, key_id: str, user_id: str) -> bool:
