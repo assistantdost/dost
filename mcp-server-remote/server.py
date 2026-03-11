@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from fastmcp import FastMCP
@@ -8,7 +8,7 @@ import dotenv
 import inspect
 from tools import stock, crypto, metal, currency, calculator, gmail_tool, calendar_tool, spotify_tool, contacts_tool
 from auth.endpoints import router as auth_router
-from auth.api_key_auth import verify_api_key
+from auth.api_key_auth import validate_key, verify_api_key, get_current_user
 
 dotenv.load_dotenv()
 
@@ -149,17 +149,17 @@ def root():
     }
 
 
-@app.middleware("http")
-async def api_key_middleware(request: Request, call_next):
-    if request.url.path.startswith("/remote_mcp"):
-        api_key = request.headers.get("X-API-Key")
-        if not api_key:
-            return JSONResponse(status_code=401, content={"detail": "X-API-Key header is required"})
-        try:
-            await verify_api_key(api_key)
-        except Exception as e:
-            return JSONResponse(status_code=403, content={"detail": "Invalid or revoked API key"})
-    return await call_next(request)
+# @app.middleware("http")
+# async def api_key_middleware(request: Request, call_next):
+#     if request.url.path.startswith("/remote_mcp"):
+#         api_key = request.headers.get("X-API-Key")
+#         if not api_key:
+#             return JSONResponse(status_code=401, content={"detail": "X-API-Key header is required"})
+#         try:
+#             request.state.user = await validate_key(api_key)
+#         except HTTPException as e:
+#             return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+#     return await call_next(request)
 
 
 # Mount MCP using the app we already created
