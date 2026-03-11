@@ -1,6 +1,4 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.requests import Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from fastmcp import FastMCP
 import requests
 import os
@@ -8,13 +6,13 @@ import dotenv
 import inspect
 from tools import stock, crypto, metal, currency, calculator, gmail_tool, calendar_tool, spotify_tool, contacts_tool
 from auth.endpoints import router as auth_router
-from auth.api_key_auth import validate_key, verify_api_key, get_current_user
+from auth.api_key_auth import APIKeyAuth
 
 dotenv.load_dotenv()
 
 # ---------------- MCP Server ----------------
 # Remove host/port from FastMCP - they're deprecated when mounting in FastAPI
-mcp = FastMCP(name="mcp-server-web")
+mcp = FastMCP(name="mcp-server-web", auth=APIKeyAuth())
 
 API_KEY = os.getenv("WEATHER_API_KEY", "YOUR_API_KEY")
 BASE_URL = "http://api.openweathermap.org/data/2.5/weather"
@@ -147,19 +145,6 @@ def root():
             "search_spotify"
         ]
     }
-
-
-# @app.middleware("http")
-# async def api_key_middleware(request: Request, call_next):
-#     if request.url.path.startswith("/remote_mcp"):
-#         api_key = request.headers.get("X-API-Key")
-#         if not api_key:
-#             return JSONResponse(status_code=401, content={"detail": "X-API-Key header is required"})
-#         try:
-#             request.state.user = await validate_key(api_key)
-#         except HTTPException as e:
-#             return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
-#     return await call_next(request)
 
 
 # Mount MCP using the app we already created
