@@ -1,6 +1,7 @@
 import httpx
 from datetime import datetime, timezone
 from typing import Optional, List
+from fastmcp.server.dependencies import get_access_token
 
 # Import OAuth functions and new centralized config
 from auth.oauth_flow import get_google_token, create_authorization_url
@@ -64,13 +65,12 @@ def _handle_google_api_error(e: httpx.HTTPStatusError, tool_name: str) -> str:
 
 
 def list_calendar_events(
-    max_results: int = 5,
-    user_id: str = "default"
-) -> str:
+    max_results: int = 5) -> str:
     """
     Retrieves the user's personal daily agenda, upcoming meetings, and appointments from Google Calendar.
     Use this to check availability, see what is planned for today or tomorrow, and manage time.
     """
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_google_auth_flow(CALENDAR_SCOPES, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -119,12 +119,12 @@ def create_calendar_event(
     time_zone: str = "Asia/Kolkata",
     attendees: Optional[List[str]] = None,
     description: Optional[str] = None,
-    user_id: str = "default"
 ) -> str:
     """
     Schedules a new event, meeting, or appointment in Google Calendar.
     Use this to book time slots, set up reminders for specific dates and times, and invite attendees.
     """
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_google_auth_flow(CALENDAR_SCOPES, user_id)
     if "❌" in auth_result:
         return auth_result

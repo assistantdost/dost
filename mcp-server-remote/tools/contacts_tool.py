@@ -2,6 +2,7 @@
 
 import httpx
 from typing import Optional, List
+from fastmcp.server.dependencies import get_access_token
 
 # Import OAuth functions and new centralized config
 from auth.oauth_flow import get_google_token, create_authorization_url
@@ -58,13 +59,12 @@ def _handle_google_api_error(e: httpx.HTTPStatusError, tool_name: str) -> str:
 
 def list_contacts(
     query: Optional[str] = None,
-    max_results: int = 10,
-    user_id: str = "default"
-) -> str:
+    max_results: int = 10) -> str:
     """
     Searches the user's Google Contacts address book.
     Use this to find contact details like email addresses or phone numbers for a specific person (e.g., 'What is John's email?').
     """
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_google_auth_flow(CONTACTS_SCOPES, user_id)
     if "❌" in auth_result:
         return auth_result

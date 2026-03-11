@@ -1,6 +1,7 @@
 import httpx
 import logging
 from typing import Optional, List, Dict, Any
+from fastmcp.server.dependencies import get_access_token
 
 # Import OAuth functions from our new spotify_oauth_flow
 from auth.spotify_oauth_flow import (
@@ -83,12 +84,13 @@ def _handle_spotify_api_error(e: httpx.HTTPStatusError) -> str:
 
 # --- Spotify Tools ---
 
-def get_current_playback(user_id: str = "default") -> str:
+def get_current_playback() -> str:
     """
     Checks what song or audio is currently playing on Spotify.
     Use this to identify the active track, artist, and album.
     """
     required_scopes = ['user-read-playback-state', 'user-read-currently-playing']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -142,12 +144,13 @@ def get_current_playback(user_id: str = "default") -> str:
         return f"An unexpected error occurred: {e}"
 
 
-def list_spotify_devices(user_id: str = "default") -> str:
+def list_spotify_devices() -> str:
     """
     Lists all available Spotify Connect devices.
     Use this to see where music can be played (e.g., laptop, phone, smart speaker) and get device IDs for transfer.
     """
     required_scopes = ['user-read-playback-state']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -186,12 +189,13 @@ def list_spotify_devices(user_id: str = "default") -> str:
         return f"An unexpected error occurred: {e}"
 
 
-def set_spotify_device(device_id: str, play: bool = False, user_id: str = "default") -> str:
+def set_spotify_device(device_id: str, play: bool = False) -> str:
     """
     Transfers Spotify playback to a different device.
     Use this to switch music from one device (e.g., phone) to another (e.g., speaker).
     """
     required_scopes = ['user-modify-playback-state']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -222,12 +226,13 @@ def set_spotify_device(device_id: str, play: bool = False, user_id: str = "defau
         return f"An unexpected error occurred: {e}"
 
 
-def play_spotify(user_id: str = "default") -> str:
+def play_spotify() -> str:
     """
     Resumes media playback on the active Spotify device.
     Use this to unpause music or continue listening.
     """
     required_scopes = ['user-modify-playback-state']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -254,12 +259,13 @@ def play_spotify(user_id: str = "default") -> str:
         return f"An unexpected error occurred: {e}"
 
 
-def pause_spotify(user_id: str = "default") -> str:
+def pause_spotify() -> str:
     """
     Pauses the current media playback on Spotify.
     Use this to stop music or audio temporarily.
     """
     required_scopes = ['user-modify-playback-state']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -286,12 +292,13 @@ def pause_spotify(user_id: str = "default") -> str:
         return f"An unexpected error occurred: {e}"
 
 
-def next_track_spotify(user_id: str = "default") -> str:
+def next_track_spotify() -> str:
     """
     Skips to the next track in the Spotify playback queue.
     Use this when the user wants to hear a different song.
     """
     required_scopes = ['user-modify-playback-state']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -318,12 +325,13 @@ def next_track_spotify(user_id: str = "default") -> str:
         return f"An unexpected error occurred: {e}"
 
 
-def previous_track_spotify(user_id: str = "default") -> str:
+def previous_track_spotify() -> str:
     """
     Goes back to the previous track in the Spotify playback queue.
     Use this to replay a song or return to an earlier track.
     """
     required_scopes = ['user-modify-playback-state']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -353,13 +361,13 @@ def previous_track_spotify(user_id: str = "default") -> str:
 def start_spotify_playback(
     context_uri: Optional[str] = None,
     uris: Optional[List[str]] = None,
-    user_id: str = "default"
 ) -> str:
     """
     Starts new playback of a specific song, album, artist, or playlist on Spotify.
     Use this to initiate playback of specific content using a Spotify URI.
     """
     required_scopes = ['user-modify-playback-state']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -401,14 +409,13 @@ def start_spotify_playback(
 def search_spotify(
     query: str,
     search_type: str = "track",
-    limit: int = 5,
-    user_id: str = "default"
-) -> str:
+    limit: int = 5) -> str:
     """
     Searches the Spotify catalog for tracks, albums, artists, or playlists.
     Use this to find a song, an artist's discography, or a curated playlist by name.
     """
     required_scopes = ['user-read-playback-state']
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_spotify_auth_flow(required_scopes, user_id)
     if "❌" in auth_result:
         return auth_result

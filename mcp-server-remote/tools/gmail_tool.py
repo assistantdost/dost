@@ -1,6 +1,8 @@
 import httpx
 from typing import Optional, List
 import base64
+from fastmcp.server.dependencies import get_access_token
+
 from email.mime.text import MIMEText
 
 # Import OAuth functions and new centralized config
@@ -67,12 +69,12 @@ def _handle_google_api_error(e: httpx.HTTPStatusError, tool_name: str) -> str:
 def read_recent_emails(
     max_results: int = 5,
     query: Optional[str] = None,
-    user_id: str = "default"
 ) -> str:
     """
     Retrieves recent emails from the user's Gmail inbox.
     Use this to read the latest messages, check for unread emails, or search for specific emails from a sender or with a specific subject.
     """
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_google_auth_flow(GMAIL_SCOPES, user_id)
     if "❌" in auth_result:
         return auth_result
@@ -127,13 +129,13 @@ def send_email(
     to: str,
     subject: str,
     body: str,
-    user_id: str = "default"
 ) -> str:
     """
     Sends a new email from the user's Gmail account.
     Use this to compose and send messages to recipients.
     Requires a recipient email address, subject, and body text. Always resolve the email address via 'list_contacts' first if only a name is given.
     """
+    user_id = get_access_token().claims["sub"]
     auth_result = _handle_google_auth_flow(GMAIL_SCOPES, user_id)
     if "❌" in auth_result:
         return auth_result
