@@ -2,7 +2,7 @@ import hashlib
 import httpx
 import json
 import os
-from fastmcp.server.auth import AuthProvider
+from fastmcp.server.auth import AuthProvider, AccessToken
 from redis import asyncio as aioredis
 
 MAIN_SERVER_URL = os.getenv("MAIN_SERVER_URL", "http://localhost:8000")
@@ -17,7 +17,7 @@ def hash_key(key: str) -> str:
     return hashlib.sha256(key.encode()).hexdigest()
 
 
-async def validate_key(api_key: str) -> dict:
+async def validate_key(api_key: str) -> dict | None:
     """Cache → main server validation. Returns user data dict or None."""
     redis_key = f"apikey:{hash_key(api_key)}"
 
@@ -37,16 +37,16 @@ async def validate_key(api_key: str) -> dict:
 
 
 class APIKeyAuth(AuthProvider):
-    async def authenticate(self, request):
-        api_key = request.headers.get("X-API-Key")
-
-        if not api_key:
-            return None
-
-        data = await validate_key(api_key)
+    async def verify_token(self, token: str) -> AccessToken | None:
+        data = await validate_key(token)
 
         if not data:
             return None
 
-        return {"sub": data["api_key"]["user_id"]}
+        return AccessToken(
+            token=token,
+            client_id="api_key",
+            scopes=[],
+            claims={"sub": data["api_key"]["user_id"]},
+        )
 
