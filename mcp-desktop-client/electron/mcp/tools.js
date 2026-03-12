@@ -88,9 +88,10 @@ export class Tools extends EventEmitter {
 			serverConfig.transport === "http"
 		) {
 			const headers = serverConfig.headers || {};
+
 			return new StreamableHTTPClientTransport(
 				new URL(serverConfig.url),
-				{ headers },
+				{ requestInit: { headers } },
 			);
 		} else if (serverConfig.transport === "sse") {
 			return {
@@ -318,9 +319,9 @@ export class Tools extends EventEmitter {
 	}
 
 	async updateServer(serverName, updates) {
-		if (!this.state.mcpServers[serverName]) {
-			return { success: false, error: "Server not found" };
-		}
+		// if (!this.state.mcpServers[serverName]) {
+		// 	return { success: false, error: "Server not found" };
+		// }
 		const existingConfig = this.state.config[serverName] || {};
 		const newConfig = { ...existingConfig, ...updates };
 		return await this.addServer(serverName, newConfig);

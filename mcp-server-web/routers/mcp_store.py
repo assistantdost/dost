@@ -16,7 +16,10 @@ DEFAULT_SERVERS = {
         "url": "http://127.0.0.1:8000/remote_mcp/mcp",
         "transport": "streamable_http",
         "enabled": True,
-        "description": "Remote MCP server (calendar, gmail, etc.)"
+        "description": "Remote MCP server (calendar, gmail, etc.)",
+        "headers": {
+            "Authorization": "Bearer <YOUR_API_KEY>"
+        }
     },
 }
 
