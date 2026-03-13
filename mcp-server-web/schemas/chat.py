@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import List, Optional, Any, Dict
+from pydantic import BaseModel, Field
+from typing import List, Optional, Any, Dict, Union, Literal
 from datetime import datetime
 
 
@@ -8,13 +8,39 @@ class ChatModelInfo(BaseModel):
     name: str
     provider: str
 
-class PartsItem(BaseModel):
-    type: str  # text, reasoning, tool-call, tool-result
-    text: Optional[str] = None
-    toolCallId: Optional[str] = None
-    toolName: Optional[str] = None
-    input: Optional[Dict[str, Any]] = None
-    output: Optional[Dict[str, Any]] = None
+class TextPart(BaseModel):
+    type: Literal["text"]
+    text: str
+
+class ReasoningPart(BaseModel):
+    type: Literal["reasoning"]
+    text: str
+
+class ToolCallPart(BaseModel):
+    type: Literal["tool-call"]
+    toolCallId: str
+    toolName: str
+    args: Dict[str, Any]  # Renamed from 'input' for SDK compatibility
+
+class ToolResultPart(BaseModel):
+    type: Literal["tool-result"]
+    toolCallId: str
+    result: Dict[str, Any]  # Renamed from 'output'
+
+# Custom/UI parts (keep for your app, but transform before SDK)
+class StepStartPart(BaseModel):
+    type: Literal["step-start"]
+
+class DynamicToolPart(BaseModel):  # Your custom type
+    type: Literal["dynamic-tool"]
+    toolCallId: str
+    toolName: str
+    input: Dict[str, Any]  # Keep as-is for now
+    output: Dict[str, Any]
+    state: Optional[str] = None  # UI field
+
+# Union for parts
+PartsItem = Union[TextPart, ReasoningPart, ToolCallPart, ToolResultPart, StepStartPart, DynamicToolPart]
 
 
 class MessageBase(BaseModel):
