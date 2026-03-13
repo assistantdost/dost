@@ -274,6 +274,7 @@ export class Tools extends EventEmitter {
 				};
 			}
 			console.log(`🔌 Connecting to ${serverName}-----------`);
+			// console.log("Server config:", serverConfig);
 
 			let client;
 			let transport = this._createTransport(serverConfig);
