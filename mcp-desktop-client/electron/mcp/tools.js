@@ -300,7 +300,7 @@ export class Tools extends EventEmitter {
 
 			await this.updateConfig({
 				...this.state.config,
-				[serverName]: serverConfig,
+				[serverName]: { ...serverConfig, enabled: true },
 			});
 
 			return {
