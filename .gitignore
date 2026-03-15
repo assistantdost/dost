@@ -97,6 +97,7 @@ venv.bak/
 .mcpserver/
 .remotevenv/
 .packagevenv/
+.try/
 
 # Spyder project settings
 .spyderproject

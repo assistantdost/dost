@@ -14,7 +14,6 @@ from typing import Any, Dict
 
 
 # ────────────────────────── Safe Expression Evaluator ──────────────────────────
-
 _SAFE_OPS = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
