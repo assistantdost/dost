@@ -19,7 +19,7 @@ All modules implement comprehensive security controls including:
 """
 
 from .security import SecurityError, security_config
-from .application_manager import open_app, open_webpage, search_web, play_song
+from .application_manager import open_app, open_webpage, play_song
 from .system_control import volume_control, brightness_control, system_power
 from .file_operations import create_note, find_files
 
@@ -31,7 +31,6 @@ __all__ = [
     # Application Management
     'open_app',
     'open_webpage',
-    'search_web',
     'play_song',
 
     # System Control

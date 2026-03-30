@@ -14,7 +14,7 @@ from .modules import (
     SecurityError, security_config,
 
     # Application Management
-    open_app, open_webpage, search_web, play_song,
+    open_app, open_webpage, play_song,
 
     # System Control
     volume_control, brightness_control, system_power,
@@ -52,7 +52,7 @@ __all__ = [
     'SecurityError', 'security_config',
 
     # Application Management
-    'open_app', 'open_webpage', 'search_web', 'play_song',
+    'open_app', 'open_webpage', 'play_song',
 
     # System Control
     'volume_control', 'brightness_control', 'system_power',

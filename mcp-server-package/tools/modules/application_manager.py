@@ -126,37 +126,6 @@ class WebManager:
             return f"Failed to open webpage: {e}"
 
     @_secure_operation(require_validation=True, log_operation=True)
-    @_rate_limit(max_calls=15, time_window=60)
-    def search_web(self, query: str, engine: str = "google") -> str:
-        """
-        Performs a web search using a specified search engine from the config.
-
-        Args:
-            query (str): The search term.
-            engine (str, optional): The search engine to use. Defaults to "google".
-
-        Returns:
-            str: A confirmation message or an error if the engine is not configured.
-        """
-        try:
-            # Validate search engine
-            engine_lower = engine.lower()
-            search_url = config.get(f"web.search_engines.{engine_lower}")
-
-            if not search_url:
-                return f"Search engine '{engine}' not configured."
-
-            # Construct search URL
-            formatted_url = search_url.format(query)
-
-            # Use the secure webpage opening method
-            return self.open_webpage(formatted_url)
-
-        except Exception as e:
-            logger.error(f"Search error: {e}")
-            return f"Search failed: {e}"
-
-    @_secure_operation(require_validation=True, log_operation=True)
     @_rate_limit(max_calls=5, time_window=300)  # More restrictive for YouTube
     def play_song(self, song: str) -> str:
         """
@@ -243,13 +212,6 @@ def open_webpage(url: str) -> str:
     Navigates to a specific URL or website address (e.g., google.com, youtube.com). Use this to visit a page directly, NOT to search for information.
     """
     return web_manager.open_webpage(url)
-
-
-def search_web(query: str, engine: str = "google") -> str:
-    """
-    Queries a search engine (Google/Bing) to find answers, pasta recipes, or information. Use this when looking for facts or unknown websites.
-    """
-    return web_manager.search_web(query, engine)
 
 
 def play_song(song: str) -> str:
