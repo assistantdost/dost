@@ -2,7 +2,7 @@
 # server.py
 from datetime import datetime
 from mcp.server.fastmcp import FastMCP
-from tools import windows
+from tools import windows, calculator, scraper_tool
 import inspect
 import pytz
 from pytz import country_timezones, country_names
@@ -57,4 +57,6 @@ def register_tools(module):
 
 if __name__ == "__main__":
     register_tools(windows)
+    register_tools(calculator)
+    register_tools(scraper_tool)
     mcp.run(transport='stdio')

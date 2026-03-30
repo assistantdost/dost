@@ -4,7 +4,7 @@ import requests
 import os
 import dotenv
 import inspect
-from tools import stock, crypto, metal, currency, calculator, gmail_tool, calendar_tool, spotify_tool, contacts_tool
+from tools import stock, crypto, metal, currency, gmail_tool, calendar_tool, spotify_tool, contacts_tool
 from auth.endpoints import router as auth_router
 from auth.api_key_auth import APIKeyAuth
 
@@ -67,7 +67,6 @@ register_tools(stock)
 register_tools(crypto)
 register_tools(metal)
 register_tools(currency)
-register_tools(calculator)
 
 # Register Gmail and Calendar tools with OAuth
 mcp.tool()(gmail_tool.read_recent_emails)
@@ -118,12 +117,6 @@ def root():
             "docs": "/docs"
         },
         "tools_registered": [
-            "basic_math",
-            "evaluate_expression",
-            "statistics_calc",
-            "unit_converter",
-            "date_calculator",
-            "base_converter",
             "get_weather",
             "get_stock_data",
             "get_crypto_price",
@@ -169,12 +162,6 @@ if __name__ == "__main__":
     print("   ✅ API Docs: http://localhost:8000/docs")
     print("   ✅ MCP Endpoint: http://localhost:8000/mcp (Streamable HTTP)")    # Corrected path
     print("\n🔧 Registered MCP Tools:")
-    print("   - basic_math (from calculator module)")
-    print("   - evaluate_expression (from calculator module)")
-    print("   - statistics_calc (from calculator module)")
-    print("   - unit_converter (from calculator module)")
-    print("   - date_calculator (from calculator module)")
-    print("   - base_converter (from calculator module)")
     print("   - get_weather")
     print("   - get_stock_data (from stock module)")
     print("   - get_crypto_price (from crypto module)")
