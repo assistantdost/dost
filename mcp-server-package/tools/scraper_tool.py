@@ -69,10 +69,10 @@ def search_web(query: str, num_results: int = 5, max_chars_per_page: int = 2000)
     for result in results:
         page_url = result['url']
         content = scrape_webpage(page_url)
-        
+
         if len(content) > max_chars_per_page:
             content = f"{content[:max_chars_per_page]}\n\n... (truncated to {max_chars_per_page} characters) <u>[Read More]({page_url})</u>"
-            
+
         scraped_data.append({
             "source_url": page_url,
             "title": result["title"],
