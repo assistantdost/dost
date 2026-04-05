@@ -64,9 +64,9 @@ const items = [
 ];
 
 export function AppSidebar() {
-	const { logged, token } = useAuthStore();
+	const token = useAuthStore((state) => state.token);
 	const { setChats, activeChatId } = useChatStore();
-	const { theme, toggleTheme } = useGlobalStore();
+	const { theme, toggleTheme, logged } = useGlobalStore();
 	const { toolCount } = useMcpStore();
 
 	// Fetch user chats with TanStack Query - only when logged and has token

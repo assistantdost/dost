@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld("authAPI", {
 	setToken: (token) => ipcRenderer.invoke("auth:set-token", token),
 	clearToken: () => ipcRenderer.invoke("auth:clear-token"),
 	getToken: () => ipcRenderer.invoke("auth:get-token"),
+	getUserId: () => ipcRenderer.invoke("auth:get-user-id"),
 });
 
 contextBridge.exposeInMainWorld("ipcRenderer", ipcRenderer);

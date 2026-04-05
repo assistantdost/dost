@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import ChatWindow from "@/components/ChatWindow";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
+import useGlobalStore from "@/store/globalStore";
 import { useAiStore } from "@/store/aiStore";
 import { getChat } from "@/api/chat";
 
@@ -13,7 +14,8 @@ function Chat() {
 	const { setMessages, setSummary, setActiveChatId } = useChatStore();
 	const selectChatModel = useAiStore((state) => state.selectChatModel);
 	const providers = useAiStore((state) => state.providers);
-	const { logged, token } = useAuthStore();
+	const token = useAuthStore((state) => state.token);
+	const logged = useGlobalStore((state) => state.logged);
 
 	// Fetch chat with React Query - only when logged and has token
 	const { data: chat, isLoading } = useQuery({

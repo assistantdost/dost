@@ -3,6 +3,7 @@ import customStorage from "./customStorage";
 import { persist } from "zustand/middleware";
 import auth from "../api/auth";
 import { toast } from "sonner";
+import useGlobalStore from "./globalStore";
 
 export const useAuthStore = create(
 	persist(
@@ -11,7 +12,6 @@ export const useAuthStore = create(
 			token: null,
 			loading: false,
 			error: null,
-			logged: false,
 			hydrated: false,
 			isAdmin: () => {
 				const user = get().user;
@@ -19,7 +19,10 @@ export const useAuthStore = create(
 			},
 			signupData: {},
 			setToken: (token) => set({ token }),
-			clearToken: () => set({ token: null, user: null }),
+			clearToken: () => {
+				set({ token: null, user: null });
+				useGlobalStore.getState().setLogged(false);
+			},
 			setUser: (user) => set({ user }),
 			clearUser: () => set({ user: null }),
 			setLoading: (loading) => set({ loading }),
@@ -111,7 +114,8 @@ export const useAuthStore = create(
 				try {
 					const response = await auth.login(credentials);
 					const { token, user, message } = response;
-					set({ token, user, loading: false, logged: true });
+					set({ token, user, loading: false });
+					useGlobalStore.getState().setLogged(true);
 					if (window.authAPI) {
 						window.authAPI.setToken(token);
 					}
@@ -139,7 +143,8 @@ export const useAuthStore = create(
 					const response = await auth.googleLogin(payload);
 					console.log("Google login response:", response);
 					const { token, user, message } = response;
-					set({ token, user, loading: false, logged: true });
+					set({ token, user, loading: false });
+					useGlobalStore.getState().setLogged(true);
 					if (window.authAPI) {
 						window.authAPI.setToken(token);
 					}
@@ -164,15 +169,20 @@ export const useAuthStore = create(
 			refreshToken: async () => {
 				try {
 					const response = await auth.refresh();
-					const { token, logged } = response;
+					const { token } = response;
 					console.log("Token refreshed:", token);
-					set({ token, logged: logged });
+					set({ token });
+					useGlobalStore.getState().setLogged(true);
 					if (window.authAPI) {
 						window.authAPI.setToken(token);
 					}
 					return token;
 				} catch (error) {
-					set({ token: null, user: null, logged: false });
+					set({ token: null, user: null });
+					useGlobalStore.getState().setLogged(false);
+					if (window.authAPI) {
+						window.authAPI.clearToken();
+					}
 					throw error;
 				}
 			},
@@ -184,7 +194,8 @@ export const useAuthStore = create(
 				} catch (error) {
 					// Ignore API errors, still logout locally
 				}
-				set({ token: null, user: null, logged: false, error: null });
+				set({ token: null, user: null, error: null });
+				useGlobalStore.getState().setLogged(false);
 				if (window.authAPI) {
 					window.authAPI.clearToken();
 				}
@@ -192,7 +203,8 @@ export const useAuthStore = create(
 			},
 
 			unAuthorisedLogout: (message) => {
-				set({ token: null, user: null, logged: false, error: null });
+				set({ token: null, user: null, error: null });
+				useGlobalStore.getState().setLogged(false);
 				if (window.authAPI) {
 					window.authAPI.clearToken();
 				}
@@ -202,7 +214,7 @@ export const useAuthStore = create(
 		{
 			name: "authStore",
 			storage: customStorage,
-			partialize: (state) => ({ user: state.user, logged: state.logged }), // Only persist user
+			partialize: (state) => ({ user: state.user }),
 			onRehydrateStorage: () => (state) => {
 				state.hydrated = true;
 			},

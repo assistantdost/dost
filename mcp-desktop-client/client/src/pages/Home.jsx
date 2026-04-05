@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
+import useGlobalStore from "@/store/globalStore";
 import { useChatStore } from "@/store/chatStore";
 import {
 	PromptInput,
@@ -16,7 +17,8 @@ import { toast } from "sonner";
 import { useAiStore } from "@/store/aiStore";
 
 function Home() {
-	const { logged, user } = useAuthStore();
+	const user = useAuthStore((state) => state.user);
+	const logged = useGlobalStore((state) => state.logged);
 	const { addChat } = useChatStore();
 	const chatModel = useAiStore((state) => state.chatModel);
 	const provider = useAiStore((state) => state.provider);
