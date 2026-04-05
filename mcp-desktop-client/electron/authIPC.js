@@ -1,6 +1,8 @@
 import { ipcMain } from "electron";
+import jwt from "jsonwebtoken";
 import { clearActiveUser, setActiveUser } from "./store.js";
 import { tools } from "./mcp/tools.js";
+import { aiModel } from "./ai/models.js";
 
 let authToken = null;
 let authUserId = null;
@@ -11,18 +13,11 @@ function decodeUserIdFromToken(token) {
 	}
 
 	try {
-		const parts = token.split(".");
-		if (parts.length < 2) {
+		const decodedPayload = jwt.decode(token);
+		if (!decodedPayload || typeof decodedPayload !== "object") {
 			return null;
 		}
 
-		const payload = parts[1]
-			.replace(/-/g, "+")
-			.replace(/_/g, "/")
-			.padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
-		const decodedPayload = JSON.parse(
-			Buffer.from(payload, "base64").toString("utf8"),
-		);
 		return decodedPayload?.id || null;
 	} catch (error) {
 		console.warn("Failed to decode JWT payload:", error.message);
@@ -48,12 +43,14 @@ export function setupAuthIPC() {
 		authUserId = decodedUserId;
 		setActiveUser(decodedUserId);
 		tools.setActiveUserId(decodedUserId);
+		await aiModel.init();
 		return true; // Acknowledge
 	});
 
 	ipcMain.handle("auth:clear-token", async () => {
 		await tools.resetForLogout();
 		clearActiveUser();
+		await aiModel.init();
 		authToken = null;
 		authUserId = null;
 		console.log("Token cleared in main process");

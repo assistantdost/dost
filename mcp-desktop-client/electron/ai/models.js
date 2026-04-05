@@ -41,6 +41,7 @@ export class AIModel extends EventEmitter {
 
 	async init() {
 		await this.getModels();
+		this.clearProviderEnvVars();
 
 		let aiConfig = resolveStore().get("aiConfig") || {};
 
@@ -109,6 +110,18 @@ export class AIModel extends EventEmitter {
 		resolveStore().set("aiConfig", aiConfig);
 
 		this.getSystemEnv();
+	}
+
+	clearProviderEnvVars() {
+		if (!this.state.providers) {
+			return;
+		}
+
+		for (const provider of Object.values(this.state.providers)) {
+			if (provider?.env_var) {
+				delete process.env[provider.env_var];
+			}
+		}
 	}
 
 	async getModels() {
