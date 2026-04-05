@@ -29,6 +29,13 @@ contextBridge.exposeInMainWorld("oauthAPI", {
 	offTokens: (callback) => ipcRenderer.off("oauth-tokens", callback),
 });
 
+// Auth IPC
+contextBridge.exposeInMainWorld("authAPI", {
+	setToken: (token) => ipcRenderer.invoke("auth:set-token", token),
+	clearToken: () => ipcRenderer.invoke("auth:clear-token"),
+	getToken: () => ipcRenderer.invoke("auth:get-token"),
+});
+
 contextBridge.exposeInMainWorld("ipcRenderer", ipcRenderer);
 
 contextBridge.exposeInMainWorld("electron", {

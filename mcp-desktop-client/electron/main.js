@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import store from "./store.js";
 import "./ipcStore.js";
+import { setupAuthIPC } from "./authIPC.js";
 import { createServer } from "./server/server.js";
 
 // MCP imports
@@ -54,6 +55,9 @@ registerMcpIpcHandlers();
 
 // ✅ Register AI IPC handlers
 registerAiIpcHandlers();
+
+// ✅ Register Auth IPC handlers
+setupAuthIPC();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

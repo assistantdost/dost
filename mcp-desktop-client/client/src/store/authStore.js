@@ -112,6 +112,9 @@ export const useAuthStore = create(
 					const response = await auth.login(credentials);
 					const { token, user, message } = response;
 					set({ token, user, loading: false, logged: true });
+					if (window.authAPI) {
+						window.authAPI.setToken(token);
+					}
 					toast.success(message || "Login successful!");
 					return response;
 				} catch (error) {
@@ -137,6 +140,9 @@ export const useAuthStore = create(
 					console.log("Google login response:", response);
 					const { token, user, message } = response;
 					set({ token, user, loading: false, logged: true });
+					if (window.authAPI) {
+						window.authAPI.setToken(token);
+					}
 					toast.success(message || "Login successful!");
 					return response;
 				} catch (error) {
@@ -161,6 +167,9 @@ export const useAuthStore = create(
 					const { token, logged } = response;
 					console.log("Token refreshed:", token);
 					set({ token, logged: logged });
+					if (window.authAPI) {
+						window.authAPI.setToken(token);
+					}
 					return token;
 				} catch (error) {
 					set({ token: null, user: null, logged: false });
@@ -176,11 +185,17 @@ export const useAuthStore = create(
 					// Ignore API errors, still logout locally
 				}
 				set({ token: null, user: null, logged: false, error: null });
+				if (window.authAPI) {
+					window.authAPI.clearToken();
+				}
 				toast.success("Logged out successfully");
 			},
 
 			unAuthorisedLogout: (message) => {
 				set({ token: null, user: null, logged: false, error: null });
+				if (window.authAPI) {
+					window.authAPI.clearToken();
+				}
 				toast.error(message || "Session expired. Please log in again.");
 			},
 		}),
