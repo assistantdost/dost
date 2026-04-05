@@ -9,6 +9,10 @@ import os from "os";
 
 const LLM_MODELS = config.API_URL + "/llm_models";
 
+function resolveStore() {
+	return typeof store === "function" ? store() : store;
+}
+
 export class AIModel extends EventEmitter {
 	constructor() {
 		super();
@@ -37,8 +41,9 @@ export class AIModel extends EventEmitter {
 
 	async init() {
 		await this.getModels();
+		this.clearProviderEnvVars();
 
-		let aiConfig = store.get("aiConfig") || {};
+		let aiConfig = resolveStore().get("aiConfig") || {};
 
 		// Collect env vars grouped by provider
 		const envStore = aiConfig.envStore;
@@ -102,9 +107,21 @@ export class AIModel extends EventEmitter {
 		}
 
 		// Save aiConfig to store
-		store.set("aiConfig", aiConfig);
+		resolveStore().set("aiConfig", aiConfig);
 
 		this.getSystemEnv();
+	}
+
+	clearProviderEnvVars() {
+		if (!this.state.providers) {
+			return;
+		}
+
+		for (const provider of Object.values(this.state.providers)) {
+			if (provider?.env_var) {
+				delete process.env[provider.env_var];
+			}
+		}
 	}
 
 	async getModels() {
@@ -152,7 +169,7 @@ export class AIModel extends EventEmitter {
 
 	// Method to select chat model
 	selectChatModel(provider, model) {
-		let aiConfig = store.get("aiConfig") || {};
+		let aiConfig = resolveStore().get("aiConfig") || {};
 		aiConfig.provider = provider;
 		aiConfig.chatModel = model;
 		// Optionally set summaryModel to provider's default
@@ -165,7 +182,7 @@ export class AIModel extends EventEmitter {
 			this.state.providers[provider].models[aiConfig.summaryModel];
 
 		// Save to store
-		store.set("aiConfig", aiConfig);
+		resolveStore().set("aiConfig", aiConfig);
 	}
 
 	// Dynamic chatAgent method
@@ -253,25 +270,25 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 
 	// Methods for store.aiConfig (renamed from apiConfig)
 	setAiConfig(key, value) {
-		const aiConfig = store.get("aiConfig") || {};
+		const aiConfig = resolveStore().get("aiConfig") || {};
 		aiConfig[key] = value;
-		store.set("aiConfig", aiConfig);
+		resolveStore().set("aiConfig", aiConfig);
 	}
 
 	getAiConfig(key) {
-		const aiConfig = store.get("aiConfig") || {};
+		const aiConfig = resolveStore().get("aiConfig") || {};
 		return aiConfig[key];
 	}
 
 	deleteAiConfig(key) {
-		const aiConfig = store.get("aiConfig") || {};
+		const aiConfig = resolveStore().get("aiConfig") || {};
 		delete aiConfig[key];
-		store.set("aiConfig", aiConfig);
+		resolveStore().set("aiConfig", aiConfig);
 	}
 
 	// Methods for store.aiConfig.envStore
 	setEnvStore(envData) {
-		let aiConfig = store.get("aiConfig") || {};
+		let aiConfig = resolveStore().get("aiConfig") || {};
 		if (!aiConfig.envStore) aiConfig.envStore = {};
 		if (!this.state.envStore) this.state.envStore = {};
 
@@ -348,7 +365,7 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 			}
 		}
 
-		store.set("aiConfig", aiConfig);
+		resolveStore().set("aiConfig", aiConfig);
 	}
 
 	getEnvStore(key) {
@@ -368,7 +385,7 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 	}
 
 	deleteEnvStore(key) {
-		let aiConfig = store.get("aiConfig") || {};
+		let aiConfig = resolveStore().get("aiConfig") || {};
 		if (aiConfig.envStore) {
 			// Find and delete from the correct provider
 			for (const [providerName, providerKeys] of Object.entries(
@@ -380,7 +397,7 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 					key in providerKeys
 				) {
 					delete aiConfig.envStore[providerName][key];
-					store.set("aiConfig", aiConfig);
+					resolveStore().set("aiConfig", aiConfig);
 					break;
 				}
 			}

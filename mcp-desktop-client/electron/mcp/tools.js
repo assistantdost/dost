@@ -8,7 +8,6 @@ import { config } from "../config.js";
 import path from "path";
 import fs from "fs/promises";
 
-const MCP_CONFIG_PATH = path.join(app.getPath("userData"), "mcp.json");
 const DEFAULT_SERVERS_URL = config.API_URL + "/mcp_store/default-servers";
 
 export class Tools extends EventEmitter {
@@ -46,6 +45,50 @@ export class Tools extends EventEmitter {
 		);
 
 		this.initialized = false;
+		this.activeUserId = null;
+	}
+
+	getMcpConfigPath() {
+		if (!this.activeUserId) {
+			return null;
+		}
+
+		return path.join(
+			app.getPath("userData"),
+			"users",
+			String(this.activeUserId),
+			"mcp.json",
+		);
+	}
+
+	async ensureUserProfilePath() {
+		const configPath = this.getMcpConfigPath();
+		if (!configPath) {
+			throw new Error("User context not initialized");
+		}
+
+		await fs.mkdir(path.dirname(configPath), { recursive: true });
+		return configPath;
+	}
+
+	setActiveUserId(userId) {
+		if (this.activeUserId === userId) {
+			return;
+		}
+
+		this.activeUserId = userId || null;
+		this.initialized = false;
+		this.state.config = {};
+		this.state.mcpServers = {};
+		this.state.isMcpConnected = false;
+	}
+
+	async resetForLogout() {
+		this.activeUserId = null;
+		this.initialized = false;
+		this.state.config = {};
+		this.state.mcpServers = {};
+		this.state.isMcpConnected = false;
 	}
 
 	// ✅ Helper to update nested state immutably (triggers proxy)
@@ -57,13 +100,22 @@ export class Tools extends EventEmitter {
 
 	// ✅ Async initialization method
 	async init() {
+		if (!this.activeUserId) {
+			this.state.config = {};
+			this.initialized = true;
+			return;
+		}
+
 		try {
-			const data = await fs.readFile(MCP_CONFIG_PATH, "utf8");
+			const configPath = await this.ensureUserProfilePath();
+			const data = await fs.readFile(configPath, "utf8");
 
 			this.state.config = JSON.parse(data);
 			this.initialized = true;
 		} catch (error) {
-			console.error("Failed to load MCP config:", error);
+			if (error.code !== "ENOENT") {
+				console.error("Failed to load MCP config:", error);
+			}
 			this.state.config = {};
 			this.initialized = true;
 		}
@@ -236,6 +288,13 @@ export class Tools extends EventEmitter {
 	}
 
 	async loadDefaultServers() {
+		if (!this.activeUserId) {
+			return {
+				success: false,
+				error: "User not authenticated",
+			};
+		}
+
 		try {
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -342,12 +401,17 @@ export class Tools extends EventEmitter {
 	}
 
 	async updateConfig(newConfig) {
+		if (!this.activeUserId) {
+			throw new Error("User not authenticated");
+		}
+
 		const validation = this.validateConfig(newConfig);
 		if (!validation.valid) {
 			throw new Error(`Invalid config: ${validation.errors.join(", ")}`);
 		}
 		this.state.config = newConfig;
-		await fs.writeFile(MCP_CONFIG_PATH, JSON.stringify(newConfig, null, 2));
+		const configPath = await this.ensureUserProfilePath();
+		await fs.writeFile(configPath, JSON.stringify(newConfig, null, 2));
 	}
 
 	validateConfig(configToValidate = this.state.config) {

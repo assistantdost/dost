@@ -4,7 +4,6 @@ import {
 	HashRouter as Router,
 	Routes,
 	Route,
-	Navigate,
 	useLocation,
 } from "react-router-dom";
 
@@ -23,9 +22,12 @@ import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
 import { useMcpStore } from "@/store/mcpStore";
 import { useAiStore } from "@/store/aiStore";
+import useGlobalStore from "@/store/globalStore";
 
 function App() {
-	const { refreshToken, logged } = useAuthStore();
+	const refreshToken = useAuthStore((state) => state.refreshToken);
+	const token = useAuthStore((state) => state.token);
+	const logged = useGlobalStore((state) => state.logged);
 
 	// Initialize MCP and AI stores and set up listeners for updates from main process
 	const mcpInitialize = useMcpStore((state) => state.initialize);
@@ -36,7 +38,6 @@ function App() {
 
 	// Initialize MCP store and listen for updates
 	useEffect(() => {
-		mcpInitialize();
 		aiInitialize();
 		const cleanup = mcpListenForUpdates();
 		const aiCleanup = aiListenForUpdates();
@@ -65,6 +66,12 @@ function App() {
 			return () => clearInterval(interval);
 		}
 	}, [refreshToken, logged]);
+
+	useEffect(() => {
+		if (logged && token) {
+			mcpInitialize();
+		}
+	}, [logged, token, mcpInitialize]);
 
 	return (
 		<Router basename="/">

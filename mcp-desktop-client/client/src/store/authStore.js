@@ -3,6 +3,21 @@ import customStorage from "./customStorage";
 import { persist } from "zustand/middleware";
 import auth from "../api/auth";
 import { toast } from "sonner";
+import useGlobalStore from "./globalStore";
+import { queryClient } from "../lib/queryClient";
+import { clearChatQueries } from "../lib/tanstackQueries";
+import { useChatStore } from "./chatStore";
+
+function clearLocalChatState() {
+	const chatStore = useChatStore.getState();
+	chatStore.setActiveChatId(null);
+	chatStore.setMessages([]);
+	chatStore.setSummary(null, null);
+}
+
+function clearSessionQueries() {
+	clearChatQueries(queryClient);
+}
 
 export const useAuthStore = create(
 	persist(
@@ -11,7 +26,6 @@ export const useAuthStore = create(
 			token: null,
 			loading: false,
 			error: null,
-			logged: false,
 			hydrated: false,
 			isAdmin: () => {
 				const user = get().user;
@@ -19,7 +33,12 @@ export const useAuthStore = create(
 			},
 			signupData: {},
 			setToken: (token) => set({ token }),
-			clearToken: () => set({ token: null, user: null }),
+			clearToken: () => {
+				set({ token: null, user: null });
+				useGlobalStore.getState().setLogged(false);
+				clearSessionQueries();
+				clearLocalChatState();
+			},
 			setUser: (user) => set({ user }),
 			clearUser: () => set({ user: null }),
 			setLoading: (loading) => set({ loading }),
@@ -111,7 +130,11 @@ export const useAuthStore = create(
 				try {
 					const response = await auth.login(credentials);
 					const { token, user, message } = response;
-					set({ token, user, loading: false, logged: true });
+					set({ token, user, loading: false });
+					useGlobalStore.getState().setLogged(true);
+					if (window.authAPI) {
+						window.authAPI.setToken(token);
+					}
 					toast.success(message || "Login successful!");
 					return response;
 				} catch (error) {
@@ -136,7 +159,11 @@ export const useAuthStore = create(
 					const response = await auth.googleLogin(payload);
 					console.log("Google login response:", response);
 					const { token, user, message } = response;
-					set({ token, user, loading: false, logged: true });
+					set({ token, user, loading: false });
+					useGlobalStore.getState().setLogged(true);
+					if (window.authAPI) {
+						window.authAPI.setToken(token);
+					}
 					toast.success(message || "Login successful!");
 					return response;
 				} catch (error) {
@@ -158,12 +185,22 @@ export const useAuthStore = create(
 			refreshToken: async () => {
 				try {
 					const response = await auth.refresh();
-					const { token, logged } = response;
+					const { token } = response;
 					console.log("Token refreshed:", token);
-					set({ token, logged: logged });
+					set({ token });
+					useGlobalStore.getState().setLogged(true);
+					if (window.authAPI) {
+						window.authAPI.setToken(token);
+					}
 					return token;
 				} catch (error) {
-					set({ token: null, user: null, logged: false });
+					set({ token: null, user: null });
+					useGlobalStore.getState().setLogged(false);
+					clearSessionQueries();
+					clearLocalChatState();
+					if (window.authAPI) {
+						window.authAPI.clearToken();
+					}
 					throw error;
 				}
 			},
@@ -175,19 +212,31 @@ export const useAuthStore = create(
 				} catch (error) {
 					// Ignore API errors, still logout locally
 				}
-				set({ token: null, user: null, logged: false, error: null });
+				set({ token: null, user: null, error: null });
+				useGlobalStore.getState().setLogged(false);
+				clearSessionQueries();
+				clearLocalChatState();
+				if (window.authAPI) {
+					window.authAPI.clearToken();
+				}
 				toast.success("Logged out successfully");
 			},
 
 			unAuthorisedLogout: (message) => {
-				set({ token: null, user: null, logged: false, error: null });
+				set({ token: null, user: null, error: null });
+				useGlobalStore.getState().setLogged(false);
+				clearSessionQueries();
+				clearLocalChatState();
+				if (window.authAPI) {
+					window.authAPI.clearToken();
+				}
 				toast.error(message || "Session expired. Please log in again.");
 			},
 		}),
 		{
 			name: "authStore",
 			storage: customStorage,
-			partialize: (state) => ({ user: state.user, logged: state.logged }), // Only persist user
+			partialize: (state) => ({ user: state.user }),
 			onRehydrateStorage: () => (state) => {
 				state.hydrated = true;
 			},

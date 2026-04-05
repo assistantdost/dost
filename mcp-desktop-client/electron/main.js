@@ -2,13 +2,13 @@ import { app, BrowserWindow, shell, ipcMain, protocol, net } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import store from "./store.js";
+import getStore from "./store.js";
 import "./ipcStore.js";
+import { setupAuthIPC } from "./authIPC.js";
 import { createServer } from "./server/server.js";
 
 // MCP imports
 import { registerMcpIpcHandlers } from "./mcp/ipcHandlers.js";
-import { tools } from "./mcp/tools.js";
 import { toolRAG } from "./mcp/toolRAG.js";
 
 // AI imports
@@ -33,20 +33,20 @@ protocol.registerSchemesAsPrivileged([
 
 // IPC listeners
 ipcMain.on("electron-store-get", async (event, val) => {
-	event.returnValue = store.get(val);
+	event.returnValue = getStore().get(val);
 });
 ipcMain.on("electron-store-set", async (event, key, val) => {
-	store.set(key, val);
+	getStore().set(key, val);
 });
 ipcMain.on("electron-store-delete", async (event, key) => {
-	store.delete(key);
+	getStore().delete(key);
 });
 ipcMain.on("electron-store-get-all", async (event) => {
-	event.returnValue = store.store;
+	event.returnValue = getStore().store;
 });
 
 ipcMain.on("electron-store-delete-all", (event) => {
-	store.clear(); // Clears all data
+	getStore().clear(); // Clears all data
 });
 
 // ✅ Register MCP IPC handlers
@@ -54,6 +54,9 @@ registerMcpIpcHandlers();
 
 // ✅ Register AI IPC handlers
 registerAiIpcHandlers();
+
+// ✅ Register Auth IPC handlers
+setupAuthIPC();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,7 +111,6 @@ app.whenReady().then(async () => {
 	await createServer(mainWindow);
 	await aiModel.init();
 	await toolRAG.init();
-	await tools.init();
 	// const results = await tools.initializeMcpClients(true);
 	// console.log(
 	// 	"MCP clients initialized on startup:",

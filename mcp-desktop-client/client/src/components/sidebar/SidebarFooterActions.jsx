@@ -9,9 +9,11 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { useAuthStore } from "@/store/authStore";
+import useGlobalStore from "@/store/globalStore";
 
 export function SidebarFooterActions() {
-	const { logged, user, logout } = useAuthStore();
+	const { user, logout } = useAuthStore();
+	const logged = useGlobalStore((state) => state.logged);
 
 	if (!logged) {
 		return (

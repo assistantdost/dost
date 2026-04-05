@@ -1,9 +1,8 @@
 import { Navigate } from "react-router-dom";
-import { useAuthStore } from "@/store/authStore";
-import { toast } from "sonner";
+import useGlobalStore from "@/store/globalStore";
 
 const ProtectedRoute = ({ children }) => {
-	const { logged } = useAuthStore();
+	const logged = useGlobalStore((state) => state.logged);
 
 	if (!logged) {
 		// toast.error("Please login first");
