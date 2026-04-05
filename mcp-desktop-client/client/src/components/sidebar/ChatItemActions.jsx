@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateChatName, deleteChat } from "@/api/chat";
+import { chatMutationOptions } from "@/lib/tanstackQueries";
 import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -29,36 +29,36 @@ export function ChatItemActions({ chat, onDelete }) {
 	const location = useLocation();
 
 	// Rename mutation
-	const renameMutation = useMutation({
-		mutationFn: (name) => updateChatName(chat.id, name),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["chats"] });
-			toast.success("Chat renamed successfully");
-			setIsRenameOpen(false);
-		},
-		onError: (error) => {
-			toast.error("Failed to rename chat");
-			console.error(error);
-		},
-	});
+	const renameMutation = useMutation(
+		chatMutationOptions.rename(queryClient, chat.id, {
+			onSuccess: () => {
+				toast.success("Chat renamed successfully");
+				setIsRenameOpen(false);
+			},
+			onError: (error) => {
+				toast.error("Failed to rename chat");
+				console.error(error);
+			},
+		}),
+	);
 
 	// Delete mutation
-	const deleteMutation = useMutation({
-		mutationFn: () => deleteChat(chat.id),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["chats"] });
-			toast.success("Chat deleted successfully");
-			setIsDeleteOpen(false);
-			// Navigate away if currently viewing this chat
-			if (location.pathname === `/chat/${chat.id}`) {
-				navigate("/", { replace: true });
-			}
-		},
-		onError: (error) => {
-			toast.error("Failed to delete chat");
-			console.error(error);
-		},
-	});
+	const deleteMutation = useMutation(
+		chatMutationOptions.delete(queryClient, chat.id, {
+			onSuccess: () => {
+				toast.success("Chat deleted successfully");
+				setIsDeleteOpen(false);
+				// Navigate away if currently viewing this chat
+				if (location.pathname === `/chat/${chat.id}`) {
+					navigate("/", { replace: true });
+				}
+			},
+			onError: (error) => {
+				toast.error("Failed to delete chat");
+				console.error(error);
+			},
+		}),
+	);
 
 	const handleRename = () => {
 		if (newName.trim() && newName !== chat.name) {

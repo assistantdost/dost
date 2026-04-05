@@ -12,7 +12,7 @@ import {
 import AiModelSelector from "@/components/ai/model-selector";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createChat } from "@/api/chat";
+import { chatMutationOptions } from "@/lib/tanstackQueries";
 import { toast } from "sonner";
 import { useAiStore } from "@/store/aiStore";
 
@@ -68,18 +68,13 @@ function Home() {
 	};
 
 	// Create chat mutation
-	const createChatMutation = useMutation({
-		mutationFn: (chatData) => createChat(chatData),
-		onSuccess: (response) => {
-			const newChat = response;
-
-			// Invalidate chats query to refetch the list
-			queryClient.invalidateQueries({ queryKey: ["chats"] });
-
-			// Navigate to the new chat
-			navigate(`/chat/${newChat.id}`);
-		},
-	});
+	const createChatMutation = useMutation(
+		chatMutationOptions.create(queryClient, {
+			onSuccess: (newChat) => {
+				navigate(`/chat/${newChat.id}`);
+			},
+		}),
+	);
 
 	const handleCreateChat = async (e) => {
 		e.preventDefault();

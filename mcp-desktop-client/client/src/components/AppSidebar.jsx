@@ -39,7 +39,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
 import useGlobalStore from "@/store/globalStore";
 import { useMcpStore } from "@/store/mcpStore";
-import { getUserChats } from "@/api/chat";
+import { chatQueryOptions } from "@/lib/tanstackQueries";
 
 import { ChatItemActions } from "@/components/sidebar/ChatItemActions";
 import { SidebarFooterActions } from "@/components/sidebar/SidebarFooterActions";
@@ -70,17 +70,12 @@ export function AppSidebar() {
 	const { toolCount } = useMcpStore();
 
 	// Fetch user chats with TanStack Query - only when logged and has token
-	const { data: chats = [], isLoading: isLoadingChats } = useQuery({
-		queryKey: ["chats"],
-		queryFn: async () => {
-			const response = await getUserChats();
-			return response || [];
-		},
-		enabled: logged && !!token, // Only fetch when user is logged in
-		onSuccess: (data) => {
-			setChats(data);
-		},
-	});
+	const { data: chats = [], isLoading: isLoadingChats } = useQuery(
+		chatQueryOptions.list({
+			enabled: logged && !!token,
+			onSuccess: (data) => setChats(data),
+		}),
+	);
 
 	return (
 		<Sidebar>

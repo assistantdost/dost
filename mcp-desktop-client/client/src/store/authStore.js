@@ -4,6 +4,20 @@ import { persist } from "zustand/middleware";
 import auth from "../api/auth";
 import { toast } from "sonner";
 import useGlobalStore from "./globalStore";
+import { queryClient } from "../lib/queryClient";
+import { clearChatQueries } from "../lib/tanstackQueries";
+import { useChatStore } from "./chatStore";
+
+function clearLocalChatState() {
+	const chatStore = useChatStore.getState();
+	chatStore.setActiveChatId(null);
+	chatStore.setMessages([]);
+	chatStore.setSummary(null, null);
+}
+
+function clearSessionQueries() {
+	clearChatQueries(queryClient);
+}
 
 export const useAuthStore = create(
 	persist(
@@ -22,6 +36,8 @@ export const useAuthStore = create(
 			clearToken: () => {
 				set({ token: null, user: null });
 				useGlobalStore.getState().setLogged(false);
+				clearSessionQueries();
+				clearLocalChatState();
 			},
 			setUser: (user) => set({ user }),
 			clearUser: () => set({ user: null }),
@@ -180,6 +196,8 @@ export const useAuthStore = create(
 				} catch (error) {
 					set({ token: null, user: null });
 					useGlobalStore.getState().setLogged(false);
+					clearSessionQueries();
+					clearLocalChatState();
 					if (window.authAPI) {
 						window.authAPI.clearToken();
 					}
@@ -196,6 +214,8 @@ export const useAuthStore = create(
 				}
 				set({ token: null, user: null, error: null });
 				useGlobalStore.getState().setLogged(false);
+				clearSessionQueries();
+				clearLocalChatState();
 				if (window.authAPI) {
 					window.authAPI.clearToken();
 				}
@@ -205,6 +225,8 @@ export const useAuthStore = create(
 			unAuthorisedLogout: (message) => {
 				set({ token: null, user: null, error: null });
 				useGlobalStore.getState().setLogged(false);
+				clearSessionQueries();
+				clearLocalChatState();
 				if (window.authAPI) {
 					window.authAPI.clearToken();
 				}
