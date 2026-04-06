@@ -33,11 +33,22 @@ import {
 	ToolOutput,
 } from "@/components/ai/tool";
 
+import {
+	Popover,
+	PopoverContent,
+	PopoverDescription,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+
 import { SummarizingMessages } from "@/components/chat/SummarizingMessages";
 
 import { Response } from "@/components/ai/response";
 
 import { ChatLockedModel } from "@/components/ai/model-selector";
+
+import { Checkpoint, CheckpointIcon, CheckpointTrigger } from "./ai/checkpoint";
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -184,6 +195,10 @@ export default function ChatWindow({
 	const [summarizing, setSummarizing] = useState(false);
 
 	const providers = useAiStore((state) => state.providers);
+	const summary_ = useChatStore((state) => state.summary);
+	const lastSummarizedMessageId_ = useChatStore(
+		(state) => state.lastSummarizedMessageId,
+	);
 
 	const modelFound =
 		providers?.[chatLockedModel?.provider]?.models?.[
@@ -221,6 +236,7 @@ export default function ChatWindow({
 					}
 
 					summaryMessage = {
+						id: ulid(),
 						role: "system",
 						parts: [{ type: "text", text: summary }],
 					};
@@ -532,6 +548,32 @@ export default function ChatWindow({
 							))}
 						</MessageContent>
 					</Message>
+
+					{/* # Summary Checkpoint */}
+					{message.id === lastSummarizedMessageId_ && (
+						<Checkpoint>
+							<CheckpointIcon />
+							<Popover>
+								<PopoverTrigger asChild>
+									<CheckpointTrigger>
+										Summarized checkpoint
+									</CheckpointTrigger>
+								</PopoverTrigger>
+								<PopoverContent
+									className="w-96 md:w-xl max-h-60 overflow-auto"
+									align="start"
+								>
+									<Response
+										state="done"
+										className="text-xs text-muted-foreground"
+										role="system"
+									>
+										{summary_ || "No summary available."}
+									</Response>
+								</PopoverContent>
+							</Popover>
+						</Checkpoint>
+					)}
 				</div>
 			);
 		});

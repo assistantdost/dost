@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import trafilatura
 
 
-def search_web(query: str, num_results: int = 5, max_chars_per_page: int = 2000) -> str:
+def search_web(query: str, num_results: int = 3, max_chars_per_page: int = 1000) -> str:
     """
     Search DuckDuckGo for a query, scrape the top results, and return their truncated content along with links and snippets.
     Use this to find detailed information online.

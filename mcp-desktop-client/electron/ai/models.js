@@ -248,9 +248,15 @@ You are powered by MCP (Model Context Protocol) and have access to a dynamic set
 
 	// Dynamic summaryModel method
 	async getSummaryModel() {
+		if (!this.state.provider || !this.state.summaryModel) {
+			throw new Error(
+				`AI model not initialized. Provider: ${this.state.provider}, SummaryModel: ${this.state.summaryModel}`,
+			);
+		}
+
 		if (this.state.provider === "groq") {
 			return groq(this.state.summaryModel.id);
-		} else if (this.state.provider === "gemini") {
+		} else if (this.state.provider === "google") {
 			return google(this.state.summaryModel.id);
 		} else {
 			throw new Error(`Unsupported provider: ${this.state.provider}`);

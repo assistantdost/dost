@@ -13,6 +13,12 @@ export async function setupRoutes(server, mainWindow) {
 	// Handle /api/chat endpoint
 	server.post("/api/chat", async (req, res) => {
 		try {
+			// Ensure AI model is initialized
+			if (!aiModel.state.provider || !aiModel.state.chatModel) {
+				console.log("AI model not initialized, initializing...");
+				await aiModel.init();
+			}
+
 			const { messages } = req.body;
 
 			res.setHeader("Content-Type", "text/event-stream");
@@ -61,6 +67,12 @@ export async function setupRoutes(server, mainWindow) {
 	// Handle /api/summarize endpoint
 	server.post("/api/summarize", async (req, res) => {
 		try {
+			// Ensure AI model is initialized
+			if (!aiModel.state.provider || !aiModel.state.summaryModel) {
+				console.log("AI model not initialized, initializing...");
+				await aiModel.init();
+			}
+
 			const { messages } = req.body;
 
 			if (!messages || !Array.isArray(messages)) {
@@ -138,7 +150,7 @@ Format your response STRICTLY using the following sections:
 
 			// ✅ Use llama-3.1-8b-instant with simple text messages
 			const summaryResponse = await generateText({
-				model: aiModel.getSummaryModel(),
+				model: await aiModel.getSummaryModel(),
 				messages: summaryPrompt,
 				maxTokens: config.SUMMARY_MAX_TOKENS || 800,
 				temperature: 0.3, // Lower temperature for more focused summaries
