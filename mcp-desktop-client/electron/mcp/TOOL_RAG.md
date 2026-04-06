@@ -4,7 +4,7 @@
 
 `ToolRAG` is a RAG (Retrieval-Augmented Generation) system for MCP (Model Context Protocol) tool discovery and selection. It combines **vector semantic search** with conversation-history-aware "sticky" tool selection to intelligently filter and prioritize relevant tools for LLM calls.
 
-**Search strategy:** Vector similarity handles all query types — exact names, partial name words, and semantic phrases (e.g. "temperature" → `get_weather`). Tool embeddings are enriched with name variations and parameter names so keyword-style queries are covered without BM25. Vague follow-up queries (e.g. "do it", "set it to 8") are automatically enriched with the previous user message as context before searching. Sticky context adds tools used in recent turns regardless of search score.
+**Search strategy:** Combines vector semantic search with BM25 full-text search to handle all query types — exact names, partial name words, semantic phrases (e.g. "temperature" → `get_weather`), and keyword matches. Tool embeddings are enriched with name variations and parameter names for broad coverage. Vague follow-up queries (e.g. "do it", "set it to 8") are automatically enriched with the previous user message as context before searching. Sticky context adds tools used in recent turns regardless of search score.
 
 **Location:** `electron/mcp/toolRAG.js`  
 **Dependencies:** `@xenova/transformers`, `@orama/orama`  
@@ -39,23 +39,24 @@ Alternatives considered: Larger models like all-mpnet-base-v2 (768 dims, ~400MB)
 ### Core Components
 
 1. **Vector Search Engine** - Semantic similarity via 384-dim embeddings
-2. **Enriched Tool Embeddings** - Embeds `name + name variations + description + parameter names` for broad query coverage
-3. **Vague Query Enrichment** - Detects short/low-confidence queries and enriches with previous user message as context
-4. **Sticky Context Extractor** - Conversation history analysis for tool continuity
-5. **Debounced Re-indexing** - Automatic tool database updates with batching
-6. **Unified Selection Algorithm** - Combines vector search + sticky results with fallback
+2. **BM25 Text Search Engine** - Keyword-based full-text search over tool names, descriptions, and parameters
+3. **Enriched Tool Embeddings** - Embeds `name + name variations + description + parameter names` for broad query coverage
+4. **Vague Query Enrichment** - Detects short/low-confidence queries and enriches with previous user message as context
+5. **Sticky Context Extractor** - Conversation history analysis for tool continuity
+6. **Debounced Re-indexing** - Automatic tool database updates with batching
+7. **Unified Selection Algorithm** - Combines vector search + text search + sticky results with fallback
 
 ### Schema Fields
 
-| Field            | Type        | Purpose                                | Role                 |
-| ---------------- | ----------- | -------------------------------------- | -------------------- |
-| `name`           | string      | Tool name                              | Stored, in embedText |
-| `description`    | string      | Tool description                       | Stored, in embedText |
-| `schemaText`     | string      | Readable param names (`city, units`)   | Stored, in embedText |
-| `nameVariations` | string      | Individual words from name, lowercased | Stored, in embedText |
-| `embedding`      | vector[384] | Semantic embedding                     | Vector search target |
+| Field            | Type        | Purpose                                | Role                                  |
+| ---------------- | ----------- | -------------------------------------- | ------------------------------------- |
+| `name`           | string      | Tool name                              | Stored, in embedText, BM25 searchable |
+| `description`    | string      | Tool description                       | Stored, in embedText, BM25 searchable |
+| `schemaText`     | string      | Readable param names (`city, units`)   | BM25 searchable                       |
+| `nameVariations` | string      | Individual words from name, lowercased | BM25 searchable                       |
+| `embedding`      | vector[384] | Semantic embedding                     | Vector search target                  |
 
-All string fields contribute to the `embedText` used to generate the embedding. Only `embedding` is directly searched — vector similarity is the sole retrieval mechanism.
+All string fields except `embedding` contribute to BM25 full-text search. `name`, `description`, and `schemaText` are also included in the `embedText` used to generate the embedding for vector similarity.
 
 ### Data Flow
 
@@ -66,9 +67,11 @@ User Query ──→ Vague? ──yes──→ _getLastUserQuery() ──→ Enr
                  └──────────────────────────────────────────→┤
                                                              ↓
                                            Embed → Vector similarity → Semantic Hits
-                                                                              ↓
+                                                             ↓
+User Query ────────────────────────────────────→ BM25 Text Search → Text Hits
+                                                             ↓
 Conversation History ──────────────────────────→ Sticky Extraction → Sticky Tools
-                                                                              ↓
+                                                             ↓
                                                   Merge & Deduplicate → Filtered Tools Object → LLM Agent
 ```
 
@@ -82,6 +85,7 @@ export class ToolRAG {
 		this.semanticLimit = options.semanticLimit ?? 5; // Max semantic search results
 		this.stickyWindow = options.stickyWindow ?? 3; // Recent assistant turns to scan
 		this.debounceMs = options.debounceMs ?? 100; // Reindex debounce delay
+		this.textSearchLimit = options.textSearchLimit ?? 3; // Max BM25 text search results
 
 		this._pipeline = null; // Transformer.js pipeline
 		this._db = null; // Orama vector database
@@ -94,11 +98,12 @@ export class ToolRAG {
 
 ### Constructor Options
 
-| Option          | Type     | Default | Description                                               |
-| --------------- | -------- | ------- | --------------------------------------------------------- |
-| `semanticLimit` | `number` | `5`     | Maximum tools returned from semantic search               |
-| `stickyWindow`  | `number` | `3`     | Number of recent assistant turns to scan for sticky tools |
-| `debounceMs`    | `number` | `100`   | Milliseconds to debounce reindexing operations            |
+| Option            | Type     | Default | Description                                               |
+| ----------------- | -------- | ------- | --------------------------------------------------------- |
+| `semanticLimit`   | `number` | `5`     | Maximum tools returned from semantic search               |
+| `stickyWindow`    | `number` | `3`     | Number of recent assistant turns to scan for sticky tools |
+| `debounceMs`      | `number` | `100`   | Milliseconds to debounce reindexing operations            |
+| `textSearchLimit` | `number` | `3`     | Maximum tools returned from BM25 text search              |
 
 ### Lifecycle Methods
 
@@ -149,8 +154,8 @@ async index(tools) {
         schema: {
             name: "string",
             description: "string",
-            schemaText: "string",     // readable param names — included in embedText
-            nameVariations: "string", // individual words from name — included in embedText
+            schemaText: "string",     // human-readable param names for BM25
+            nameVariations: "string", // individual words from name, lowercased for BM25
             embedding: `vector[${DIMS}]`,
         },
     });
@@ -158,7 +163,7 @@ async index(tools) {
     for (const tool of tools) {
         const desc = tool.description || "";
 
-        // Richer embedding: name variations + description + parameter names
+        // Richer embedding: name + description + parameter names
         const paramNames = Object.keys(
             tool.inputSchema?.properties ||
             tool.inputSchema?.jsonSchema?.properties || {}
@@ -172,8 +177,8 @@ async index(tools) {
         insert(this._db, {
             name: tool.name,
             description: desc,
-            schemaText: paramNames,
-            nameVariations: nameVariations.join(" ").toLowerCase(),
+            schemaText: paramNames, // clean readable text — BM25 indexes this
+            nameVariations: nameVariations.join(" ").toLowerCase(), // individual words, lowercased — BM25 indexes this
             embedding: vec,
         });
     }
@@ -194,8 +199,9 @@ async index(tools) {
 
 - Recreates database on each call
 - Calls `_generateNameVariations()` to break name into individual words (e.g. `list_calendar_events` → `["list", "calendar", "events"]`)
-- `embedText` format: `"${tool.name}. ${nameVariations.join(". ")}: ${description}. Parameters: ${paramNames}"` — packs full name, individual name words, description, and param names into one string so all query types are covered by vector similarity
-- `nameVariations` stored lowercased in schema for structural access; the embedding naturally handles case-insensitive matching
+- `embedText` format: `"${tool.name}. ${nameVariations.join(". ")}: ${description}. Parameters: ${paramNames}"` — packs full name, individual name words, description, and param names into one string for vector similarity
+- `schemaText` and `nameVariations` stored separately for BM25 full-text search
+- `nameVariations` stored lowercased for case-insensitive BM25 matching
 
 #### `reindex(activeTools)`
 
@@ -280,6 +286,46 @@ async search(query, limit = this.semanticLimit) {
 
 > **Tool authoring tip:** Both **names** and **descriptions** feed the embedding. Keep names specific and action-oriented, and write descriptions using natural language and intent phrases rather than API documentation style. See [Tool Authoring Strategy](#tool-authoring-strategy) for details.
 
+#### `async textSearch(query, limit?)`
+
+Performs **BM25 full-text search** over indexed tools.
+
+```javascript
+async textSearch(query, limit = this.textSearchLimit) {
+    this._assertReady();
+    if (!this._db) return [];
+
+    const { search } = await import("@orama/orama");
+
+    const results = await search(this._db, {
+        mode: "fulltext",
+        term: query,
+        properties: ["name", "description", "schemaText", "nameVariations"],
+        limit,
+    });
+
+    return (results.hits || []).map((h) => ({
+        name: h.document.name,
+        description: h.document.description,
+        score: Math.round(h.score * 1000) / 1000,
+    }));
+}
+```
+
+**Parameters:**
+
+- `query`: `string` - Search query text
+- `limit`: `number` - Maximum results (default: `this.textSearchLimit`)
+
+**Returns:** `Promise<Array<{name, description, score}>>`
+
+**Implementation Notes:**
+
+- `mode: "fulltext"` — BM25 ranking over specified properties
+- Searches `name`, `description`, `schemaText` (parameter names), and `nameVariations` (individual words from name)
+- Useful for exact keyword matches and partial name queries
+- Rounds scores to 3 decimal places
+
 ### Sticky Context Methods
 
 #### `extractSticky(history, window?)`
@@ -340,20 +386,22 @@ extractSticky(history, window = this.stickyWindow) {
 
 #### `async select(query, history, allTools, options?)`
 
-Combines semantic search and sticky context to select relevant tools.
+Combines semantic search, BM25 text search, and sticky context to select relevant tools.
 
 ```javascript
 async select(query, history, allTools, options = {}) {
     const limit = options.semanticLimit ?? this.semanticLimit;
     const window = options.stickyWindow ?? this.stickyWindow;
 
-    // Fallback: if RAG not ready, return all tools
     if (!this._pipeline || !this._db) {
         console.warn("ToolRAG not ready, returning all tools");
         return allTools;
     }
 
+    console.log("<<-------------------------------------");
+
     // 1. Semantic hits — enrich vague queries with conversation context
+    let searchQuery = query;
     const hits = await this.search(query, limit);
     const topScore = hits.length > 0 ? hits[0].score : 0;
     const isVague = query.split(/\s+/).length <= 6 || topScore < 0.4;
@@ -361,8 +409,8 @@ async select(query, history, allTools, options = {}) {
     if (isVague) {
         const prevQuery = this._getLastUserQuery(history);
         if (prevQuery) {
-            const enrichedQuery = `${query}. Context: ${prevQuery}`;
-            const enrichedHits = await this.search(enrichedQuery, limit);
+            searchQuery = `${query}. Context: ${prevQuery}`;
+            const enrichedHits = await this.search(searchQuery, limit);
             // Merge: keep enriched hits, add any original hits not already present
             const seen = new Set(enrichedHits.map((h) => h.name));
             for (const h of hits) {
@@ -370,25 +418,53 @@ async select(query, history, allTools, options = {}) {
             }
             hits.length = 0;
             hits.push(...enrichedHits);
+            console.log(
+                "[ToolRAG] Vague query enriched with previous user query:",
+                prevQuery,
+            );
         }
     }
 
     const selected = new Set();
+
+    console.log(
+        "Semantic tools",
+        Array.from(hits, (h) => `${h.name} `),
+    );
+
     for (const t of hits) {
         selected.add(t.name);
     }
 
-    // 2. Sticky context — tools used in recent turns
+    // 2. BM25 text search
+    const textHits = await this.textSearch(query, this.textSearchLimit);
+    console.log(
+        "Text tools",
+        Array.from(textHits, (h) => `${h.name} `),
+    );
+
+    for (const t of textHits) {
+        selected.add(t.name);
+    }
+
+    // 3. Sticky context (tool calls from previous turns)
     const sticky = this.extractSticky(history, window);
+
     for (const name of sticky) {
         selected.add(name);
     }
 
+    console.log("Sticky tools", sticky);
+
     // 3. Build result object in exact tools format
     const result = {};
     for (const name of selected) {
-        if (allTools[name]) result[name] = allTools[name];
+        if (allTools[name]) {
+            result[name] = allTools[name];
+        }
     }
+
+    console.log("------------------------------------->>");
 
     return result;
 }
@@ -406,12 +482,13 @@ async select(query, history, allTools, options = {}) {
 **Algorithm:**
 
 1. **Fallback check** — if not initialized or not indexed, return `allTools` immediately
-2. **Initial search** — vector similarity on current query → top N hits
+2. **Semantic search** — vector similarity on current query → top N hits
 3. **Vague detection** — query is vague if it has ≤ 6 words **OR** top hit score < 0.4
 4. **Query enrichment** (if vague) — fetches previous user message via `_getLastUserQuery()`, re-searches with `"${query}. Context: ${prevQuery}"`, merges results
-5. **Sticky extraction** — scan last K assistant turns for tool calls → tool names
-6. **Merge** — union of search + sticky, deduplicated
-7. **Build result** — return matching tools in original MCP format
+5. **Text search** — BM25 full-text search on query → additional hits
+6. **Sticky extraction** — scan last K assistant turns for tool calls → tool names
+7. **Merge** — union of semantic + text + sticky, deduplicated
+8. **Build result** — return matching tools in original MCP format
 
 **Why enrichment matters:**
 
@@ -427,11 +504,11 @@ Turn 2 — User: "do it for kolkata too"
 
 #### `async testSelect(query, history, allTools, options?)`
 
-Debug/inspection variant of `select()`. Includes the same vague query enrichment logic. Returns a sorted annotated array instead of the tools object, for evaluating retrieval quality.
+Debug/inspection variant of `select()`. Includes the same logic for semantic search, text search, vague query enrichment, and sticky context. Returns a sorted annotated array instead of the tools object, for evaluating retrieval quality.
 
-**Returns:** `Promise<Array<{name, description, score, source}>>` — sorted by score descending, with `source` being `"semantic"`, `"sticky"`, or `"both"`
+**Returns:** `Promise<Array<{name, description, score, source}>>` — sorted by score descending (semantic/text first, then sticky), with `source` being `"semantic"`, `"text"`, `"sticky"`, or `"both"`
 
-**Use this for:** Debugging retrieval, evaluating query coverage, tuning `semanticLimit`/`stickyWindow`, verifying enrichment is firing correctly.
+**Use this for:** Debugging retrieval, evaluating query coverage, tuning `semanticLimit`/`textSearchLimit`/`stickyWindow`, verifying enrichment is firing correctly.
 
 ### Utility Methods
 
@@ -621,7 +698,7 @@ const agent = await chatAgent(filteredTools);
 - **Initialization:** ~80MB download (first run), ~0.25s (cached)
 - **Indexing:** ~50ms per tool (embedding + DB insert)
 - **Search:** ~10-20ms per query (embedding + vector search)
-- **Selection:** ~20-50ms total (search + sticky extraction)
+- **Selection:** ~30-60ms total (semantic search + text search + sticky extraction)
 
 ## Error Handling
 
@@ -649,7 +726,7 @@ A pre-configured singleton is available:
 ```javascript
 import { toolRAG } from "./electron/mcp/toolRAG.js";
 
-// Uses stickyWindow: 10 (increased from default 3)
+// Uses stickyWindow: 10 (increased from default 3), textSearchLimit: 3
 ```
 
 This provides a ready-to-use instance with optimized defaults for production use.
@@ -692,14 +769,17 @@ Descriptions are embedded alongside the name. Write them how users **think and s
 Query: "whats the feel in durgapur? warm or cold"
 
   Vector: "warm or cold" → "temperature, weather forecast" → ✅ get_weather
+  BM25: "warm" matches description → ✅ get_weather
 
 Query: "list calendar"
 
   Vector: "list calendar" + nameVariations ("list", "calendar", "events") in embedText → ✅ list_calendar_events
+  BM25: "calendar" matches nameVariations → ✅ list_calendar_events
 
 Query: "get_weather"
 
   Vector: exact name in embedText → ✅ strong match
+  BM25: exact name match → ✅ strong match
 ```
 
 The enriched `embedText` format ensures coverage for **exact**, **partial**, and **semantic** queries without any query preprocessing.

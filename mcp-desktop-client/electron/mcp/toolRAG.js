@@ -20,6 +20,7 @@ export class ToolRAG {
 		this.semanticLimit = options.semanticLimit ?? 5;
 		this.stickyWindow = options.stickyWindow ?? 3;
 		this.debounceMs = options.debounceMs ?? 100;
+		this.textSearchLimit = options.textSearchLimit ?? 3;
 
 		this._pipeline = null;
 		this._db = null;
@@ -160,6 +161,32 @@ export class ToolRAG {
 		}));
 	}
 
+	/**
+	 * BM25 full-text search over indexed tools.
+	 * @param {string} query
+	 * @param {number} [limit]
+	 * @returns {Promise<Array<{name, description, score}>>}
+	 */
+	async textSearch(query, limit = this.textSearchLimit) {
+		this._assertReady();
+		if (!this._db) return [];
+
+		const { search } = await import("@orama/orama");
+
+		const results = await search(this._db, {
+			mode: "fulltext",
+			term: query,
+			properties: ["name", "description", "schemaText", "nameVariations"],
+			limit,
+		});
+
+		return (results.hits || []).map((h) => ({
+			name: h.document.name,
+			description: h.document.description,
+			score: Math.round(h.score * 1000) / 1000,
+		}));
+	}
+
 	// ── Sticky Context ──────────────────────────────────────────────────────────
 
 	/**
@@ -269,7 +296,18 @@ export class ToolRAG {
 			selected.add(t.name);
 		}
 
-		// 2. Sticky context (tool calls from previous turns)
+		// 2. BM25 text search
+		const textHits = await this.textSearch(query, this.textSearchLimit);
+		console.log(
+			"Text tools",
+			Array.from(textHits, (h) => `${h.name} `),
+		);
+
+		for (const t of textHits) {
+			selected.add(t.name);
+		}
+
+		// 3. Sticky context (tool calls from previous turns)
 		const sticky = this.extractSticky(history, window);
 
 		for (const name of sticky) {
@@ -320,7 +358,17 @@ export class ToolRAG {
 			map.set(t.name, { ...t, source: "semantic" });
 		}
 
-		// 2. Sticky context
+		// 2. BM25 text search
+		const textHits = await this.textSearch(query, this.textSearchLimit);
+		for (const t of textHits) {
+			if (map.has(t.name)) {
+				map.get(t.name).source = "both";
+				continue;
+			}
+			map.set(t.name, { ...t, source: "text" });
+		}
+
+		// 3. Sticky context
 		const sticky = this.extractSticky(history, window);
 
 		for (const name of sticky) {
@@ -340,7 +388,7 @@ export class ToolRAG {
 			}
 		}
 
-		// 3. Sort: semantic/both first (by score desc), then sticky
+		// 4. Sort: semantic/text/both first (by score desc), then sticky
 		return [...map.values()].sort((a, b) => {
 			if (a.source === "sticky" && b.source !== "sticky") return 1;
 			if (a.source !== "sticky" && b.source === "sticky") return -1;
@@ -443,4 +491,5 @@ export class ToolRAG {
 // Default singleton for convenience
 export const toolRAG = new ToolRAG({
 	stickyWindow: 10,
+	textSearchLimit: 3,
 });
