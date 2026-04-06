@@ -296,6 +296,8 @@ export class Tools extends EventEmitter {
 		}
 
 		try {
+			await this.ensureInitialized();
+
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -314,9 +316,28 @@ export class Tools extends EventEmitter {
 					error: validation.errors,
 				};
 			}
-			await this.updateConfig(defaults);
+
+			const existingConfig = this.state.config || {};
+			const mergedConfig = { ...defaults, ...existingConfig };
+			const importedServers = Object.keys(defaults).filter(
+				(serverName) =>
+					!Object.prototype.hasOwnProperty.call(
+						existingConfig,
+						serverName,
+					),
+			);
+
+			if (importedServers.length > 0) {
+				await this.updateConfig(mergedConfig);
+			}
+
 			const results = await this.initializeMcpClients();
-			return { success: true, results };
+			return {
+				success: true,
+				results,
+				importedCount: importedServers.length,
+				importedServers,
+			};
 		} catch (error) {
 			console.error("Failed to load defaults:", error);
 			return { success: false, error: error.message };

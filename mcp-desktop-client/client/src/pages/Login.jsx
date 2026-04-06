@@ -15,13 +15,11 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuthStore } from "@/store/authStore";
-import { useMcpStore } from "@/store/mcpStore";
 
 export default function LoginPage() {
 	const [formData, setFormData] = useState({ email: "", password: "" });
 	const [showPassword, setShowPassword] = useState(false);
 	const { login, googleLogin, loading, error } = useAuthStore();
-	const { loadDefaultServers } = useMcpStore();
 	const navigate = useNavigate();
 
 	const hasLoggedInRef = useRef(false); // New ref to prevent duplicate logins
@@ -35,9 +33,6 @@ export default function LoginPage() {
 				hasLoggedInRef.current = true; // Mark as processed
 				await googleLogin(tokens);
 
-				// Load default MCP servers after successful login
-				loadDefaultServers();
-
 				navigate("/");
 			} catch (err) {
 				toast.error("Failed to store tokens");
@@ -46,7 +41,7 @@ export default function LoginPage() {
 		};
 		window.oauthAPI.onTokens(handleTokens);
 		return () => window.oauthAPI.offTokens(handleTokens);
-	}, [navigate, googleLogin, loadDefaultServers]);
+	}, [navigate, googleLogin]);
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
@@ -57,9 +52,6 @@ export default function LoginPage() {
 		e.preventDefault();
 		try {
 			await login(formData);
-
-			// Load default MCP servers after successful login
-			await loadDefaultServers();
 
 			navigate("/");
 		} catch (err) {

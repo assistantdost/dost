@@ -28,6 +28,11 @@ export const useMcpStore = create((set, get) => ({
 				);
 				console.error("MCP Initialization error:", fail);
 			});
+
+			const currentConfig = await window.mcp.readConfig();
+			if (Object.keys(currentConfig || {}).length === 0) {
+				await get().loadDefaultServers();
+			}
 		} catch (error) {
 			console.error("❌ Error initializing MCP Store:", error);
 			toast.error("Failed to initialize MCP Store");
@@ -36,7 +41,7 @@ export const useMcpStore = create((set, get) => ({
 
 	// ========== CONFIG MANAGEMENT ==========
 
-	// Load default servers from API on login
+	// Load default servers from API (merge-missing: preserves existing server credentials/details)
 	loadDefaultServers: async () => {
 		if (!isRenderer) return { success: false };
 
