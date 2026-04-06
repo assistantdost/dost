@@ -155,7 +155,7 @@ const MemoizedMessagePart = memo(({ part, messageId, index, status, role }) => {
 								output={
 									part.output?.content?.[0]?.type ===
 										"text" && (
-										<Response state="done">
+										<Response state="done" role={role}>
 											{part.output.content[0].text}
 										</Response>
 									)
