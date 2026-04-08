@@ -1,6 +1,6 @@
 # Desktop Client Multi-Profile Isolation Implementation
 
-Date: 2026-04-06
+Date: 2026-04-09
 
 ## Goal
 
@@ -14,7 +14,7 @@ Implement multi-profile support on the same machine by isolating desktop client 
     - `users/<userId>/config.json` via `electron-store`
     - `users/<userId>/mcp.json` for MCP server configuration
 4. Logout and unauthorized flows clear in-memory auth context in Electron and reset active profile context.
-5. `logged` ownership moved from `authStore` to `globalStore` and remains persisted.
+5. `logged` ownership moved from `authStore` to `globalStore` and is now persisted in root `profile-meta.json`.
 6. MCP initialization is no longer eager at app startup; it initializes only when authenticated state is available.
 7. AI model state and provider keys are re-initialized on login/logout profile switch, preventing cross-user key leakage.
 8. TanStack chat queries/mutations are centralized in one module with shared keys and invalidation behavior.
@@ -25,12 +25,16 @@ Implement multi-profile support on the same machine by isolating desktop client 
 Base path: `app.getPath("userData")`
 
 - Profile metadata:
-    - `profile-meta.json` (tracks last active user id)
+    - `profile-meta.json` (tracks `lastUserId` and persisted `globalStore` fields like `logged` and theme)
 - Per-profile stores:
-    - `users/guest/config.json` (before login)
-    - `users/<userId>/config.json` (after login)
+    - `users/<userId>/config.json` (only for authenticated users)
 - Per-profile MCP config:
     - `users/<userId>/mcp.json`
+
+Notes:
+
+- No guest profile file is used for persisted app state.
+- When unauthenticated, non-global renderer store writes are treated as ephemeral and are not persisted to disk.
 
 ## Auth Context Flow
 
@@ -48,10 +52,11 @@ Base path: `app.getPath("userData")`
 1. Renderer clears auth state (`token`, `user`).
 2. Renderer sets `logged = false`.
 3. Renderer calls `window.authAPI.clearToken()`.
-4. Main process clears in-memory `authToken` and `authUserId`.
-5. Main process resets MCP runtime context and active profile binding.
-6. Main process re-initializes AI model against guest/no-auth context.
-7. Renderer clears chat query cache and local chat state.
+4. Main process persists `globalStore.state.logged = false` in `profile-meta.json`.
+5. Main process clears in-memory `authToken` and `authUserId`.
+6. Main process resets MCP runtime context and active profile binding.
+7. Main process re-initializes AI model against no-auth context.
+8. Renderer clears chat query cache and local chat state.
 
 ## Client-Side State Changes
 
@@ -63,6 +68,8 @@ Base path: `app.getPath("userData")`
 - Persisted fields:
     - `theme`
     - `logged`
+- Persistence location:
+    - Root `profile-meta.json` (not per-user `config.json`)
 
 ### `authStore`
 
@@ -108,8 +115,12 @@ Base path: `app.getPath("userData")`
     - `clearActiveUser()`
     - `getActiveUserId()`
     - `getStore()`
+    - `getMetaStore()`
+    - `getScopedStore(key)`
 - Uses `electron-store` with dynamic `cwd`:
     - `users/<userId>/config.json`
+- Routes `globalStore` key to root `profile-meta.json`.
+- Removes guest-backed persisted store for unauthenticated mode (uses in-memory ephemeral store for non-global keys).
 - Keeps compatibility by exporting `getStore` as default and resolving instance at call-sites.
 
 ### Auth IPC (`electron/authIPC.js`)
@@ -126,8 +137,8 @@ Base path: `app.getPath("userData")`
     - `auth:get-token`
     - `auth:get-user-id`
 - Profile switch behavior in handlers:
-    - `auth:set-token` -> set active user, set MCP active user, re-init AI model
-    - `auth:clear-token` -> reset MCP runtime, clear active user, re-init AI model
+    - `auth:set-token` -> set active user, persist `logged=true` in profile meta, set MCP active user, re-init AI model
+    - `auth:clear-token` -> persist `logged=false` in profile meta, reset MCP runtime, clear active user, re-init AI model
 
 ### MCP Tools (`electron/mcp/tools.js`)
 
@@ -149,7 +160,9 @@ Base path: `app.getPath("userData")`
 
 - Removed eager `tools.init()` from app startup.
 - Kept AI and RAG initialization.
-- Electron store IPC now resolves the active profile store on each call.
+- Electron store IPC now resolves scoped stores by key:
+    - `globalStore` -> root profile meta store
+    - Other keys -> active authenticated user store
 
 ### Preload (`electron/preload.js`)
 
@@ -163,9 +176,10 @@ Base path: `app.getPath("userData")`
 
 ## Important Runtime Notes
 
-- `globalStore` persistence currently follows active profile store because renderer storage bridge uses Electron store IPC bound to active profile.
-- Before login, state goes to guest profile.
-- After login, state goes to `users/<userId>/config.json`.
+- `globalStore` persistence is no longer tied to active user profile files.
+- `logged` state is persisted in root profile metadata and remains stable across profile switching.
+- User-specific app state remains in `users/<userId>/config.json`.
+- MCP server config remains in `users/<userId>/mcp.json`.
 
 ## Backward Compatibility Fixes
 
@@ -180,13 +194,14 @@ Later improvement: JWT payload parsing moved from manual base64 logic to `jsonwe
 
 ## Validation Checklist
 
-1. Start app logged out: no MCP initialization crash.
+1. Start app logged out: no MCP initialization crash and no guest profile persistence side effects.
 2. Login user A:
     - `users/<userA>/config.json` created
     - `users/<userA>/mcp.json` created on MCP config write
 3. Logout:
     - logged false
     - token/user cleared
+    - `profile-meta.json` updated with `globalStore.state.logged = false`
     - Electron in-memory auth context cleared
     - AI model reinitialized
     - chat query cache cleared
@@ -198,6 +213,7 @@ Later improvement: JWT payload parsing moved from manual base64 logic to `jsonwe
 5. Restart app:
     - persisted logged behavior remains as designed
     - refresh flow still runs when logged is true
+    - no stale previous-user flash from guest config
 
 ## Known Non-Blocking Item
 

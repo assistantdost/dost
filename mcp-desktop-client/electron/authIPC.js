@@ -1,6 +1,6 @@
 import { ipcMain } from "electron";
 import jwt from "jsonwebtoken";
-import { clearActiveUser, setActiveUser } from "./store.js";
+import { clearActiveUser, getMetaStore, setActiveUser } from "./store.js";
 import { tools } from "./mcp/tools.js";
 import { aiModel } from "./ai/models.js";
 
@@ -31,6 +31,19 @@ export function hasAuthContext() {
 	return Boolean(authToken && authUserId);
 }
 
+function setPersistedLogged(logged) {
+	const metaStore = getMetaStore();
+	const globalStoreState = metaStore.get("globalStore") || {};
+
+	metaStore.set("globalStore", {
+		...globalStoreState,
+		state: {
+			...(globalStoreState.state || {}),
+			logged,
+		},
+	});
+}
+
 export function setupAuthIPC() {
 	console.log("✅ Auth IPC handlers registered");
 	ipcMain.handle("auth:set-token", async (event, token) => {
@@ -42,12 +55,14 @@ export function setupAuthIPC() {
 		authToken = token;
 		authUserId = decodedUserId;
 		setActiveUser(decodedUserId);
+		setPersistedLogged(true);
 		tools.setActiveUserId(decodedUserId);
 		await aiModel.init();
 		return true; // Acknowledge
 	});
 
 	ipcMain.handle("auth:clear-token", async () => {
+		setPersistedLogged(false);
 		await tools.resetForLogout();
 		clearActiveUser();
 		await aiModel.init();

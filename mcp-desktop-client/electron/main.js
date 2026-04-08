@@ -2,7 +2,7 @@ import { app, BrowserWindow, shell, ipcMain, protocol, net } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import getStore from "./store.js";
+import getStore, { getMetaStore, getScopedStore } from "./store.js";
 import "./ipcStore.js";
 import { setupAuthIPC } from "./authIPC.js";
 import { createServer } from "./server/server.js";
@@ -33,16 +33,20 @@ protocol.registerSchemesAsPrivileged([
 
 // IPC listeners
 ipcMain.on("electron-store-get", async (event, val) => {
-	event.returnValue = getStore().get(val);
+	event.returnValue = getScopedStore(val).get(val);
 });
 ipcMain.on("electron-store-set", async (event, key, val) => {
-	getStore().set(key, val);
+	getScopedStore(key).set(key, val);
 });
 ipcMain.on("electron-store-delete", async (event, key) => {
-	getStore().delete(key);
+	getScopedStore(key).delete(key);
 });
 ipcMain.on("electron-store-get-all", async (event) => {
-	event.returnValue = getStore().store;
+	const userStore = getStore();
+	event.returnValue = {
+		...userStore.store,
+		globalStore: getMetaStore().get("globalStore"),
+	};
 });
 
 ipcMain.on("electron-store-delete-all", (event) => {
