@@ -1,7 +1,10 @@
 import { apiHelpers } from "../config/axios";
 
-export const getUserChats = async () => {
-	return apiHelpers.get("/chats/");
+export const getUserChats = async (limit = 20, cursor = null) => {
+	const params = new URLSearchParams();
+	params.append("limit", limit);
+	if (cursor) params.append("cursor", cursor);
+	return apiHelpers.get(`/chats/?${params.toString()}`);
 };
 
 export const getChat = async (chatId) => {

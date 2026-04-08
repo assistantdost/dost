@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
 import {
 	Sidebar,
@@ -65,17 +66,36 @@ const items = [
 
 export function AppSidebar() {
 	const token = useAuthStore((state) => state.token);
-	const { setChats, activeChatId } = useChatStore();
+	const { activeChatId } = useChatStore();
 	const { theme, toggleTheme, logged } = useGlobalStore();
 	const { toolCount } = useMcpStore();
 
-	// Fetch user chats with TanStack Query - only when logged and has token
-	const { data: chats = [], isLoading: isLoadingChats } = useQuery(
-		chatQueryOptions.list({
-			enabled: logged && !!token,
-			onSuccess: (data) => setChats(data),
-		}),
-	);
+	// Fetch user chats with TanStack Infinite Query - only when logged and has token
+	const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+		useInfiniteQuery(
+			chatQueryOptions.list({
+				enabled: logged && !!token,
+			}),
+		);
+
+	const allChats = data?.pages?.flatMap((page) => page.chats) || [];
+
+	const sentinelRef = useRef(null);
+
+	useEffect(() => {
+		if (sentinelRef.current && hasNextPage) {
+			const observer = new IntersectionObserver(
+				(entries) => {
+					if (entries[0].isIntersecting && !isFetchingNextPage) {
+						fetchNextPage();
+					}
+				},
+				{ threshold: 1.0 },
+			);
+			observer.observe(sentinelRef.current);
+			return () => observer.disconnect();
+		}
+	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 	return (
 		<Sidebar>
@@ -120,38 +140,55 @@ export function AppSidebar() {
 					<SidebarGroup>
 						<SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
 						<SidebarGroupContent>
-							{isLoadingChats ? (
+							{!data ? (
 								<div className="px-4 py-2 text-sm text-muted-foreground">
 									Loading chats...
 								</div>
-							) : chats.length === 0 ? (
+							) : allChats.length === 0 ? (
 								<div className="px-4 py-2 text-sm text-muted-foreground">
 									No chats yet
 								</div>
 							) : (
-								<SidebarMenu>
-									{chats.map((chat) => (
-										<SidebarMenuItem key={chat.id}>
-											<div className="flex items-center justify-between group">
-												<SidebarMenuButton
-													asChild
-													className={`${activeChatId === chat.id ? "bg-primary/10" : ""} rounded-md flex-1 min-w-0`}
-												>
-													<Link
-														to={`/chat/${chat.id}`}
-														className="flex items-center gap-2 flex-1 min-w-0"
+								<div className="h-80 overflow-y-auto ">
+									<SidebarMenu>
+										{allChats.map((chat) => (
+											<SidebarMenuItem key={chat.id}>
+												<div className="flex items-center justify-between group">
+													<SidebarMenuButton
+														asChild
+														className={`${activeChatId === chat.id ? "bg-primary/10" : ""} rounded-md flex-1 min-w-0`}
 													>
-														<MessageCircle className="h-4 w-4 flex-shrink-0" />
-														<span className="truncate">
-															{chat.name}
-														</span>
-													</Link>
-												</SidebarMenuButton>
-												<ChatItemActions chat={chat} />
-											</div>
-										</SidebarMenuItem>
-									))}
-								</SidebarMenu>
+														<Link
+															to={`/chat/${chat.id}`}
+															className="flex items-center gap-2 flex-1 min-w-0"
+														>
+															<MessageCircle className="h-4 w-4 flex-shrink-0" />
+															<span className="truncate">
+																{chat.name}
+															</span>
+														</Link>
+													</SidebarMenuButton>
+													<ChatItemActions
+														chat={chat}
+													/>
+												</div>
+											</SidebarMenuItem>
+										))}
+										{hasNextPage && (
+											<SidebarMenuItem>
+												<div
+													ref={sentinelRef}
+													className="h-4 w-full"
+												/>
+											</SidebarMenuItem>
+										)}
+									</SidebarMenu>
+									{isFetchingNextPage && (
+										<div className="px-4 py-2 text-sm text-muted-foreground">
+											Loading more...
+										</div>
+									)}
+								</div>
 							)}
 						</SidebarGroupContent>
 					</SidebarGroup>

@@ -110,3 +110,8 @@ class ChatMeta(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PaginatedChats(BaseModel):
+    chats: List[ChatMeta]
+    next_cursor: Optional[str] = None

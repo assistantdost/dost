@@ -1,21 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
 from database import get_db
-from schemas.chat import Chat, ChatCreate, ChatUpdate, ChatMeta, ChatNameUpdate, ChatSummaryUpdate
+from schemas.chat import Chat, ChatCreate, ChatUpdate, ChatMeta, ChatNameUpdate, ChatSummaryUpdate, PaginatedChats
 from middleware.helper import protected_route
 from crud import chat as crud_chat
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ChatMeta])
+@router.get("/", response_model=PaginatedChats)
 async def get_user_chats(
+    limit: int = Query(20, ge=1, le=100),
+    cursor: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(protected_route)
 ):
-    """Get all chats metadata for the current user"""
-    chats = await crud_chat.get_user_chats(db, current_user)
+    """Get paginated chats metadata for the current user"""
+    chats = await crud_chat.get_user_chats(db, current_user, limit, cursor)
 
     result = []
     for chat in chats:
@@ -29,7 +31,9 @@ async def get_user_chats(
             last_summarized_message_id=chat.last_summarized_message_id
         ))
 
-    return result
+    next_cursor = result[-1].updated_at.isoformat() if result and len(result) == limit else None
+
+    return PaginatedChats(chats=result, next_cursor=next_cursor)
 
 
 @router.get("/{chat_id}", response_model=Chat)

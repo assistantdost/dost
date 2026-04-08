@@ -7,13 +7,17 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta  # ✅ add timedelta
 
 
-async def get_user_chats(db: AsyncSession, user_id: str) -> List[ChatModel]:
-    """Get all chats for a user"""
-    result = await db.execute(
-        select(ChatModel)
-        .where(ChatModel.user_id == user_id)
-        .order_by(ChatModel.updated_at.desc())  # ✅ most recently updated first
-    )
+async def get_user_chats(db: AsyncSession, user_id: str, limit: int = 20, cursor: Optional[str] = None) -> List[ChatModel]:
+    """Get paginated chats for a user with cursor-based pagination"""
+    query = select(ChatModel).where(ChatModel.user_id == user_id)
+
+    if cursor:
+        # Cursor is the last updated_at in ISO format
+        cursor_dt = datetime.fromisoformat(cursor.replace('Z', '+00:00'))
+        query = query.where(ChatModel.updated_at < cursor_dt)
+
+    query = query.order_by(ChatModel.updated_at.desc()).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 

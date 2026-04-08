@@ -16,12 +16,13 @@ export const queryKeys = {
 export const chatQueryOptions = {
 	list: ({ enabled = true, onSuccess } = {}) => ({
 		queryKey: queryKeys.chats.all,
-		queryFn: async () => {
-			const response = await getUserChats();
-			return response || [];
+		queryFn: async ({ pageParam = null }) => {
+			const response = await getUserChats(10, pageParam);
+			return response || { chats: [], next_cursor: null };
 		},
 		enabled,
 		onSuccess,
+		getNextPageParam: (lastPage) => lastPage.next_cursor,
 	}),
 	detail: (chatId, { enabled = true } = {}) => ({
 		queryKey: queryKeys.chats.detail(chatId),
