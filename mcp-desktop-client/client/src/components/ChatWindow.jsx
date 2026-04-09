@@ -154,7 +154,12 @@ const MemoizedMessagePart = memo(({ part, messageId, index, status, role }) => {
 			return (
 				<Tool
 					key={`${messageId}-${index}`}
-					defaultOpen={part.state === "output-available"}
+					// defaultOpen={
+					// 	status === "streaming" &&
+					// 	(part.state === "input-streaming" ||
+					// 		part.state === "input-available")
+					// }
+					// open={status === "output-available"}
 				>
 					<ToolHeader
 						type={part.type}
@@ -412,6 +417,7 @@ export default function ChatWindow({
 	const inputRef = useRef(null);
 	const isNearBottomRef = useRef(true);
 	const isFetchingOlderRef = useRef(false);
+	const lastScrollTopRef = useRef(0);
 
 	// ✅ Load messages when initialMessages change or on mount
 	useEffect(() => {
@@ -437,40 +443,42 @@ export default function ChatWindow({
 		if (!scrollRef.current) return;
 
 		const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+		const isScrollingUp = scrollTop < lastScrollTopRef.current;
+		lastScrollTopRef.current = scrollTop;
 		const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
 		// Consider "near bottom" if within 100px
 		isNearBottomRef.current = distanceFromBottom < 100;
 		setIsUserScrolling(distanceFromBottom > 100);
 
-		if (
-			scrollTop < 80 &&
-			hasMoreOlder &&
-			!isLoadingOlder &&
-			!isFetchingOlderRef.current
-		) {
-			const prevScrollTop = scrollRef.current.scrollTop;
-			const prevScrollHeight = scrollRef.current.scrollHeight;
+		if (!hasMoreOlder || isLoadingOlder || isFetchingOlderRef.current)
+			return;
+		if (!isScrollingUp || scrollTop >= 80) return;
 
-			isFetchingOlderRef.current = true;
-			Promise.resolve(onLoadOlder?.())
-				.catch((fetchOlderError) => {
-					console.error(
-						"Failed to load older messages:",
-						fetchOlderError,
-					);
-					toast.error("Failed to load older messages");
-				})
-				.finally(() => {
-					requestAnimationFrame(() => {
-						if (!scrollRef.current) return;
-						const newScrollHeight = scrollRef.current.scrollHeight;
-						scrollRef.current.scrollTop =
-							newScrollHeight - prevScrollHeight + prevScrollTop;
-						isFetchingOlderRef.current = false;
-					});
+		// Avoid loading older messages on initial render when content is not scrollable yet.
+		if (scrollHeight <= clientHeight) return;
+
+		const prevScrollTop = scrollTop;
+		const prevScrollHeight = scrollHeight;
+
+		isFetchingOlderRef.current = true;
+		Promise.resolve(onLoadOlder?.())
+			.catch((fetchOlderError) => {
+				console.error(
+					"Failed to load older messages:",
+					fetchOlderError,
+				);
+				toast.error("Failed to load older messages");
+			})
+			.finally(() => {
+				requestAnimationFrame(() => {
+					if (!scrollRef.current) return;
+					const newScrollHeight = scrollRef.current.scrollHeight;
+					scrollRef.current.scrollTop =
+						newScrollHeight - prevScrollHeight + prevScrollTop;
+					isFetchingOlderRef.current = false;
 				});
-		}
+			});
 	}, [hasMoreOlder, isLoadingOlder, onLoadOlder]);
 
 	// ✅ Debounced auto-scroll to bottom (only if user is near bottom)

@@ -5,7 +5,7 @@ from models.chat import Chat as ChatModel, Message as MessageModel
 from schemas.chat import ChatCreate, ChatUpdate
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta  # ✅ add timedelta
-import ulid
+from ulid import ULID
 
 
 async def get_user_chats(db: AsyncSession, user_id: str, limit: int = 20, cursor: Optional[str] = None) -> List[ChatModel]:
@@ -52,9 +52,8 @@ def _decode_ulid_time(ulid_str: str) -> Optional[datetime]:
     if not ulid_str:
         return None
     try:
-        value = ulid.from_str(ulid_str)
-        ts_ms = value.timestamp().int
-        return datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+        value = ULID.from_str(ulid_str)
+        return _as_utc(value.datetime)
     except Exception:
         return None
 
