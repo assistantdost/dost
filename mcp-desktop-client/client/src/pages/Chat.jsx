@@ -18,7 +18,7 @@ function Chat() {
 	const logged = useGlobalStore((state) => state.logged);
 
 	// Fetch chat messages with infinite query - only when logged and has token
-	const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
+	const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
 		useInfiniteQuery(
 			chatQueryOptions.detailInfinite(chatId, {
 				enabled: !!chatId && logged && !!token,
@@ -26,7 +26,8 @@ function Chat() {
 		);
 
 	const pages = data?.pages || [];
-	const chat = pages[0] || null;
+	const firstPage = pages[0] || null;
+	const chatModel = firstPage?.chat_model || null;
 
 	const mergedMessages = useMemo(() => {
 		if (pages.length === 0) return [];
@@ -52,24 +53,32 @@ function Chat() {
 		await fetchNextPage();
 	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-	// Update messages and summary in store when chat data changes
+	// Keep active chat ID in store in sync with route.
 	useEffect(() => {
-		if (chat?.summary !== undefined) {
-			setSummary(chat.summary, chat.last_summarized_message_id);
+		setActiveChatId(chatId);
+	}, [chatId, setActiveChatId]);
+
+	// Update summary metadata when first page changes.
+	useEffect(() => {
+		if (firstPage?.summary !== undefined) {
+			setSummary(firstPage.summary, firstPage.last_summarized_message_id);
+		}
+	}, [firstPage?.summary, firstPage?.last_summarized_message_id, setSummary]);
+
+	// Select locked model when model/provider context is available.
+	useEffect(() => {
+		if (!chatModel) {
+			return;
 		}
 
-		// If chat has a locked model, try to select it
-		if (chat?.chat_model !== undefined) {
-			const { provider, name, id } = chat?.chat_model;
-			const modelFound = providers?.[provider].models?.[id] !== null;
-			if (modelFound) {
-				selectChatModel(provider, id);
-			} else {
-				toast.warning(`Chat model ${provider} - ${name} not found.`);
-			}
+		const { provider, name, id } = chatModel;
+		const modelFound = providers?.[provider]?.models?.[id] !== null;
+		if (modelFound) {
+			selectChatModel(provider, id);
+		} else {
+			toast.warning(`Chat model ${provider} - ${name} not found.`);
 		}
-		setActiveChatId(chatId);
-	}, [chat, providers, selectChatModel, setActiveChatId, setSummary, chatId]);
+	}, [chatModel, providers, selectChatModel]);
 
 	return (
 		<section className="w-full ">
@@ -78,7 +87,7 @@ function Chat() {
 				key={chatId}
 				chatId={chatId}
 				initialMessages={mergedMessages}
-				chatLockedModel={chat?.chat_model || null}
+				chatLockedModel={chatModel}
 				hasMoreOlder={Boolean(hasNextPage)}
 				isLoadingOlder={isFetchingNextPage}
 				onLoadOlder={loadOlderMessages}

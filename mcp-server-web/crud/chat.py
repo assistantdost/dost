@@ -33,6 +33,8 @@ async def get_chat_by_id(db: AsyncSession, chat_id: str, user_id: str) -> Option
     return result.scalar_one_or_none()
 
 
+# =================== Helper functions for paginated messages ===================
+
 def _parse_message_cursor(cursor: str) -> tuple[datetime, str]:
     """Cursor format: <iso_datetime>::<message_id>"""
     cursor_dt_raw, cursor_id = cursor.split("::", 1)
@@ -186,6 +188,8 @@ async def get_chat_messages_paginated(
         "has_more_older": has_more_older,
     }
 
+
+# =================== Paginated options end ===================
 
 async def create_chat(db: AsyncSession, chat_data: ChatCreate, user_id: str) -> ChatModel:
     """Create a new chat with the first message"""

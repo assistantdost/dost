@@ -72,6 +72,19 @@ async def get_chat(
     )
 
 
+@router.get("/{chat_id}/full", response_model=Chat)
+async def get_full_chat(
+    chat_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(protected_route)
+):
+    """Get a specific chat with all its messages"""
+    chat = await crud_chat.get_chat_by_id(db, chat_id, current_user)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    return chat
+
+
 @router.post("/", response_model=Chat)
 async def create_chat(
     chat_data: ChatCreate,
