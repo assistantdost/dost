@@ -38,7 +38,7 @@ export const chatQueryOptions = {
 		queryKey: queryKeys.chats.detailInfinite(chatId),
 		queryFn: async ({ pageParam = null }) =>
 			getChat(chatId, {
-				limit: 6,
+				limit: 10,
 				cursor: pageParam,
 			}),
 		enabled,
