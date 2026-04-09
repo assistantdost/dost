@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import ChatWindow from "@/components/ChatWindow";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
@@ -11,24 +11,49 @@ import { chatQueryOptions } from "@/lib/tanstackQueries";
 
 function Chat() {
 	const { chatId } = useParams();
-	const { setMessages, setSummary, setActiveChatId } = useChatStore();
+	const { setSummary, setActiveChatId } = useChatStore();
 	const selectChatModel = useAiStore((state) => state.selectChatModel);
 	const providers = useAiStore((state) => state.providers);
 	const token = useAuthStore((state) => state.token);
 	const logged = useGlobalStore((state) => state.logged);
 
-	// Fetch chat with React Query - only when logged and has token
-	const { data: chat, isLoading } = useQuery(
-		chatQueryOptions.detail(chatId, {
-			enabled: !!chatId && logged && !!token,
-		}),
-	);
+	// Fetch chat messages with infinite query - only when logged and has token
+	const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
+		useInfiniteQuery(
+			chatQueryOptions.detailInfinite(chatId, {
+				enabled: !!chatId && logged && !!token,
+			}),
+		);
+
+	const pages = data?.pages || [];
+	const chat = pages[0] || null;
+
+	const mergedMessages = useMemo(() => {
+		if (pages.length === 0) return [];
+
+		const seenIds = new Set();
+		const result = [];
+
+		for (let i = pages.length - 1; i >= 0; i--) {
+			const pageMessages = pages[i]?.messages || [];
+			for (const message of pageMessages) {
+				if (!seenIds.has(message.id)) {
+					seenIds.add(message.id);
+					result.push(message);
+				}
+			}
+		}
+
+		return result;
+	}, [pages]);
+
+	const loadOlderMessages = useCallback(async () => {
+		if (!hasNextPage || isFetchingNextPage) return;
+		await fetchNextPage();
+	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 	// Update messages and summary in store when chat data changes
 	useEffect(() => {
-		if (chat?.messages) {
-			setMessages(chat.messages);
-		}
 		if (chat?.summary !== undefined) {
 			setSummary(chat.summary, chat.last_summarized_message_id);
 		}
@@ -44,7 +69,7 @@ function Chat() {
 			}
 		}
 		setActiveChatId(chatId);
-	}, [chat]);
+	}, [chat, providers, selectChatModel, setActiveChatId, setSummary, chatId]);
 
 	return (
 		<section className="w-full ">
@@ -52,8 +77,11 @@ function Chat() {
 			<ChatWindow
 				key={chatId}
 				chatId={chatId}
-				initialMessages={chat?.messages || []}
+				initialMessages={mergedMessages}
 				chatLockedModel={chat?.chat_model || null}
+				hasMoreOlder={Boolean(hasNextPage)}
+				isLoadingOlder={isFetchingNextPage}
+				onLoadOlder={loadOlderMessages}
 			/>
 		</section>
 	);

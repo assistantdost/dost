@@ -10,6 +10,7 @@ export const queryKeys = {
 	chats: {
 		all: ["chats"],
 		detail: (chatId) => ["chat", chatId],
+		detailInfinite: (chatId) => ["chat", chatId, "messages"],
 	},
 };
 
@@ -26,8 +27,23 @@ export const chatQueryOptions = {
 	}),
 	detail: (chatId, { enabled = true } = {}) => ({
 		queryKey: queryKeys.chats.detail(chatId),
-		queryFn: async () => getChat(chatId),
+		queryFn: async () => getChat(chatId, { limit: 30 }),
 		enabled,
+		retry: false,
+		refetchOnMount: "always",
+		refetchOnWindowFocus: false,
+		staleTime: 0,
+	}),
+	detailInfinite: (chatId, { enabled = true } = {}) => ({
+		queryKey: queryKeys.chats.detailInfinite(chatId),
+		queryFn: async ({ pageParam = null }) =>
+			getChat(chatId, {
+				limit: 30,
+				cursor: pageParam,
+			}),
+		enabled,
+		initialPageParam: null,
+		getNextPageParam: (lastPage) => lastPage?.next_cursor ?? null,
 		retry: false,
 		refetchOnMount: "always",
 		refetchOnWindowFocus: false,

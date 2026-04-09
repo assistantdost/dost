@@ -7,8 +7,11 @@ export const getUserChats = async (limit = 20, cursor = null) => {
 	return apiHelpers.get(`/chats/?${params.toString()}`);
 };
 
-export const getChat = async (chatId) => {
-	return apiHelpers.get(`/chats/${chatId}`);
+export const getChat = async (chatId, { limit = 30, cursor = null } = {}) => {
+	const params = new URLSearchParams();
+	params.append("limit", String(limit));
+	if (cursor) params.append("cursor", cursor);
+	return apiHelpers.get(`/chats/${chatId}?${params.toString()}`);
 };
 
 export const createChat = async (chatData) => {

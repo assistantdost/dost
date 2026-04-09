@@ -189,6 +189,9 @@ export default function ChatWindow({
 	chatId,
 	initialMessages = [],
 	chatLockedModel = {},
+	hasMoreOlder = false,
+	isLoadingOlder = false,
+	onLoadOlder,
 }) {
 	const [input, setInput] = useState("");
 	const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -405,6 +408,7 @@ export default function ChatWindow({
 	const debounceTimeoutRef = useRef(null);
 	const inputRef = useRef(null);
 	const isNearBottomRef = useRef(true);
+	const isFetchingOlderRef = useRef(false);
 
 	// ✅ Load messages when initialMessages change or on mount
 	useEffect(() => {
@@ -435,7 +439,36 @@ export default function ChatWindow({
 		// Consider "near bottom" if within 100px
 		isNearBottomRef.current = distanceFromBottom < 100;
 		setIsUserScrolling(distanceFromBottom > 100);
-	}, []);
+
+		if (
+			scrollTop < 80 &&
+			hasMoreOlder &&
+			!isLoadingOlder &&
+			!isFetchingOlderRef.current
+		) {
+			const prevScrollTop = scrollRef.current.scrollTop;
+			const prevScrollHeight = scrollRef.current.scrollHeight;
+
+			isFetchingOlderRef.current = true;
+			Promise.resolve(onLoadOlder?.())
+				.catch((fetchOlderError) => {
+					console.error(
+						"Failed to load older messages:",
+						fetchOlderError,
+					);
+					toast.error("Failed to load older messages");
+				})
+				.finally(() => {
+					requestAnimationFrame(() => {
+						if (!scrollRef.current) return;
+						const newScrollHeight = scrollRef.current.scrollHeight;
+						scrollRef.current.scrollTop =
+							newScrollHeight - prevScrollHeight + prevScrollTop;
+						isFetchingOlderRef.current = false;
+					});
+				});
+		}
+	}, [hasMoreOlder, isLoadingOlder, onLoadOlder]);
 
 	// ✅ Debounced auto-scroll to bottom (only if user is near bottom)
 	useLayoutEffect(() => {
@@ -614,6 +647,11 @@ export default function ChatWindow({
 							</div>
 						)}
 						{renderedMessages}
+						{isLoadingOlder && (
+							<div className="pb-4 text-center text-xs text-muted-foreground">
+								Loading older messages...
+							</div>
+						)}
 						{summarizing && <SummarizingMessages />}
 					</ConversationContent>
 				</Conversation>

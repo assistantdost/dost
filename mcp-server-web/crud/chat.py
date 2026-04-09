@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, and_, or_
 from sqlalchemy.orm import selectinload
 from models.chat import Chat as ChatModel, Message as MessageModel
 from schemas.chat import ChatCreate, ChatUpdate
@@ -30,6 +30,156 @@ async def get_chat_by_id(db: AsyncSession, chat_id: str, user_id: str) -> Option
         )
     )
     return result.scalar_one_or_none()
+
+
+def _parse_message_cursor(cursor: str) -> tuple[datetime, Optional[str]]:
+    """Parse a message cursor formatted as '<iso_datetime>::<message_id>'"""
+    if "::" in cursor:
+        cursor_dt_raw, cursor_id = cursor.split("::", 1)
+    else:
+        cursor_dt_raw, cursor_id = cursor, None
+    cursor_dt = datetime.fromisoformat(cursor_dt_raw.replace("Z", "+00:00"))
+    return cursor_dt, cursor_id
+
+
+def _build_message_cursor(message: MessageModel) -> str:
+    return f"{message.created_at.isoformat()}::{message.id}"
+
+
+def _is_older_than(a: MessageModel, b: MessageModel) -> bool:
+    return (a.created_at < b.created_at) or (
+        a.created_at == b.created_at and a.id < b.id
+    )
+
+
+async def get_chat_messages_paginated(
+    db: AsyncSession,
+    chat_id: str,
+    user_id: str,
+    limit: int = 30,
+    cursor: Optional[str] = None,
+):
+    """
+    Get chat with paginated messages.
+
+    First load rule:
+    - Load latest `limit` messages.
+    - If `last_summarized_message_id` is older than the oldest loaded message,
+      expand first page to include that summary boundary message.
+
+    Older loads:
+    - Cursor-based loading strictly older messages.
+    """
+    chat_result = await db.execute(
+        select(ChatModel).where(
+            ChatModel.id == chat_id,
+            ChatModel.user_id == user_id,
+        )
+    )
+    chat = chat_result.scalar_one_or_none()
+    if not chat:
+        return None
+
+    base_query = select(MessageModel).where(MessageModel.chat_id == chat_id)
+    messages_desc: List[MessageModel] = []
+
+    if cursor:
+        cursor_dt, cursor_id = _parse_message_cursor(cursor)
+        if cursor_id:
+            base_query = base_query.where(
+                or_(
+                    MessageModel.created_at < cursor_dt,
+                    and_(
+                        MessageModel.created_at == cursor_dt,
+                        MessageModel.id < cursor_id,
+                    ),
+                )
+            )
+        else:
+            base_query = base_query.where(MessageModel.created_at < cursor_dt)
+
+        result = await db.execute(
+            base_query
+            .order_by(MessageModel.created_at.desc(), MessageModel.id.desc())
+            .limit(limit)
+        )
+        messages_desc = result.scalars().all()
+    else:
+        # First load: latest `limit`
+        result = await db.execute(
+            base_query
+            .order_by(MessageModel.created_at.desc(), MessageModel.id.desc())
+            .limit(limit)
+        )
+        messages_desc = result.scalars().all()
+
+        # Expand initial page to include summary boundary if needed.
+        if chat.last_summarized_message_id and messages_desc:
+            summary_msg_result = await db.execute(
+                select(MessageModel).where(
+                    MessageModel.chat_id == chat_id,
+                    MessageModel.id == chat.last_summarized_message_id,
+                )
+            )
+            summary_msg = summary_msg_result.scalar_one_or_none()
+
+            if summary_msg:
+                oldest_loaded = messages_desc[-1]
+                if _is_older_than(summary_msg, oldest_loaded):
+                    expanded_result = await db.execute(
+                        select(MessageModel)
+                        .where(MessageModel.chat_id == chat_id)
+                        .where(
+                            or_(
+                                MessageModel.created_at > summary_msg.created_at,
+                                and_(
+                                    MessageModel.created_at == summary_msg.created_at,
+                                    MessageModel.id >= summary_msg.id,
+                                ),
+                            )
+                        )
+                        .order_by(
+                            MessageModel.created_at.desc(),
+                            MessageModel.id.desc(),
+                        )
+                    )
+                    messages_desc = expanded_result.scalars().all()
+
+    if not messages_desc:
+        return {
+            "chat": chat,
+            "messages": [],
+            "next_cursor": None,
+            "has_more_older": False,
+        }
+
+    oldest_loaded = messages_desc[-1]
+    older_exists_result = await db.execute(
+        select(func.count())
+        .select_from(MessageModel)
+        .where(MessageModel.chat_id == chat_id)
+        .where(
+            or_(
+                MessageModel.created_at < oldest_loaded.created_at,
+                and_(
+                    MessageModel.created_at == oldest_loaded.created_at,
+                    MessageModel.id < oldest_loaded.id,
+                ),
+            )
+        )
+    )
+    has_more_older = older_exists_result.scalar_one() > 0
+    next_cursor = _build_message_cursor(oldest_loaded) if has_more_older else None
+
+    # UI expects chronological order.
+    messages_asc = list(reversed(messages_desc))
+
+    return {
+        "chat": chat,
+        "messages": messages_asc,
+        "next_cursor": next_cursor,
+        "has_more_older": has_more_older,
+    }
 
 
 async def create_chat(db: AsyncSession, chat_data: ChatCreate, user_id: str) -> ChatModel:

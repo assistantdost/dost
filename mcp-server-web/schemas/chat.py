@@ -115,3 +115,20 @@ class ChatMeta(BaseModel):
 class PaginatedChats(BaseModel):
     chats: List[ChatMeta]
     next_cursor: Optional[str] = None
+
+
+class PaginatedChatMessages(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    chat_model: ChatModelInfo
+    created_at: datetime
+    updated_at: datetime
+    summary: Optional[str] = None
+    last_summarized_message_id: Optional[str] = None
+    messages: List[Message] = []
+    next_cursor: Optional[str] = None
+    has_more_older: bool = False
+
+    class Config:
+        from_attributes = True

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from database import get_db
-from schemas.chat import Chat, ChatCreate, ChatUpdate, ChatMeta, ChatNameUpdate, ChatSummaryUpdate, PaginatedChats
+from schemas.chat import Chat, ChatCreate, ChatUpdate, ChatMeta, ChatNameUpdate, ChatSummaryUpdate, PaginatedChats, PaginatedChatMessages
 from middleware.helper import protected_route
 from crud import chat as crud_chat
 
@@ -36,19 +36,40 @@ async def get_user_chats(
     return PaginatedChats(chats=result, next_cursor=next_cursor)
 
 
-@router.get("/{chat_id}", response_model=Chat)
+@router.get("/{chat_id}", response_model=PaginatedChatMessages)
 async def get_chat(
     chat_id: str,
+    limit: int = Query(30, ge=1, le=200),
+    cursor: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(protected_route)
 ):
-    """Get a specific chat with all messages"""
-    chat = await crud_chat.get_chat_by_id(db, chat_id, current_user)
+    """Get a specific chat with paginated messages"""
+    result = await crud_chat.get_chat_messages_paginated(
+        db,
+        chat_id,
+        current_user,
+        limit,
+        cursor,
+    )
 
-    if not chat:
+    if not result:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    return chat
+    chat = result["chat"]
+    return PaginatedChatMessages(
+        id=chat.id,
+        user_id=chat.user_id,
+        name=chat.name,
+        chat_model=chat.chat_model,
+        created_at=chat.created_at,
+        updated_at=chat.updated_at,
+        summary=chat.summary,
+        last_summarized_message_id=chat.last_summarized_message_id,
+        messages=result["messages"],
+        next_cursor=result["next_cursor"],
+        has_more_older=result["has_more_older"],
+    )
 
 
 @router.post("/", response_model=Chat)
