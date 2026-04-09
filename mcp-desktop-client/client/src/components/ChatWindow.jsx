@@ -72,6 +72,8 @@ import { ulid } from "ulid";
 
 import axios from "axios";
 
+import MessageSkeleton from "./MessageSkeleton";
+
 // ✅ Environment-based API URL
 const API_URL = import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:5599";
 
@@ -188,6 +190,7 @@ MemoizedMessagePart.displayName = "MemoizedMessagePart";
 export default function ChatWindow({
 	chatId,
 	initialMessages = [],
+	isLoading = false,
 	chatLockedModel = {},
 	hasMoreOlder = false,
 	isLoadingOlder = false,
@@ -624,8 +627,8 @@ export default function ChatWindow({
 		}
 	}, []);
 
-	// ✅ Show loading state for initial messages
-	const isLoading = status === "streaming" && messages.length === 0;
+	// // ✅ Show loading state for initial messages
+	// const isLoading = status === "streaming" && messages.length === 0;
 
 	return (
 		<div className="flex flex-col h-full max-w-4xl mx-auto">
@@ -639,19 +642,10 @@ export default function ChatWindow({
 			>
 				<Conversation>
 					<ConversationContent>
-						{isLoading && (
-							<div className="flex items-center justify-center h-full">
-								<div className="animate-pulse text-muted-foreground">
-									Loading conversation...
-								</div>
-							</div>
-						)}
+						{isLoading && <MessageSkeleton />}
+
+						{isLoadingOlder && <MessageSkeleton />}
 						{renderedMessages}
-						{isLoadingOlder && (
-							<div className="pb-4 text-center text-xs text-muted-foreground">
-								Loading older messages...
-							</div>
-						)}
 						{summarizing && <SummarizingMessages />}
 					</ConversationContent>
 				</Conversation>

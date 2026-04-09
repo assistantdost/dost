@@ -18,12 +18,18 @@ function Chat() {
 	const logged = useGlobalStore((state) => state.logged);
 
 	// Fetch chat messages with infinite query - only when logged and has token
-	const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
-		useInfiniteQuery(
-			chatQueryOptions.detailInfinite(chatId, {
-				enabled: !!chatId && logged && !!token,
-			}),
-		);
+	const {
+		data,
+		isFetching,
+		isLoading,
+		hasNextPage,
+		isFetchingNextPage,
+		fetchNextPage,
+	} = useInfiniteQuery(
+		chatQueryOptions.detailInfinite(chatId, {
+			enabled: !!chatId && logged && !!token,
+		}),
+	);
 
 	const pages = data?.pages || [];
 	const firstPage = pages[0] || null;
@@ -88,6 +94,7 @@ function Chat() {
 				chatId={chatId}
 				initialMessages={mergedMessages}
 				chatLockedModel={chatModel}
+				isLoading={isLoading}
 				hasMoreOlder={Boolean(hasNextPage)}
 				isLoadingOlder={isFetchingNextPage}
 				onLoadOlder={loadOlderMessages}
