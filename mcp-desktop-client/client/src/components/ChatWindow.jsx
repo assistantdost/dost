@@ -64,6 +64,10 @@ import {
 import { toast } from "sonner";
 import { useChatStore } from "@/store/chatStore";
 import { useAiStore } from "@/store/aiStore";
+import {
+	DEFAULT_SUMMARY_TRIGGER_TOKENS,
+	useSettingsStore,
+} from "@/store/settingsStore";
 import { updateChatSummary, updateChat } from "@/api/chat";
 
 import { isWithinTokenLimit } from "gpt-tokenizer/model/gpt-4o";
@@ -76,9 +80,6 @@ import MessageSkeleton from "./MessageSkeleton";
 
 // ✅ Environment-based API URL
 const API_URL = import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:5599";
-
-const SUMMARY_TRIGGER_TOKENS =
-	parseInt(import.meta.env.VITE_SUMMARY_TRIGGER_TOKENS) || 1000;
 
 /**
  * Number of recent conversations to keep OUTSIDE the summary window.
@@ -210,11 +211,17 @@ export default function ChatWindow({
 	const lastSummarizedMessageId_ = useChatStore(
 		(state) => state.lastSummarizedMessageId,
 	);
+	const summaryTriggerTokens = useSettingsStore(
+		(state) => state.summaryTriggerTokens,
+	);
 
 	const modelFound =
 		providers?.[chatLockedModel?.provider]?.models?.[
 			chatLockedModel?.id
 		] !== null;
+
+	const effectiveSummaryTriggerTokens =
+		summaryTriggerTokens || DEFAULT_SUMMARY_TRIGGER_TOKENS;
 
 	const { messages, setMessages, sendMessage, status, error } = useChat({
 		id: chatId,
@@ -325,7 +332,7 @@ export default function ChatWindow({
 					messagesToSummarize.length === 0 ||
 					isWithinTokenLimit(
 						convertedToSummarize,
-						SUMMARY_TRIGGER_TOKENS,
+						effectiveSummaryTriggerTokens,
 					);
 
 				// ── Step 4: Summarize if over token limit ─────────────────────────────

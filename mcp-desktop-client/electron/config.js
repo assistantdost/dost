@@ -18,5 +18,4 @@ export const config = {
 	API_URL: process.env.VITE_API_URL || "http://localhost:5000/api/v1",
 	GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
 	GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-	SUMMARY_MAX_TOKENS: parseInt(process.env.VITE_SUMMARY_MAX_TOKENS) || 800,
 };

@@ -6,6 +6,20 @@ import { toolRAG } from "../mcp/toolRAG.js";
 import { generateText } from "ai";
 
 import { config } from "../config.js";
+import getStore from "../store.js";
+
+const DEFAULT_SUMMARY_MAX_TOKENS = 700;
+
+function getSummaryMaxTokens() {
+	const settingsStore = getStore().get("settingsStore") || {};
+	const numericValue = Number(settingsStore?.state?.summaryMaxTokens);
+
+	if (Number.isFinite(numericValue)) {
+		return Math.min(Math.max(Math.round(numericValue), 200), 2000);
+	}
+
+	return DEFAULT_SUMMARY_MAX_TOKENS;
+}
 
 export async function setupRoutes(server, mainWindow) {
 	// Await the agents
@@ -152,7 +166,7 @@ Format your response STRICTLY using the following sections:
 			const summaryResponse = await generateText({
 				model: await aiModel.getSummaryModel(),
 				messages: summaryPrompt,
-				maxTokens: config.SUMMARY_MAX_TOKENS || 800,
+				maxTokens: getSummaryMaxTokens(),
 				temperature: 0.3, // Lower temperature for more focused summaries
 			});
 

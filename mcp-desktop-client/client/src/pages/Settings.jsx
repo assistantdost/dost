@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAiStore } from "@/store/aiStore";
+import { SummarySettingsSliders } from "@/components/settings/SummarySettingsSliders";
 
 export default function Settings() {
 	const { envStore, providers, setEnvStore, initialize, listenForUpdates } =
@@ -106,7 +107,7 @@ export default function Settings() {
 	}
 
 	return (
-		<div className="container mx-auto p-6">
+		<div className="container mx-auto space-y-6 p-6">
 			<Card className="max-w-2xl mx-auto">
 				<CardHeader>
 					<CardTitle>Bring Your Own Keys (BYOK)</CardTitle>
@@ -154,6 +155,12 @@ export default function Settings() {
 					>
 						{saving ? "Saving..." : "Save API Keys"}
 					</Button>
+				</CardContent>
+			</Card>
+
+			<Card className="max-w-2xl mx-auto py-1">
+				<CardContent>
+					<SummarySettingsSliders />
 				</CardContent>
 			</Card>
 		</div>
