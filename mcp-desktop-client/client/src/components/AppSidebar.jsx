@@ -57,11 +57,11 @@ const items = [
 		url: "/test",
 		icon: TestTubeDiagonal,
 	},
-	{
-		title: "Test Chat",
-		url: "/chat",
-		icon: MessageSquarePlus,
-	},
+	// {
+	// 	title: "Test Chat",
+	// 	url: "/chat",
+	// 	icon: MessageSquarePlus,
+	// },
 ];
 
 export function AppSidebar() {
@@ -117,101 +117,103 @@ export function AppSidebar() {
 					</button>
 				</div>
 			</SidebarHeader>
-			<SidebarContent>
-				<SidebarGroup>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{items.map((item) => (
-								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton asChild>
-										<Link to={item.url}>
-											<item.icon />
-											<span>{item.title}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
-
-				{/* Chats Section */}
-				{logged && (
+			<SidebarContent className="overflow-hidden">
+				<div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
 					<SidebarGroup>
-						<SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
 						<SidebarGroupContent>
-							{!data ? (
-								<div className="px-4 py-2 text-sm text-muted-foreground">
-									Loading chats...
-								</div>
-							) : allChats.length === 0 ? (
-								<div className="px-4 py-2 text-sm text-muted-foreground">
-									No chats yet
-								</div>
-							) : (
-								<div className="h-80 overflow-y-auto ">
-									<SidebarMenu>
-										{allChats.map((chat) => (
-											<SidebarMenuItem key={chat.id}>
-												<div className="flex items-center justify-between group">
-													<SidebarMenuButton
-														asChild
-														className={`${activeChatId === chat.id ? "bg-primary/10" : ""} rounded-md flex-1 min-w-0`}
-													>
-														<Link
-															to={`/chat/${chat.id}`}
-															className="flex items-center gap-2 flex-1 min-w-0"
-														>
-															<MessageCircle className="h-4 w-4 flex-shrink-0" />
-															<span className="truncate">
-																{chat.name}
-															</span>
-														</Link>
-													</SidebarMenuButton>
-													<ChatItemActions
-														chat={chat}
-													/>
-												</div>
-											</SidebarMenuItem>
-										))}
-										{hasNextPage && (
-											<SidebarMenuItem>
-												<div
-													ref={sentinelRef}
-													className="h-4 w-full"
-												/>
-											</SidebarMenuItem>
-										)}
-									</SidebarMenu>
-									{isFetchingNextPage && (
-										<div className="px-4 py-2 text-sm text-muted-foreground">
-											Loading more...
-										</div>
-									)}
-								</div>
-							)}
+							<SidebarMenu>
+								{items.map((item) => (
+									<SidebarMenuItem key={item.title}>
+										<SidebarMenuButton asChild>
+											<Link to={item.url}>
+												<item.icon />
+												<span>{item.title}</span>
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								))}
+							</SidebarMenu>
 						</SidebarGroupContent>
 					</SidebarGroup>
-				)}
 
-				{/* Tools Section - At the bottom of sidebar content */}
+					{/* Chats Section */}
+					{logged && (
+						<SidebarGroup>
+							<SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
+							<SidebarGroupContent>
+								{!data ? (
+									<div className="px-4 py-2 text-sm text-muted-foreground">
+										Loading chats...
+									</div>
+								) : allChats.length === 0 ? (
+									<div className="px-4 py-2 text-sm text-muted-foreground">
+										No chats yet
+									</div>
+								) : (
+									<div className="h-full max-h-96 overflow-y-auto ">
+										<SidebarMenu>
+											{allChats.map((chat) => (
+												<SidebarMenuItem key={chat.id}>
+													<div className="flex items-center justify-between group">
+														<SidebarMenuButton
+															asChild
+															className={`${activeChatId === chat.id ? "bg-primary/10" : ""} rounded-md flex-1 min-w-0`}
+														>
+															<Link
+																to={`/chat/${chat.id}`}
+																className="flex items-center gap-2 flex-1 min-w-0"
+															>
+																<MessageCircle className="h-4 w-4 flex-shrink-0" />
+																<span className="truncate">
+																	{chat.name}
+																</span>
+															</Link>
+														</SidebarMenuButton>
+														<ChatItemActions
+															chat={chat}
+														/>
+													</div>
+												</SidebarMenuItem>
+											))}
+											{hasNextPage && (
+												<SidebarMenuItem>
+													<div
+														ref={sentinelRef}
+														className="h-4 w-full"
+													/>
+												</SidebarMenuItem>
+											)}
+										</SidebarMenu>
+										{isFetchingNextPage && (
+											<div className="px-4 py-2 text-sm text-muted-foreground">
+												Loading more...
+											</div>
+										)}
+									</div>
+								)}
+							</SidebarGroupContent>
+						</SidebarGroup>
+					)}
+				</div>
+
+				{/* Tools Section - pinned at bottom of SidebarContent */}
 				{logged && (
-					<SidebarGroup>
+					<SidebarGroup className="mt-auto pt-2">
 						<SidebarGroupLabel>Tools</SidebarGroupLabel>
 						<SidebarGroupContent>
 							<Button
-								className=" w-full cursor-pointer"
+								className="w-full cursor-pointer"
 								variant="ghost"
 							>
 								<Link
 									to="/tools"
-									className="flex justify-between items-center gap-2 w-full"
+									className="flex w-full items-center justify-between gap-2"
 								>
 									<div className="flex items-center gap-2">
 										<ToolCase className="h-4 w-4" />
 										<span>Tools</span>
 									</div>
-									<span className="text-xs bg-primary/10 px-2 py-1 rounded-full">
+									<span className="rounded-full bg-primary/10 px-2 py-1 text-xs">
 										{toolCount}
 									</span>
 								</Link>
