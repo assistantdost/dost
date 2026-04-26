@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -8,7 +6,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
 	FiServer,
 	FiCloud,
@@ -19,8 +17,6 @@ import {
 } from "react-icons/fi";
 
 export default function Home() {
-	const router = useRouter();
-
 	const features = [
 		{
 			icon: <FiServer className="h-6 w-6" />,
@@ -81,21 +77,20 @@ export default function Home() {
 							tools
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-							<Button
-								size="lg"
-								onClick={() => router.push("/signup")}
-								className="text-lg px-8"
-							>
-								Get Started
-							</Button>
-							<Button
-								size="lg"
-								variant="outline"
-								onClick={() => router.push("/#features")}
-								className="text-lg px-8"
-							>
-								Learn More
-							</Button>
+							<Link href="/signup">
+								<Button size="lg" className="text-lg px-8 w-full sm:w-auto">
+									Get Started
+								</Button>
+							</Link>
+							<Link href="#features">
+								<Button
+									size="lg"
+									variant="outline"
+									className="text-lg px-8 w-full sm:w-auto"
+								>
+									Learn More
+								</Button>
+							</Link>
 						</div>
 						<div className="flex flex-wrap justify-center gap-8 pt-8 text-sm text-muted-foreground">
 							<div className="flex items-center gap-2">
@@ -274,22 +269,24 @@ export default function Home() {
 							Join the future of AI-powered automation today
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center">
-							<Button
-								size="lg"
-								variant="secondary"
-								onClick={() => router.push("/signup")}
-								className="text-lg px-8"
-							>
-								Create Account
-							</Button>
-							<Button
-								size="lg"
-								variant="outline"
-								onClick={() => router.push("/login")}
-								className="text-lg px-8 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground hover:text-primary"
-							>
-								Sign In
-							</Button>
+							<Link href="/signup">
+								<Button
+									size="lg"
+									variant="secondary"
+									className="text-lg px-8 w-full sm:w-auto"
+								>
+									Create Account
+								</Button>
+							</Link>
+							<Link href="/login">
+								<Button
+									size="lg"
+									variant="outline"
+									className="text-lg px-8 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground hover:text-primary w-full sm:w-auto"
+								>
+									Sign In
+								</Button>
+							</Link>
 						</div>
 					</div>
 				</div>

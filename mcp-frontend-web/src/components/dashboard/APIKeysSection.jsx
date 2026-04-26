@@ -17,7 +17,7 @@ import RevokeAPIKeyDialog from "./RevokeAPIKeyDialog";
 import DeleteAPIKeyDialog from "./DeleteAPIKeyDialog";
 import APIKeyCreatedModal from "./APIKeyCreatedModal";
 
-export default function APIKeysSection() {
+export default function APIKeysSection({ initialData = [] }) {
 	const {
 		apiKeys,
 		loading,
@@ -42,8 +42,14 @@ export default function APIKeysSection() {
 	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
+		// If we don't have data, fetch it. Otherwise, we rely on initialData.
+		// However, Zustand store might be empty on first load.
+		if (apiKeys.length === 0 && initialData.length > 0) {
+			useAPIStore.setState({ apiKeys: initialData });
+		}
+		// Still fetch in background to ensure freshness
 		getAPIKeys();
-	}, [getAPIKeys]);
+	}, [getAPIKeys, initialData, apiKeys.length]);
 
 	const handleCreateKey = async () => {
 		if (!newKeyName.trim()) {

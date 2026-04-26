@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import auth from "../api/auth";
 import { toast } from "sonner";
+import { setCookie, deleteCookie, getCookie } from "cookies-next";
 
 export const useAuthStore = create(
 	persist(
@@ -18,8 +19,14 @@ export const useAuthStore = create(
 			},
 			signupData: {},
 			resetPasswordEmail: null,
-			setToken: (token) => set({ token }),
-			clearToken: () => set({ token: null, user: null }),
+			setToken: (token) => {
+				set({ token });
+				setCookie("token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
+			},
+			clearToken: () => {
+				set({ token: null, user: null });
+				deleteCookie("token");
+			},
 			setUser: (user) => set({ user }),
 			clearUser: () => set({ user: null }),
 			setLoading: (loading) => set({ loading }),
@@ -113,6 +120,7 @@ export const useAuthStore = create(
 					const { token, user, message } = response;
 					console.log("Login response:", response);
 					set({ token, user, loading: false, logged: true });
+					setCookie("token", token, { maxAge: 60 * 60 * 24 * 7 });
 					toast.success(message || "Login successful!");
 					return response;
 				} catch (error) {
@@ -138,6 +146,7 @@ export const useAuthStore = create(
 					console.log("Google login response:", response);
 					const { token, user, message } = response;
 					set({ token, user, loading: false, logged: true });
+					setCookie("token", token, { maxAge: 60 * 60 * 24 * 7 });
 					toast.success(message || "Login successful!");
 					return response;
 				} catch (error) {
@@ -161,9 +170,15 @@ export const useAuthStore = create(
 					const response = await auth.refresh();
 					const { token, logged } = response;
 					set({ token, logged: logged });
+					if (token) {
+						setCookie("token", token, { maxAge: 60 * 60 * 24 * 7 });
+					} else {
+						deleteCookie("token");
+					}
 					return token;
 				} catch (error) {
 					set({ token: null, user: null, logged: false });
+					deleteCookie("token");
 					throw error;
 				}
 			},
@@ -219,11 +234,13 @@ export const useAuthStore = create(
 			// Logout
 			logout: () => {
 				set({ token: null, user: null, logged: false, error: null });
+				deleteCookie("token");
 				toast.success("Logged out successfully");
 			},
 
 			unAuthorisedLogout: (message) => {
 				set({ token: null, user: null, logged: false, error: null });
+				deleteCookie("token");
 				toast.error(message || "Session expired. Please log in again.");
 			},
 		}),
@@ -236,3 +253,4 @@ export const useAuthStore = create(
 		},
 	),
 );
+

@@ -1,8 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useAuthStore } from "@/store/authStore";
+import { serverApi } from "@/lib/serverApi";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -12,19 +8,33 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import APIKeysSection from "@/components/dashboard/APIKeysSection";
+import LogoutButton from "@/components/dashboard/LogoutButton";
 
-export default function DashboardPage() {
-	const router = useRouter();
-	const { user, logged, logout } = useAuthStore();
+async function getDashboardData() {
+	try {
+		const [userData, apiKeysData] = await Promise.all([
+			serverApi("/users/me"),
+			serverApi("/api-keys"),
+		]);
+		return {
+			user: userData.user,
+			initialApiKeys: apiKeysData.api_keys,
+		};
+	} catch (error) {
+		console.error("Dashboard data fetch failed:", error);
+		return { user: null, initialApiKeys: [] };
+	}
+}
 
-	useEffect(() => {
-		if (!logged) {
-			router.push("/login");
-		}
-	}, [logged, router]);
+export default async function DashboardPage() {
+	const { user, initialApiKeys } = await getDashboardData();
 
-	if (!logged || !user) {
-		return null;
+	if (!user) {
+		return (
+			<div className="flex items-center justify-center min-h-screen">
+				<p>Failed to load dashboard data. Please try logging in again.</p>
+			</div>
+		);
 	}
 
 	return (
@@ -70,20 +80,11 @@ export default function DashboardPage() {
 									</p>
 								</div>
 							)}
-							<Button
-								variant="outline"
-								className="w-full mt-4 text-red-500 hover:text-red-600"
-								onClick={() => {
-									logout();
-									router.push("/");
-								}}
-							>
-								Logout
-							</Button>
+							<LogoutButton />
 						</CardContent>
 					</Card>
 
-					<APIKeysSection />
+					<APIKeysSection initialData={initialApiKeys} />
 				</div>
 			</div>
 		</div>
