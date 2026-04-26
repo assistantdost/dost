@@ -1,8 +1,9 @@
 ## Pages:
 
-- Home
-- Docs
-- Profile
+- Home (nav)
+- Docs (nav)
+- Profile (protected) (nav) (under user icon)
+- Dashboard (protected) (nav) (under user icon)
 - mcp-servers
 - blog
 - changelog
