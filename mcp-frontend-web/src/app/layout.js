@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import StoreInitializer from "@/components/StoreInitializer";
 import RefreshToken from "@/hooks/refreshToken";
 import { serverApi } from "@/lib/serverApi";
+import axios from "axios";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -25,30 +26,39 @@ export const metadata = {
 
 async function getSessionData() {
 	const cookieStore = await cookies();
-	const token = cookieStore.get("token")?.value;
+	const refreshToken = cookieStore.get("refresh_token")?.value;
 	let user = null;
+	let accessToken = null;
 
-	if (token) {
+	if (refreshToken) {
 		try {
-			const userData = await serverApi("/users/me");
+			const fetcher = await getServerFetcher();
+			const userData = await getMe(fetcher);
 			user = userData.user;
+			
+			// We can obtain the access token by manually calling refresh once for the layout
+			// to seed the client-side store, avoiding an immediate client-side refresh call
+			const refreshResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/refresh`, {}, {
+				headers: { Cookie: `refresh_token=${refreshToken}` }
+			});
+			accessToken = refreshResponse.data.token;
 		} catch (error) {
-			console.error("Failed to fetch user session:", error.message);
+			console.error("Failed to fetch user session in layout:", error.message);
 		}
 	}
 
-	return { user, token };
+	return { user, accessToken };
 }
 
 export default async function RootLayout({ children }) {
-	const { user, token } = await getSessionData();
+	const { user, accessToken } = await getSessionData();
 
 	return (
 		<html lang="en">
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<StoreInitializer user={user} token={token} />
+				<StoreInitializer user={user} token={accessToken} />
 				<Navbar />
 				{children}
 				<Toaster position="top-center" richColors />

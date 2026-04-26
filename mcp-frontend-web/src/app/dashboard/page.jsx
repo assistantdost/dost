@@ -9,12 +9,16 @@ import {
 } from "@/components/ui/card";
 import APIKeysSection from "@/components/dashboard/APIKeysSection";
 import LogoutButton from "@/components/dashboard/LogoutButton";
+import { getServerFetcher } from "@/lib/serverApi";
+import { getMe } from "@/api/user";
+import { getAPIKeys } from "@/api/apiKeys";
 
 async function getDashboardData() {
 	try {
+		const fetcher = await getServerFetcher();
 		const [userData, apiKeysData] = await Promise.all([
-			serverApi("/users/me"),
-			serverApi("/api-keys"),
+			getMe(fetcher),
+			getAPIKeys(fetcher),
 		]);
 		return {
 			user: userData.user,

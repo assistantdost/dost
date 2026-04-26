@@ -13,6 +13,7 @@ export const useAuthStore = create(
 			error: null,
 			logged: false,
 			hydrated: false,
+			initialChecked: false,
 			isAdmin: () => {
 				const user = get().user;
 				return user?.role === "admin";
@@ -21,11 +22,9 @@ export const useAuthStore = create(
 			resetPasswordEmail: null,
 			setToken: (token) => {
 				set({ token });
-				setCookie("token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
 			},
 			clearToken: () => {
 				set({ token: null, user: null });
-				deleteCookie("token");
 			},
 			setUser: (user) => set({ user }),
 			clearUser: () => set({ user: null }),
@@ -120,7 +119,6 @@ export const useAuthStore = create(
 					const { token, user, message } = response;
 					console.log("Login response:", response);
 					set({ token, user, loading: false, logged: true });
-					setCookie("token", token, { maxAge: 60 * 60 * 24 * 7 });
 					toast.success(message || "Login successful!");
 					return response;
 				} catch (error) {
@@ -146,7 +144,6 @@ export const useAuthStore = create(
 					console.log("Google login response:", response);
 					const { token, user, message } = response;
 					set({ token, user, loading: false, logged: true });
-					setCookie("token", token, { maxAge: 60 * 60 * 24 * 7 });
 					toast.success(message || "Login successful!");
 					return response;
 				} catch (error) {
@@ -170,15 +167,9 @@ export const useAuthStore = create(
 					const response = await auth.refresh();
 					const { token, logged } = response;
 					set({ token, logged: logged });
-					if (token) {
-						setCookie("token", token, { maxAge: 60 * 60 * 24 * 7 });
-					} else {
-						deleteCookie("token");
-					}
 					return token;
 				} catch (error) {
 					set({ token: null, user: null, logged: false });
-					deleteCookie("token");
 					throw error;
 				}
 			},
@@ -232,17 +223,27 @@ export const useAuthStore = create(
 			},
 
 			// Logout
-			logout: () => {
-				set({ token: null, user: null, logged: false, error: null });
-				deleteCookie("token");
-				toast.success("Logged out successfully");
+			logout: async () => {
+				try {
+					await auth.logout();
+				} catch (error) {
+					console.error("Logout error:", error);
+				} finally {
+					set({
+						token: null,
+						user: null,
+						logged: false,
+						error: null,
+					});
+					toast.success("Logged out successfully");
+				}
 			},
 
 			unAuthorisedLogout: (message) => {
 				set({ token: null, user: null, logged: false, error: null });
-				deleteCookie("token");
 				toast.error(message || "Session expired. Please log in again.");
 			},
+
 		}),
 		{
 			name: "dost-mcp-authStore",

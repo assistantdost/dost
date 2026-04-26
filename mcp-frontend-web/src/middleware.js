@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export function middleware(request) {
-	const token = request.cookies.get("token")?.value;
+	const refreshToken = request.cookies.get("refresh_token")?.value;
 	const { pathname } = request.nextUrl;
 
 	// Define protected and public routes
@@ -14,12 +14,12 @@ export function middleware(request) {
 		pathname === "/verify-email";
 
 	// Redirect unauthorized users to login if they try to access protected routes
-	if (isProtectedRoute && !token) {
+	if (isProtectedRoute && !refreshToken) {
 		return NextResponse.redirect(new URL("/login", request.url));
 	}
 
 	// Redirect authorized users to dashboard if they try to access public auth routes
-	if (isPublicRoute && token) {
+	if (isPublicRoute && refreshToken) {
 		return NextResponse.redirect(new URL("/dashboard", request.url));
 	}
 

@@ -13,6 +13,7 @@ export default function StoreInitializer({ user, token }) {
 		if (token) {
 			useAuthStore.setState({ token });
 		}
+		useAuthStore.setState({ initialChecked: true });
 		initialized.current = true;
 	}
 

@@ -1,6 +1,6 @@
 # Next.js SSR & Authentication Implementation Summary
 
-This document outlines the architectural changes made to transition the project from a "React SPA within Next.js" to a "Full Next.js Application" leveraging Server-Side Rendering (SSR), Server Components, and Middleware.
+This document outlines the architectural changes made to transition the project from a "React SPA within Next.js" to a "Full Next.js Application" leveraging Server-Side Rendering (SSR), Server Components, and secure authentication.
 
 ## 1. Architectural Shift: React SPA -> Full Next.js
 
@@ -9,62 +9,66 @@ This document outlines the architectural changes made to transition the project 
 - Implemented a `serverApi` utility in `src/lib/serverApi.js` for data fetching on the server.
 
 ### Why
-- **SEO & Performance**: Server Components send less JavaScript to the client, leading to faster First Contentful Paint (FCP) and better search engine indexing.
-- **Data Fetching**: Fetching data on the server reduces the "waterfall" effect of multiple client-side requests and eliminates "loading flicker" for authenticated pages.
+- **SEO & Performance**: Server Components send less JavaScript to the client, leading to faster First Contentful Paint (FCP).
+- **Data Fetching**: Fetching data on the server reduces client-side waterfalls and eliminates loading flickers for authenticated pages.
 
 ---
 
-## 2. Authentication: Cookie-Based Sync
+## 2. Authentication: Secure In-Memory Token & Refresh Cookie
 
 ### Change
-- Installed `cookies-next`.
-- Updated `authStore.js` to automatically sync the JWT `token` with a browser cookie whenever it is set, refreshed, or cleared.
+- **In-Memory Access Token**: The JWT access token is now stored strictly in the application's memory (Zustand state) and is **not** saved to cookies or `localStorage`.
+- **Refresh Token Cookie**: The backend continues to set a `refresh_token` as an `HttpOnly` cookie.
+- **SSR Authorization**: Modified `serverApi.js` to automatically obtain a temporary access token on the server using the `refresh_token` cookie for authorized SSR requests.
 
 ### Why
-- **Server Accessibility**: Unlike `localStorage`, cookies are sent to the server with every request. This allows the Next.js server to authorize SSR requests and protect routes before the page even reaches the browser.
+- **Security (XSS Protection)**: Storing the access token in memory instead of cookies prevents malicious scripts (XSS) from stealing the session token.
+- **SSR Compatibility**: Leveraging the `refresh_token` cookie allows the server to authorize pre-rendered data without exposing the permanent token in the browser's persistent storage.
 
 ---
 
-## 3. Route Protection: Next.js Middleware
+## 3. Route Protection: Middleware & AuthGuard
 
 ### Change
-- Created `src/middleware.js`.
-- Implemented logic to check for the `token` cookie on protected routes (`/dashboard`) and public auth routes (`/login`, `/signup`).
+- **Next.js Middleware**: Implemented `src/middleware.js` to check for the `refresh_token` cookie and handle instant server-side redirects for protected routes.
+- **Dashboard AuthGuard**: Created a dedicated `AuthGuard` component and applied it via `src/app/dashboard/layout.jsx`. 
+- **Flicker Protection**: Added an `initialChecked` flag in the `authStore` to track session resolution.
 
 ### Why
-- **Instant Redirects**: Middleware runs at the edge (before rendering). Users are redirected *before* any page code is executed, preventing unauthorized users from ever seeing protected UI components (even for a split second).
-- **Cleaner Pages**: Removed `useEffect` based redirect logic from individual pages, making the components purely focused on UI.
+- **Instant Redirects**: Middleware runs before rendering, ensuring unauthorized users never see protected UI.
+- **Loading UX**: The `AuthGuard` shows a professional "Securing your session..." loader while the dashboard resolves its auth state, preventing the UI from flashing unauthenticated states.
+- **Navbar Consistency**: The Navbar uses the `initialChecked` flag to hide auth buttons until the user's status is confirmed, ensuring a premium feel.
 
 ---
 
 ## 4. Robust "Active Token Refresh" Approach
 
 ### Change
-- Updated `src/config/axios.js` with a complex interceptor system.
-- Implemented a `failedQueue` to pause outgoing requests while a token refresh is in progress.
-- Added automatic retry logic for the original request once the new token is acquired.
+- Updated `src/config/axios.js` with an interceptor system that pauses outgoing requests during a refresh cycle.
+- Automatically retries failed requests once a new token is acquired.
 
 ### Why
-- **Seamless UX**: Users are never logged out unexpectedly while active. If an access token expires during a session, the system "silently" fixes it without interrupting the user's flow.
-- **Concurrency Support**: The queue ensures that if multiple requests fail at the same time, only one refresh call is made, and all subsequent requests wait for that single refresh to finish.
+- **Seamless UX**: Users are never logged out unexpectedly while active. Token expiration is handled "silently" in the background.
 
 ---
 
-## 5. Hydration & Store Initialization
+## 5. Logout & Session Termination
 
 ### Change
-- Created `src/components/StoreInitializer.jsx`.
-- Integrated it into `src/app/layout.js` to pass server-fetched session data into the Zustand store.
+- **Backend-Driven Logout**: The `logout` function in `authStore.js` now calls the backend's `/auth/logout` endpoint.
+- **Async Synchronization**: UI components (Navbar, Logout Button) now `await` the logout call before redirecting to the login page.
 
 ### Why
-- **Consistency**: Prevents "Hydration Mismatch" errors and ensures that components like the **Navbar** show the correct state (Logged In vs Logged Out) immediately upon page load, rather than waiting for the client-side store to hydrate from `localStorage`.
+- **Cookie Security**: Since the `refresh_token` is an `HttpOnly` cookie, the client cannot delete it directly. Calling the backend ensures the server clears the cookie via a `Set-Cookie` header.
+- **Middleware Consistency**: Clearing the `refresh_token` cookie is essential for the Next.js Middleware to recognize that the user is no longer authorized, preventing accidental redirects back to protected areas.
 
 ---
 
 ## Summary of New/Modified Files
-- **`src/middleware.js`**: Centralized route protection.
-- **`src/lib/serverApi.js`**: Server-side data fetching utility.
+- **`src/middleware.js`**: Server-side route protection based on `refresh_token`.
+- **`src/lib/serverApi.js`**: Server-side data fetching with internal token refresh.
+- **`src/components/auth/AuthGuard.jsx`**: Section-specific protection & loading states.
+- **`src/app/dashboard/layout.jsx`**: Targeted dashboard protection.
+- **`src/store/authStore.js`**: Secure in-memory token management & async logout.
+- **`src/config/axios.js`**: Advanced 401 interceptors & request queuing.
 - **`src/components/StoreInitializer.jsx`**: SSR-to-Client state bridge.
-- **`src/config/axios.js`**: Advanced interceptors for token refresh.
-- **`src/store/authStore.js`**: Cookie synchronization logic.
-- **`src/app/dashboard/page.jsx`**: Full SSR implementation with pre-fetched data.

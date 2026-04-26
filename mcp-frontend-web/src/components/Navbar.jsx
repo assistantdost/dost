@@ -25,11 +25,11 @@ import { useRouter } from "next/navigation";
 
 const Navbar = () => {
 	const [isOpen, setIsOpen] = useState(false);
-	const { user, logged, logout } = useAuthStore();
+	const { user, logged, logout, initialChecked } = useAuthStore();
 	const router = useRouter();
 
-	const handleLogout = () => {
-		logout();
+	const handleLogout = async () => {
+		await logout();
 		router.push("/");
 	};
 
@@ -70,23 +70,23 @@ const Navbar = () => {
 					</div>
 
 					{/* Desktop Auth Buttons */}
-					<div className="hidden md:flex items-center space-x-4">
-						{logged && user ? (
+					<div className="hidden md:flex items-center space-x-4 min-w-[100px] justify-end">
+						{!initialChecked ? (
+							<div className="h-9 w-24 bg-muted animate-pulse rounded-md" />
+						) : logged && user ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
 										variant="ghost"
-										className="relative h-8 w-8 rounded-full"
+										className="relative h-9 w-9 rounded-full"
 									>
-										<Avatar className="h-8 w-8">
+										<Avatar className="h-9 w-9">
 											<AvatarImage
 												src={user.avatar}
 												alt={user.name}
 											/>
 											<AvatarFallback>
-												{user.name
-													?.charAt(0)
-													.toUpperCase()}
+												{user.name?.charAt(0).toUpperCase()}
 											</AvatarFallback>
 										</Avatar>
 									</Button>
@@ -108,9 +108,7 @@ const Navbar = () => {
 									</DropdownMenuLabel>
 									<DropdownMenuSeparator />
 									<DropdownMenuItem
-										onClick={() =>
-											router.push("/dashboard")
-										}
+										onClick={() => router.push("/dashboard")}
 									>
 										Dashboard
 									</DropdownMenuItem>
@@ -126,17 +124,13 @@ const Navbar = () => {
 								</DropdownMenuContent>
 							</DropdownMenu>
 						) : (
-							<>
-								<Button
-									variant="ghost"
-									onClick={() => router.push("/login")}
-								>
-									Sign In
-								</Button>
-								<Button onClick={() => router.push("/signup")}>
-									Get Started
-								</Button>
-							</>
+							<Button
+								variant="default"
+								onClick={() => router.push("/login")}
+								className="px-6"
+							>
+								Sign In
+							</Button>
 						)}
 					</div>
 
@@ -226,7 +220,6 @@ const Navbar = () => {
 											</Button>
 										</>
 									) : (
-										<>
 											<Button
 												variant="outline"
 												className="w-full"
@@ -237,16 +230,6 @@ const Navbar = () => {
 											>
 												Sign In
 											</Button>
-											<Button
-												className="w-full"
-												onClick={() => {
-													router.push("/signup");
-													setIsOpen(false);
-												}}
-											>
-												Get Started
-											</Button>
-										</>
 									)}
 								</div>
 							</div>
