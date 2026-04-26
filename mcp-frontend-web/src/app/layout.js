@@ -5,7 +5,8 @@ import { Toaster } from "sonner";
 import { cookies } from "next/headers";
 import StoreInitializer from "@/components/StoreInitializer";
 import RefreshToken from "@/hooks/refreshToken";
-import { serverApi } from "@/lib/serverApi";
+import { serverApi, getServerFetcher } from "@/lib/serverApi";
+import { getMe } from "@/api/user";
 import axios from "axios";
 
 const geistSans = Geist({

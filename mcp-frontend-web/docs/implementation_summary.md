@@ -41,14 +41,19 @@ This document outlines the architectural changes made to transition the project 
 
 ---
 
-## 4. Robust "Active Token Refresh" Approach
+## 4. Robust "Active Token Refresh" & Interceptor Logic
 
 ### Change
-- Updated `src/config/axios.js` with an interceptor system that pauses outgoing requests during a refresh cycle.
-- Automatically retries failed requests once a new token is acquired.
+- **Intelligent 401 Interceptor**: Configured `src/config/axios.js` to automatically handle token expirations without user intervention.
+- **Request Queuing**: Implemented a `failedQueue` and `isRefreshing` lock system within the interceptor.
+- **Global Error Handling**: Centralized toast notifications for 403, 429, and 500 errors.
 
 ### Why
-- **Seamless UX**: Users are never logged out unexpectedly while active. Token expiration is handled "silently" in the background.
+- **Seamless UX**: If a token expires while a user is working, the app "pauses" the request, refreshes the token in the background, and then retries the original request. The user experiences zero interruption.
+- **Security**: The access token remains strictly in-memory, but the interceptor ensures it's always fresh by leveraging the HttpOnly refresh cookie.
+- **Consistency**: Developers don't need to manually handle common errors or token logic in every component; the "Engine" handles it globally.
+
+---
 
 ---
 
@@ -60,15 +65,39 @@ This document outlines the architectural changes made to transition the project 
 
 ### Why
 - **Cookie Security**: Since the `refresh_token` is an `HttpOnly` cookie, the client cannot delete it directly. Calling the backend ensures the server clears the cookie via a `Set-Cookie` header.
-- **Middleware Consistency**: Clearing the `refresh_token` cookie is essential for the Next.js Middleware to recognize that the user is no longer authorized, preventing accidental redirects back to protected areas.
+- **Middleware Consistency**: Clearing the `refresh_token` cookie is essential for the Next.js Middleware to recognize that the user is no longer authorized.
+
+---
+
+## 6. Unified API Layer & Environment Agnostic Fetching
+
+### Change
+- **Unified API Definitions**: Refactored `src/api/` (e.g., `user.js`, `apiKeys.js`) to be environment-agnostic. They now accept an optional `fetcher` instance.
+- **Server-Side Fetcher**: Implemented `getServerFetcher()` in `serverApi.js` which provides an axios-compatible interface for the server.
+
+### Why
+- **Single Source of Truth**: One function works on both the client and server.
+- **Maintenance**: Changing an endpoint URL now only requires a single update in the `src/api` folder.
+
+---
+
+## 7. API Proxying (Rewrites)
+
+### Change
+- **Next.js Rewrites**: Configured `next.config.mjs` to proxy `/api/:path*` requests to the FastAPI backend.
+- **Relative URLs**: The client-side `axios.js` now uses `/api` as its base URL.
+
+### Why
+- **Cleanliness**: Resolves Next.js deprecation warnings regarding "middleware as a proxy".
+- **Performance**: Proxying at the config level is more efficient.
 
 ---
 
 ## Summary of New/Modified Files
-- **`src/middleware.js`**: Server-side route protection based on `refresh_token`.
-- **`src/lib/serverApi.js`**: Server-side data fetching with internal token refresh.
-- **`src/components/auth/AuthGuard.jsx`**: Section-specific protection & loading states.
-- **`src/app/dashboard/layout.jsx`**: Targeted dashboard protection.
-- **`src/store/authStore.js`**: Secure in-memory token management & async logout.
-- **`src/config/axios.js`**: Advanced 401 interceptors & request queuing.
-- **`src/components/StoreInitializer.jsx`**: SSR-to-Client state bridge.
+- **`src/middleware.js`**: Purely for auth redirects (Dashboard -> Login, Login -> Dashboard).
+- **`src/lib/serverApi.js`**: Provides `getServerFetcher()` for authenticated SSR requests.
+- **`src/api/`**: Unified API definitions (shared by Client and Server).
+- **`src/store/authStore.js`**: Manages the in-memory session and background refresh.
+- **`src/config/axios.js`**: Client-side fetcher with 401 interceptors, now uses `/api` proxy.
+- **`next.config.mjs`**: Handles API rewrites and proxying to the backend.
+- **`src/components/StoreInitializer.jsx`**: Bridges the SSR "seed" data into the Zustand store.
