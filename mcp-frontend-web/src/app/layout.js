@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "sonner";
@@ -9,9 +9,10 @@ import { serverApi, getServerFetcher } from "@/lib/serverApi";
 import { getMe } from "@/api/user";
 import axios from "axios";
 
-const geistSans = Geist({
-	variable: "--font-geist-sans",
+const poppins = Poppins({
+	variable: "--font-poppins",
 	subsets: ["latin"],
+	weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -55,9 +56,9 @@ export default async function RootLayout({ children }) {
 	const { user, accessToken } = await getSessionData();
 
 	return (
-		<html lang="en">
+		<html lang="en" className="dark" style={{ colorScheme: "dark" }}>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+				className={`${poppins.variable} ${geistMono.variable} antialiased`}
 			>
 				<StoreInitializer user={user} token={accessToken} />
 				<Navbar />
