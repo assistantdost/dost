@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { serverApi } from "@/lib/serverApi";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,6 +9,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { Terminal, Shield, Mail, User } from "lucide-react";
 import APIKeysSection from "@/components/dashboard/APIKeysSection";
 import LogoutButton from "@/components/dashboard/LogoutButton";
 import { getServerFetcher } from "@/lib/serverApi";
@@ -35,61 +40,94 @@ export default async function DashboardPage() {
 
 	if (!user) {
 		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<p>Failed to load dashboard data. Please try logging in again.</p>
+			<div className="flex flex-col items-center justify-center min-h-screen p-6 font-sans">
+				<div className="max-w-md w-full text-center space-y-4 border border-border bg-card p-8 rounded-xl shadow-lg">
+					<h1 className="text-xl font-bold">Session Required</h1>
+					<p className="text-sm text-muted-foreground">
+						Failed to load dashboard data. Please try logging in again.
+					</p>
+					<Button asChild className="w-full rounded-lg">
+						<Link href="/login">Go to Login</Link>
+					</Button>
+				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950 p-4 pt-20">
-			<div className="container mx-auto max-w-6xl space-y-8">
-				<div className="text-center space-y-2">
-					<h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-						Welcome to DOST-MCP
-					</h1>
-					<p className="text-xl text-muted-foreground">
-						Hello, {user.name}!
-					</p>
+		<div className="min-h-screen bg-background text-foreground p-6 pt-28 font-sans">
+			<div className="container mx-auto max-w-4xl space-y-8">
+				{/* Welcome Header */}
+				<div className="border-b border-border/60 pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+					<div>
+						<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+						<p className="text-sm text-muted-foreground mt-1">
+							Manage credentials and monitor connections.
+						</p>
+					</div>
+					<LogoutButton />
 				</div>
 
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>Profile</CardTitle>
-							<CardDescription>
-								Your account information
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-2">
-							<div>
-								<p className="text-sm text-muted-foreground">
-									Name
-								</p>
-								<p className="font-medium">{user.name}</p>
+				{/* Profile Overview Card (Full Width) */}
+				<Card className="border-border bg-card shadow-sm">
+					<CardHeader className="pb-4">
+						<CardTitle className="text-base font-bold">Profile Overview</CardTitle>
+						<CardDescription>Your account credentials and system privileges.</CardDescription>
+					</CardHeader>
+					<CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-0">
+						<div className="space-y-1">
+							<span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Name</span>
+							<div className="flex items-center gap-2 text-sm font-semibold">
+								<User className="h-4 w-4 text-primary shrink-0" />
+								<span>{user.name}</span>
 							</div>
-							<div>
-								<p className="text-sm text-muted-foreground">
-									Email
-								</p>
-								<p className="font-medium">{user.email}</p>
+						</div>
+						<div className="space-y-1">
+							<span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Email</span>
+							<div className="flex items-center gap-2 text-sm font-semibold truncate">
+								<Mail className="h-4 w-4 text-primary shrink-0" />
+								<span>{user.email}</span>
 							</div>
-							{user.role && (
-								<div>
-									<p className="text-sm text-muted-foreground">
-										Role
-									</p>
-									<p className="font-medium capitalize">
-										{user.role}
-									</p>
-								</div>
-							)}
-							<LogoutButton />
-						</CardContent>
-					</Card>
+						</div>
+						<div className="space-y-1">
+							<span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Role / Privilege</span>
+							<div className="flex items-center gap-2 text-sm font-semibold capitalize">
+								<Shield className="h-4 w-4 text-primary shrink-0" />
+								<span>{user.role || "User"}</span>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
 
-					<APIKeysSection initialData={initialApiKeys} />
-				</div>
+				{/* API Keys Manager */}
+				<APIKeysSection initialData={initialApiKeys} />
+
+				{/* Quick Connect Guide (Full Width) */}
+				<Card className="border border-primary/20 bg-primary/5 shadow-sm">
+					<CardHeader className="pb-3">
+						<div className="flex items-center gap-2 text-primary">
+							<Terminal className="h-5 w-5" />
+							<CardTitle className="text-sm font-bold uppercase tracking-wider">Quick Connect Guide</CardTitle>
+						</div>
+						<CardDescription className="text-xs text-muted-foreground">
+							Bind your local DOST environment to this profile.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-3 text-xs leading-relaxed text-muted-foreground">
+						<p>
+							1. Generate a personal API access key above and copy the generated token.
+						</p>
+						<p>
+							2. Add the key to your local desktop client configuration or environment file:
+						</p>
+						<div className="p-3 border border-border bg-background rounded-lg font-mono text-[10px] select-all text-foreground max-w-md">
+							DOST_API_KEY=your_generated_key_here
+						</div>
+						<p>
+							3. Restart your local Desktop Server process to synchronize active cloud tools and profile settings.
+						</p>
+					</CardContent>
+				</Card>
 			</div>
 		</div>
 	);

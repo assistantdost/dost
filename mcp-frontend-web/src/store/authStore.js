@@ -167,9 +167,21 @@ export const useAuthStore = create(
 					const response = await auth.refresh();
 					const { token, logged } = response;
 					set({ token, logged: logged });
+
+					if (token) {
+						try {
+							const userModule = await import("../api/user");
+							const userResponse = await userModule.getMe();
+							set({ user: userResponse.user });
+						} catch (userError) {
+							console.error("Failed to fetch user details after refresh:", userError);
+						}
+					}
+
+					set({ initialChecked: true });
 					return token;
 				} catch (error) {
-					set({ token: null, user: null, logged: false });
+					set({ token: null, user: null, logged: false, initialChecked: true });
 					throw error;
 				}
 			},

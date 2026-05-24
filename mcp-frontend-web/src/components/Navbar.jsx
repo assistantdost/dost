@@ -19,9 +19,17 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, Zap, LayoutDashboard, User, LogOut, Sun, Moon } from "lucide-react";
+import {
+	Menu,
+	Zap,
+	LayoutDashboard,
+	User,
+	LogOut,
+	Sun,
+	Moon,
+} from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 
 const ThemeToggle = () => {
@@ -33,7 +41,9 @@ const ThemeToggle = () => {
 	}, []);
 
 	if (!mounted) {
-		return <div className="h-8 w-8 rounded-full bg-muted/40 animate-pulse shrink-0" />;
+		return (
+			<div className="h-8 w-8 rounded-full bg-muted/40 animate-pulse shrink-0" />
+		);
 	}
 
 	return (
@@ -61,15 +71,30 @@ const Navbar = () => {
 
 	const { user, logged, logout, initialChecked } = useAuthStore();
 	const router = useRouter();
+	const pathname = usePathname();
+
+	useEffect(() => {
+		setVisible(true);
+	}, [pathname]);
 
 	useEffect(() => {
 		const handleScroll = () => {
 			const currentScrollY = window.scrollY;
 			setScrolled(currentScrollY > 20);
 
-			if (currentScrollY < lastScrollY.current || currentScrollY < 60) {
+			const isDocsOrBlog =
+				pathname?.startsWith("/docs") || pathname?.startsWith("/blog");
+
+			if (
+				isDocsOrBlog ||
+				currentScrollY < lastScrollY.current ||
+				currentScrollY < 60
+			) {
 				setVisible(true);
-			} else if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
+			} else if (
+				currentScrollY > lastScrollY.current &&
+				currentScrollY > 60
+			) {
 				setVisible(false);
 				setIsOpen(false);
 			}
@@ -78,7 +103,7 @@ const Navbar = () => {
 
 		window.addEventListener("scroll", handleScroll, { passive: true });
 		return () => window.removeEventListener("scroll", handleScroll);
-	}, []);
+	}, [pathname]);
 
 	const handleLogout = async () => {
 		await logout();
@@ -87,9 +112,12 @@ const Navbar = () => {
 
 	const navLinks = [
 		{ href: "/", label: "Home" },
-		{ href: "/#features", label: "Features" },
-		{ href: "/#about", label: "About" },
-		{ href: "/#contact", label: "Contact" },
+		{ href: "/docs", label: "Docs" },
+		{ href: "/mcp-servers", label: "MCP Servers" },
+		{ href: "/blog", label: "Blog" },
+		{ href: "/changelog", label: "Changelog" },
+		{ href: "/about", label: "About" },
+		{ href: "/contact", label: "Contact" },
 	];
 
 	return (
@@ -106,7 +134,10 @@ const Navbar = () => {
 				}`}
 			>
 				{/* Logo */}
-				<Link href="/" className="flex items-center gap-2 shrink-0 group">
+				<Link
+					href="/"
+					className="flex items-center gap-2 shrink-0 group"
+				>
 					<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
 						<Zap className="h-4 w-4 fill-current" />
 					</div>
@@ -116,16 +147,26 @@ const Navbar = () => {
 				</Link>
 
 				{/* Desktop Links */}
-				<div className="hidden md:flex items-center gap-8">
-					{navLinks.map((link) => (
-						<Link
-							key={link.href}
-							href={link.href}
-							className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors duration-150"
-						>
-							{link.label}
-						</Link>
-					))}
+				<div className="hidden md:flex items-center gap-6">
+					{navLinks.map((link) => {
+						const isActive =
+							pathname === link.href ||
+							(link.href !== "/" &&
+								pathname?.startsWith(link.href));
+						return (
+							<Link
+								key={link.href}
+								href={link.href}
+								className={`text-sm font-semibold transition-colors duration-150 ${
+									isActive
+										? "text-primary font-bold"
+										: "text-muted-foreground hover:text-foreground"
+								}`}
+							>
+								{link.label}
+							</Link>
+						);
+					})}
 				</div>
 
 				{/* Desktop Auth */}
@@ -136,28 +177,46 @@ const Navbar = () => {
 					) : logged && user ? (
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+								<Button
+									variant="ghost"
+									className="relative h-8 w-8 rounded-full p-0"
+								>
 									<Avatar className="h-7 w-7">
-										<AvatarImage src={user.avatar} alt={user.name} />
-										<AvatarFallback className="bg-muted text-primary text-xs font-bold">
+										<AvatarImage
+											src={user.avatar}
+											alt={user.name}
+										/>
+										<AvatarFallback className="bg-muted text-primary text-sm font-bold">
 											{user.name?.charAt(0).toUpperCase()}
 										</AvatarFallback>
 									</Avatar>
 								</Button>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent className="w-52" align="end" forceMount>
+							<DropdownMenuContent
+								className="w-52"
+								align="end"
+								forceMount
+							>
 								<DropdownMenuLabel className="font-normal">
 									<div className="flex flex-col gap-0.5">
-										<p className="text-sm font-medium">{user.name}</p>
-										<p className="text-xs text-muted-foreground">{user.email}</p>
+										<p className="text-sm font-medium">
+											{user.name}
+										</p>
+										<p className="text-xs text-muted-foreground">
+											{user.email}
+										</p>
 									</div>
 								</DropdownMenuLabel>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={() => router.push("/dashboard")}>
+								<DropdownMenuItem
+									onClick={() => router.push("/dashboard")}
+								>
 									<LayoutDashboard className="mr-2 h-4 w-4" />
 									Dashboard
 								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => router.push("/profile")}>
+								<DropdownMenuItem
+									onClick={() => router.push("/profile")}
+								>
 									<User className="mr-2 h-4 w-4" />
 									Profile
 								</DropdownMenuItem>
@@ -184,11 +243,18 @@ const Navbar = () => {
 					<ThemeToggle />
 					<Sheet open={isOpen} onOpenChange={setIsOpen}>
 						<SheetTrigger asChild>
-							<Button variant="ghost" size="icon" className="h-8 w-8">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+							>
 								<Menu className="h-4 w-4" />
 							</Button>
 						</SheetTrigger>
-						<SheetContent side="right" className="w-[300px] border-l border-border bg-background">
+						<SheetContent
+							side="right"
+							className="w-[300px] border-l border-border bg-background"
+						>
 							<SheetHeader>
 								<SheetTitle>
 									<div className="flex items-center justify-between">
@@ -196,7 +262,9 @@ const Navbar = () => {
 											<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 												<Zap className="h-4 w-4 fill-current" />
 											</div>
-											<span className="text-lg font-semibold text-foreground">DOST</span>
+											<span className="text-lg font-semibold text-foreground">
+												DOST
+											</span>
 										</div>
 									</div>
 								</SheetTitle>
@@ -207,36 +275,67 @@ const Navbar = () => {
 									{logged && user ? (
 										<div className="flex items-center space-x-3 p-4 border border-border rounded-xl bg-muted/40 shadow-inner">
 											<Avatar className="h-10 w-10">
-												<AvatarImage src={user.avatar} alt={user.name} />
+												<AvatarImage
+													src={user.avatar}
+													alt={user.name}
+												/>
 												<AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
-													{user.name?.charAt(0).toUpperCase()}
+													{user.name
+														?.charAt(0)
+														.toUpperCase()}
 												</AvatarFallback>
 											</Avatar>
 											<div className="flex flex-col min-w-0">
-												<p className="text-xs font-bold text-foreground truncate">{user.name}</p>
-												<p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+												<p className="text-xs font-bold text-foreground truncate">
+													{user.name}
+												</p>
+												<p className="text-[10px] text-muted-foreground truncate">
+													{user.email}
+												</p>
 											</div>
 										</div>
 									) : (
 										<div className="p-4 border border-border/60 border-dashed rounded-xl bg-card/50 text-left">
-											<p className="text-xs font-bold text-foreground">Welcome to DOST</p>
-											<p className="text-[10px] text-muted-foreground mt-1">Sign in to sync your local environment and connect cloud services.</p>
+											<p className="text-xs font-bold text-foreground">
+												Welcome to DOST
+											</p>
+											<p className="text-[10px] text-muted-foreground mt-1">
+												Sign in to sync your local
+												environment and connect cloud
+												services.
+											</p>
 										</div>
 									)}
 
 									{/* Navigation list */}
 									<div className="flex flex-col space-y-1">
-										{navLinks.map((link) => (
-											<Link
-												key={link.href}
-												href={link.href}
-												className="flex items-center justify-between text-sm font-semibold hover:text-primary hover:bg-muted/30 px-3 py-2.5 rounded-lg transition-all"
-												onClick={() => setIsOpen(false)}
-											>
-												<span>{link.label}</span>
-												<span className="text-muted-foreground/30 text-xs">&rarr;</span>
-											</Link>
-										))}
+										{navLinks.map((link) => {
+											const isActive =
+												pathname === link.href ||
+												(link.href !== "/" &&
+													pathname?.startsWith(
+														link.href,
+													));
+											return (
+												<Link
+													key={link.href}
+													href={link.href}
+													className={`flex items-center justify-between text-sm font-semibold px-3 py-2.5 rounded-lg transition-all ${
+														isActive
+															? "text-primary bg-primary/10"
+															: "hover:text-primary hover:bg-muted/30"
+													}`}
+													onClick={() =>
+														setIsOpen(false)
+													}
+												>
+													<span>{link.label}</span>
+													<span className="text-muted-foreground/30 text-xs">
+														&rarr;
+													</span>
+												</Link>
+											);
+										})}
 									</div>
 								</div>
 
@@ -248,7 +347,10 @@ const Navbar = () => {
 												variant="outline"
 												size="sm"
 												className="w-full h-10 rounded-xl text-xs font-semibold"
-												onClick={() => { router.push("/dashboard"); setIsOpen(false); }}
+												onClick={() => {
+													router.push("/dashboard");
+													setIsOpen(false);
+												}}
 											>
 												<LayoutDashboard className="mr-2 h-4 w-4" />
 												Go to Dashboard
@@ -257,7 +359,10 @@ const Navbar = () => {
 												variant="ghost"
 												size="sm"
 												className="w-full h-10 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10"
-												onClick={() => { handleLogout(); setIsOpen(false); }}
+												onClick={() => {
+													handleLogout();
+													setIsOpen(false);
+												}}
 											>
 												<LogOut className="mr-2 h-4 w-4" />
 												Log out
@@ -267,14 +372,19 @@ const Navbar = () => {
 										<Button
 											size="sm"
 											className="w-full h-10 rounded-xl text-xs font-semibold"
-											onClick={() => { router.push("/login"); setIsOpen(false); }}
+											onClick={() => {
+												router.push("/login");
+												setIsOpen(false);
+											}}
 										>
 											Sign In to Account
 										</Button>
 									)}
 
 									<div className="text-center pt-2">
-										<p className="text-[10px] text-muted-foreground">DOST Platform &bull; v0.1.0</p>
+										<p className="text-[10px] text-muted-foreground">
+											DOST Platform &bull; v0.1.0
+										</p>
 									</div>
 								</div>
 							</div>
