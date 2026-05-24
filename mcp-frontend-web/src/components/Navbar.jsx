@@ -19,9 +19,39 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FiMenu, FiZap } from "react-icons/fi";
+import { Menu, Zap, LayoutDashboard, User, LogOut, Sun, Moon } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+
+const ThemeToggle = () => {
+	const { theme, setTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	if (!mounted) {
+		return <div className="h-8 w-8 rounded-full bg-muted/40 animate-pulse shrink-0" />;
+	}
+
+	return (
+		<Button
+			variant="ghost"
+			size="icon"
+			className="h-8 w-8 rounded-full shrink-0"
+			onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+			aria-label="Toggle theme"
+		>
+			{theme === "dark" ? (
+				<Sun className="h-[1.2rem] w-[1.2rem] transition-all" />
+			) : (
+				<Moon className="h-[1.2rem] w-[1.2rem] transition-all" />
+			)}
+		</Button>
+	);
+};
 
 const Navbar = () => {
 	const [isOpen, setIsOpen] = useState(false);
@@ -63,215 +93,196 @@ const Navbar = () => {
 	];
 
 	return (
-		<div
-			className="fixed top-0 left-0 right-0 z-50 flex justify-center"
-			style={{
-				paddingTop: "16px",
-				transform: visible ? "translateY(0)" : "translateY(-110%)",
-				transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-			}}
+		<header
+			className={`fixed top-0 left-0 right-0 z-50 w-full transition-transform duration-300 ${
+				visible ? "translate-y-0" : "-translate-y-full"
+			}`}
 		>
 			<nav
-				style={{
-					background: scrolled
-						? "rgba(13, 12, 34, 0.85)"
-						: "rgba(13, 12, 34, 0.6)",
-					backdropFilter: "blur(20px)",
-					WebkitBackdropFilter: "blur(20px)",
-					border: "1px solid rgba(0, 210, 255, 0.15)",
-					borderRadius: "9999px",
-					padding: "8px 24px",
-					boxShadow: scrolled
-						? "0 8px 32px rgba(0, 210, 255, 0.08), 0 0 0 1px rgba(0,210,255,0.06)"
-						: "none",
-					transition: "all 0.3s ease",
-					width: "min(900px, calc(100vw - 32px))",
-				}}
+				className={`flex h-16 w-full items-center justify-between gap-6 border-b px-6 md:px-12 transition-all duration-300 ${
+					scrolled
+						? "bg-background/90 border-border backdrop-blur-md shadow-sm"
+						: "bg-background/50 border-border/40 backdrop-blur-sm"
+				}`}
 			>
-				<div className="flex h-12 items-center justify-between gap-6">
-					{/* Logo */}
-					<Link href="/" className="flex items-center gap-2 shrink-0">
-						<div
-							style={{
-								width: "32px",
-								height: "32px",
-								borderRadius: "10px",
-								background: "#00D2FF",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								boxShadow: "0 0 12px rgba(0,210,255,0.4)",
-							}}
+				{/* Logo */}
+				<Link href="/" className="flex items-center gap-2 shrink-0 group">
+					<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
+						<Zap className="h-4 w-4 fill-current" />
+					</div>
+					<span className="text-sm font-semibold tracking-tight text-foreground">
+						DOST
+					</span>
+				</Link>
+
+				{/* Desktop Links */}
+				<div className="hidden md:flex items-center gap-8">
+					{navLinks.map((link) => (
+						<Link
+							key={link.href}
+							href={link.href}
+							className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors duration-150"
 						>
-							<FiZap className="text-[#0D0C22]" size={16} />
-						</div>
-						<span className="text-lg font-semibold text-foreground tracking-tight">
-							DOST
-						</span>
-					</Link>
+							{link.label}
+						</Link>
+					))}
+				</div>
 
-					{/* Desktop Links */}
-					<div className="hidden md:flex items-center gap-6 flex-1 justify-center">
-						{navLinks.map((link) => (
-							<Link
-								key={link.href}
-								href={link.href}
-								className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150"
-							>
-								{link.label}
-							</Link>
-						))}
-					</div>
+				{/* Desktop Auth */}
+				<div className="hidden md:flex items-center gap-3 shrink-0">
+					<ThemeToggle />
+					{!initialChecked ? (
+						<div className="h-7 w-16 bg-muted animate-pulse rounded-full" />
+					) : logged && user ? (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+									<Avatar className="h-7 w-7">
+										<AvatarImage src={user.avatar} alt={user.name} />
+										<AvatarFallback className="bg-muted text-primary text-xs font-bold">
+											{user.name?.charAt(0).toUpperCase()}
+										</AvatarFallback>
+									</Avatar>
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent className="w-52" align="end" forceMount>
+								<DropdownMenuLabel className="font-normal">
+									<div className="flex flex-col gap-0.5">
+										<p className="text-sm font-medium">{user.name}</p>
+										<p className="text-xs text-muted-foreground">{user.email}</p>
+									</div>
+								</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem onClick={() => router.push("/dashboard")}>
+									<LayoutDashboard className="mr-2 h-4 w-4" />
+									Dashboard
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => router.push("/profile")}>
+									<User className="mr-2 h-4 w-4" />
+									Profile
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem onClick={handleLogout}>
+									<LogOut className="mr-2 h-4 w-4" />
+									Log out
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					) : (
+						<Button
+							size="sm"
+							onClick={() => router.push("/login")}
+							className="h-8 rounded-full px-5 text-xs font-semibold"
+						>
+							Sign In
+						</Button>
+					)}
+				</div>
 
-					{/* Desktop Auth */}
-					<div className="hidden md:flex items-center gap-3 shrink-0 min-w-[100px] justify-end">
-						{!initialChecked ? (
-							<div className="h-8 w-20 bg-muted animate-pulse rounded-full" />
-						) : logged && user ? (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-										<Avatar className="h-8 w-8">
-											<AvatarImage src={user.avatar} alt={user.name} />
-											<AvatarFallback
-												style={{ background: "#1A1930", color: "#00D2FF", fontSize: "13px", fontWeight: 600 }}
-											>
-												{user.name?.charAt(0).toUpperCase()}
-											</AvatarFallback>
-										</Avatar>
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent className="w-52" align="end" forceMount>
-									<DropdownMenuLabel className="font-normal">
-										<div className="flex flex-col gap-0.5">
-											<p className="text-sm font-medium">{user.name}</p>
-											<p className="text-xs text-muted-foreground">{user.email}</p>
-										</div>
-									</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={() => router.push("/dashboard")}>
-										Dashboard
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={() => router.push("/profile")}>
-										Profile
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem onClick={handleLogout}>
-										Log out
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						) : (
-							<Button
-								size="sm"
-								onClick={() => router.push("/login")}
-								style={{
-									background: "#00D2FF",
-									color: "#0D0C22",
-									borderRadius: "9999px",
-									fontWeight: 600,
-									fontSize: "13px",
-									padding: "6px 18px",
-									boxShadow: "0 0 12px rgba(0,210,255,0.25)",
-									transition: "all 0.1s ease",
-								}}
-								className="hover:opacity-90 active:scale-95"
-							>
-								Sign In
-							</Button>
-						)}
-					</div>
-
-					{/* Mobile Menu - Sheet */}
+				{/* Mobile Menu - Sheet */}
+				<div className="flex md:hidden items-center gap-2">
+					<ThemeToggle />
 					<Sheet open={isOpen} onOpenChange={setIsOpen}>
-						<SheetTrigger asChild className="md:hidden">
-							<Button variant="ghost" size="icon">
-								<FiMenu className="h-5 w-5" />
+						<SheetTrigger asChild>
+							<Button variant="ghost" size="icon" className="h-8 w-8">
+								<Menu className="h-4 w-4" />
 							</Button>
 						</SheetTrigger>
-						<SheetContent side="right" className="w-[300px] sm:w-[400px]">
+						<SheetContent side="right" className="w-[300px] border-l border-border bg-background">
 							<SheetHeader>
 								<SheetTitle>
-									<div className="flex items-center gap-2">
-										<div
-											style={{
-												width: "32px",
-												height: "32px",
-												borderRadius: "10px",
-												background: "#00D2FF",
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "center",
-												boxShadow: "0 0 12px rgba(0,210,255,0.4)",
-											}}
-										>
-											<FiZap className="text-[#0D0C22]" size={16} />
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-2">
+											<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+												<Zap className="h-4 w-4 fill-current" />
+											</div>
+											<span className="text-lg font-semibold text-foreground">DOST</span>
 										</div>
-										<span className="text-xl font-bold text-foreground">DOST</span>
 									</div>
 								</SheetTitle>
 							</SheetHeader>
-							<div className="flex flex-col space-y-4 mt-8">
-								{logged && user && (
-									<div className="flex items-center space-x-3 p-4 border rounded-lg">
-										<Avatar className="h-10 w-10">
-											<AvatarImage src={user.avatar} alt={user.name} />
-											<AvatarFallback
-												style={{ background: "#1A1930", color: "#00D2FF", fontSize: "13px", fontWeight: 600 }}
-											>
-												{user.name?.charAt(0).toUpperCase()}
-											</AvatarFallback>
-										</Avatar>
-										<div className="flex flex-col">
-											<p className="text-sm font-medium">{user.name}</p>
-											<p className="text-xs text-muted-foreground">{user.email}</p>
-										</div>
-									</div>
-								)}
-								{navLinks.map((link) => (
-									<Link
-										key={link.href}
-										href={link.href}
-										className="text-lg font-medium hover:text-primary transition-colors"
-										onClick={() => setIsOpen(false)}
-									>
-										{link.label}
-									</Link>
-								))}
-								<div className="pt-4 border-t space-y-2">
+							<div className="flex flex-col h-[calc(100vh-100px)] justify-between pt-6">
+								<div className="flex flex-col space-y-6">
+									{/* Profile section if logged in */}
 									{logged && user ? (
-										<>
+										<div className="flex items-center space-x-3 p-4 border border-border rounded-xl bg-muted/40 shadow-inner">
+											<Avatar className="h-10 w-10">
+												<AvatarImage src={user.avatar} alt={user.name} />
+												<AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+													{user.name?.charAt(0).toUpperCase()}
+												</AvatarFallback>
+											</Avatar>
+											<div className="flex flex-col min-w-0">
+												<p className="text-xs font-bold text-foreground truncate">{user.name}</p>
+												<p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+											</div>
+										</div>
+									) : (
+										<div className="p-4 border border-border/60 border-dashed rounded-xl bg-card/50 text-left">
+											<p className="text-xs font-bold text-foreground">Welcome to DOST</p>
+											<p className="text-[10px] text-muted-foreground mt-1">Sign in to sync your local environment and connect cloud services.</p>
+										</div>
+									)}
+
+									{/* Navigation list */}
+									<div className="flex flex-col space-y-1">
+										{navLinks.map((link) => (
+											<Link
+												key={link.href}
+												href={link.href}
+												className="flex items-center justify-between text-sm font-semibold hover:text-primary hover:bg-muted/30 px-3 py-2.5 rounded-lg transition-all"
+												onClick={() => setIsOpen(false)}
+											>
+												<span>{link.label}</span>
+												<span className="text-muted-foreground/30 text-xs">&rarr;</span>
+											</Link>
+										))}
+									</div>
+								</div>
+
+								{/* Action Buttons & Footer */}
+								<div className="space-y-4 pt-4 border-t border-border">
+									{logged && user ? (
+										<div className="flex flex-col gap-2">
 											<Button
 												variant="outline"
-												className="w-full"
+												size="sm"
+												className="w-full h-10 rounded-xl text-xs font-semibold"
 												onClick={() => { router.push("/dashboard"); setIsOpen(false); }}
 											>
-												Dashboard
+												<LayoutDashboard className="mr-2 h-4 w-4" />
+												Go to Dashboard
 											</Button>
 											<Button
-												variant="outline"
-												className="w-full"
+												variant="ghost"
+												size="sm"
+												className="w-full h-10 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10"
 												onClick={() => { handleLogout(); setIsOpen(false); }}
 											>
+												<LogOut className="mr-2 h-4 w-4" />
 												Log out
 											</Button>
-										</>
+										</div>
 									) : (
 										<Button
-											className="w-full"
-											style={{ background: "#00D2FF", color: "#0D0C22", fontWeight: 600 }}
+											size="sm"
+											className="w-full h-10 rounded-xl text-xs font-semibold"
 											onClick={() => { router.push("/login"); setIsOpen(false); }}
 										>
-											Sign In
+											Sign In to Account
 										</Button>
 									)}
+
+									<div className="text-center pt-2">
+										<p className="text-[10px] text-muted-foreground">DOST Platform &bull; v0.1.0</p>
+									</div>
 								</div>
 							</div>
 						</SheetContent>
 					</Sheet>
 				</div>
 			</nav>
-		</div>
+		</header>
 	);
 };
 
