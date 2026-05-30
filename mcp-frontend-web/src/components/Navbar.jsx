@@ -82,11 +82,11 @@ const Navbar = () => {
 			const currentScrollY = window.scrollY;
 			setScrolled(currentScrollY > 20);
 
-			const isDocsOrBlog =
-				pathname?.startsWith("/docs") || pathname?.startsWith("/blog");
+			const isDocsOrTechnical =
+				pathname?.startsWith("/docs") || pathname?.startsWith("/technical");
 
 			if (
-				isDocsOrBlog ||
+				isDocsOrTechnical ||
 				currentScrollY < lastScrollY.current ||
 				currentScrollY < 60
 			) {
@@ -114,7 +114,7 @@ const Navbar = () => {
 		{ href: "/", label: "Home" },
 		{ href: "/docs", label: "Docs" },
 		{ href: "/mcp-servers", label: "MCP Servers" },
-		{ href: "/blog", label: "Blog" },
+		{ href: "/technical", label: "Technical" },
 		{ href: "/changelog", label: "Changelog" },
 		{ href: "/about", label: "About" },
 		{ href: "/contact", label: "Contact" },

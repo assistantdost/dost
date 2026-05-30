@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import MarkdownRenderer from "./MarkdownRenderer";
 
-export default function BlogLayout({
+export default function TechnicalLayout({
 	blogList,
 	currentSlug,
 	currentContent,
@@ -35,7 +35,7 @@ export default function BlogLayout({
 					<SidebarContent>
 						<SidebarGroup>
 							<SidebarGroupLabel className="text-xs uppercase font-bold text-muted-foreground/60 px-3 py-2">
-								Blog Articles
+								Technical Articles
 							</SidebarGroupLabel>
 							<SidebarGroupContent>
 								<SidebarMenu>
@@ -51,7 +51,7 @@ export default function BlogLayout({
 													className="text-xs font-semibold"
 												>
 													<Link
-														href={`/blog/${post.slug}`}
+														href={`/technical/${post.slug}`}
 														className="flex items-center gap-2.5"
 													>
 														<BookOpen
@@ -78,7 +78,7 @@ export default function BlogLayout({
 						<div className="flex items-center gap-3">
 							<SidebarTrigger className="h-8 w-8 text-muted-foreground hover:text-foreground" />
 							<span className="text-xs font-bold text-muted-foreground/60 hidden sm:inline">
-								Blog
+								Technical
 							</span>
 							<span className="text-xs font-bold text-muted-foreground/60 hidden sm:inline">
 								/

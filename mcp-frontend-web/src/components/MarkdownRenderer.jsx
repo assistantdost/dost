@@ -7,6 +7,102 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import "katex/dist/katex.min.css";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark, prism } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { Copy, Check } from "lucide-react";
+import { useTheme } from "next-themes";
+import Mermaid from "@/components/Mermaid";
+
+function CopyButton({ text }) {
+	const [copied, setCopied] = React.useState(false);
+
+	const handleCopy = async () => {
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		} catch (err) {
+			console.error("Failed to copy text:", err);
+		}
+	};
+
+	return (
+		<button
+			onClick={handleCopy}
+			className="p-1 hover:bg-muted text-muted-foreground hover:text-foreground rounded transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-medium"
+			title="Copy Code"
+		>
+			{copied ? (
+				<>
+					<Check
+						size={12}
+						className="text-emerald-500 animate-in fade-in zoom-in-75 duration-200"
+					/>
+					<span className="text-emerald-500 font-sans">Copied!</span>
+				</>
+			) : (
+				<>
+					<Copy size={12} />
+					<span className="font-sans">Copy</span>
+				</>
+			)}
+		</button>
+	);
+}
+
+function CodeBlock({ language, codeText }) {
+	const { resolvedTheme } = useTheme();
+	const [mounted, setMounted] = React.useState(false);
+
+	React.useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	// Default to oneDark on server-side rendering to match the dark theme and avoid flashes
+	const codeTheme = mounted && resolvedTheme === "light" ? prism : oneDark;
+	const codeString = String(codeText || "").replace(/\n$/, "");
+
+	// Clean backgrounds from inline styles of pre, code, and operator tokens
+	const cleanedTheme = React.useMemo(() => {
+		const cleaned = { ...codeTheme };
+		Object.keys(cleaned).forEach((key) => {
+			if (key.includes("pre") || key.includes("code") || key.includes("operator")) {
+				if (cleaned[key]) {
+					cleaned[key] = {
+						...cleaned[key],
+						background: "transparent",
+						backgroundColor: "transparent",
+					};
+				}
+			}
+		});
+		return cleaned;
+	}, [codeTheme]);
+
+	return (
+		<div className="my-6 border border-border rounded-lg overflow-hidden bg-card text-card-foreground shadow-sm">
+			<div className="px-4 py-1.5 border-b border-border bg-muted/60 flex justify-between items-center text-[10px] font-sans text-muted-foreground">
+				<span className="uppercase font-bold tracking-wider select-none">
+					{language || "code"}
+				</span>
+				<CopyButton text={codeString} />
+			</div>
+			<SyntaxHighlighter
+				language={language || "text"}
+				style={cleanedTheme}
+				customStyle={{
+					margin: 0,
+					padding: "1rem",
+					background: "transparent",
+					fontSize: "0.8rem",
+					lineHeight: "1.5",
+				}}
+			>
+				{codeString}
+			</SyntaxHighlighter>
+		</div>
+	);
+}
 
 const customComponents = {
 	h1: ({ node, ...props }) => (
@@ -89,6 +185,7 @@ const customComponents = {
 	pre: ({ node, children, ...props }) => {
 		let language = "";
 		let newChildren = children;
+		let codeText = "";
 
 		try {
 			const childArray = React.Children.toArray(children);
@@ -105,9 +202,18 @@ const customComponents = {
 				newChildren = React.cloneElement(codeElement, {
 					isBlock: true,
 				});
+				codeText = codeElement.props.children;
 			}
 		} catch (e) {
 			console.error("Error processing pre children:", e);
+		}
+
+		if (language === "mermaid") {
+			return <Mermaid chart={String(codeText || "").trim()} />;
+		}
+
+		if (codeText) {
+			return <CodeBlock language={language} codeText={codeText} />;
 		}
 
 		return (

@@ -1,16 +1,16 @@
 import fs from "fs";
 import path from "path";
 import { notFound, redirect } from "next/navigation";
-import DocsLayout from "@/components/DocsLayout";
+import TechnicalLayout from "@/components/TechnicalLayout";
 
-function getDocsList() {
-	const docsDir = path.join(process.cwd(), "public/docs");
-	if (!fs.existsSync(docsDir)) {
+function getTechnicalList() {
+	const technicalDir = path.join(process.cwd(), "public/technical");
+	if (!fs.existsSync(technicalDir)) {
 		return [];
 	}
 
 	const files = fs
-		.readdirSync(docsDir)
+		.readdirSync(technicalDir)
 		.filter((file) => file.endsWith(".md"));
 	return files.map((file) => {
 		const slug = file
@@ -21,35 +21,39 @@ function getDocsList() {
 		return {
 			filename: file,
 			slug,
-			title: file.replace(/\.md$/, ""),
+			title: file
+				.replace(/\.md$/, "")
+				.replace(/-/g, " ")
+				.replace(/\b\w/g, (char) => char.toUpperCase()),
 		};
 	});
 }
 
 export async function generateStaticParams() {
-	const docs = getDocsList();
+	const posts = getTechnicalList();
 	return [
 		{ slug: [] },
-		...docs.map((doc) => ({
-			slug: [doc.slug],
+		...posts.map((post) => ({
+			slug: [post.slug],
 		})),
 	];
 }
 
-export default async function DocsPage({ params }) {
+export default async function TechnicalPage({ params }) {
 	const resolvedParams = await params;
 	const slugArr = resolvedParams.slug || [];
-	const docsList = getDocsList();
+	const technicalList = getTechnicalList();
 
-	if (docsList.length === 0) {
+	if (technicalList.length === 0) {
 		return (
 			<div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6">
 				<div className="text-center">
 					<h1 className="text-xl font-bold">
-						No documentation files found.
+						No technical articles found.
 					</h1>
 					<p className="text-muted-foreground text-sm mt-1">
-						Please add markdown files to the public/docs folder.
+						Please add markdown files to the public/technical
+						folder.
 					</p>
 				</div>
 			</div>
@@ -57,14 +61,14 @@ export default async function DocsPage({ params }) {
 	}
 
 	// Redirect to the first generated slug if slug is empty
-	if (slugArr.length === 0 && docsList.length > 0) {
-		redirect(`/docs/${docsList[0].slug}`);
+	if (slugArr.length === 0 && technicalList.length > 0) {
+		redirect(`/technical/${technicalList[0].slug}`);
 	}
 
 	const slug = slugArr.join("-");
-	const activeDoc = docsList.find((doc) => doc.slug === slug);
+	const activePost = technicalList.find((post) => post.slug === slug);
 
-	if (!activeDoc) {
+	if (!activePost) {
 		notFound();
 	}
 
@@ -72,21 +76,20 @@ export default async function DocsPage({ params }) {
 	try {
 		const filePath = path.join(
 			process.cwd(),
-			"public/docs",
-			activeDoc.filename,
+			"public/technical",
+			activePost.filename,
 		);
 		fileContent = fs.readFileSync(filePath, "utf-8");
 	} catch (error) {
-		console.error("Failed to read doc file:", error);
-		fileContent =
-			"# Error loading document\nCould not read file from disk.";
+		console.error("Failed to read technical file:", error);
+		fileContent = "# Error loading article\nCould not read file from disk.";
 	}
 
 	return (
-		<DocsLayout
-			docsList={docsList}
-			currentSlug={activeDoc.slug}
-			currentTitle={activeDoc.title}
+		<TechnicalLayout
+			blogList={technicalList}
+			currentSlug={activePost.slug}
+			currentTitle={activePost.title}
 			currentContent={fileContent}
 		/>
 	);

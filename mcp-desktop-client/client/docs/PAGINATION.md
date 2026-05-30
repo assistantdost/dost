@@ -1,6 +1,6 @@
-# Chat & Message Pagination Architecture
+# Cursor-Based Pagination Architecture
 
-This document describes the cursor-based pagination architecture implemented in the DOST server and how it is integrated and consumed by the client applications.
+This document describes the cursor-based pagination architecture implemented in the DOST server and how it is consumed/integrated by the client application.
 
 ---
 
@@ -43,7 +43,7 @@ flowchart TD
 ### Client-Side Integration
 
 * **TanStack Query Key:** `["chats"]`
-* **Query Setup:** `chatQueryOptions.list` inside the client queries config.
+* **Query Setup:** [tanstackQueries.js](file:///d:/Python%20Save%20files/dost-mcp/mcp-desktop-client/client/src/lib/tanstackQueries.js#L17-L27) (`chatQueryOptions.list`)
 * **API call:** `getUserChats(limit, pageParam)`
 
 The client fetches pages incrementally by retrieving `next_cursor` from the last page fetched, passing it as `pageParam` to the query function.
@@ -70,7 +70,7 @@ Retrieving messages inside a specific chat is more complex because:
    * **Older Than Cursor:** `created_at < cursor_dt` OR (`created_at == cursor_dt` and `id < cursor_id`).
    * **Newer or Equal to Summary Boundary:** `created_at > boundary_dt` OR (`created_at == boundary_dt` and `id >= boundary_id`).
 2. **Cursor Encoding**: The cursor is a base64-encoded string representing the compound tuple `(created_at, id)`.
-3. **Keep track of older exists:** The DB query fetches `limit + 1` rows. If `len(rows) > limit`, we know `has_more_older = True` without running a separate COUNT query.
+3. **Optimized Existence Check**: The DB query fetches `limit + 1` rows. If `len(rows) > limit`, we know `has_more_older = True` without running a separate COUNT query.
 4. **Summary Boundary Expansion (First-Load only)**:
    * When loading a chat for the first time (no cursor), if `last_summarized_message_id` is present, the server decodes the creation time directly from the ULID string in memory (using `_decode_ulid_time`). This avoids an extra DB read for the summary message.
    * If the summary boundary is older than the oldest message in the initial page payload, the server dynamically runs an expanded query to fetch **all** messages newer than or equal to the summary boundary.
@@ -144,11 +144,12 @@ def newer_or_equal(created_at: datetime, message_id: str):
 
 ## 3. Client-Side Message Integration
 
-The client application handles message retrieval using TanStack's `useInfiniteQuery`.
+The desktop client handles message retrieval in [pages/Chat.jsx](file:///d:/Python%20Save%20files/dost-mcp/mcp-desktop-client/client/src/pages/Chat.jsx) using TanStack's `useInfiniteQuery`.
 
 ### Query Setup
 
 * **Query Key:** `["chat", chatId, "messages"]`
+* **Query Setup:** [tanstackQueries.js](file:///d:/Python%20Save%20files/dost-mcp/mcp-desktop-client/client/src/lib/tanstackQueries.js#L37-L52) (`chatQueryOptions.detailInfinite`)
 * **API Call:** `getChat(chatId, { limit: 10, cursor: pageParam })`
 
 ### Chronological Assembly (`useMemo`)
@@ -183,6 +184,6 @@ const mergedMessages = useMemo(() => {
    * Backend returns the latest messages, automatically expanding the page if needed to cover the summary boundary.
    * If there are older messages beyond the retrieved window, the backend includes `next_cursor`.
 2. **Scrolling Up:** When the user scrolls near the top of the chat window:
-   * The list fires the pagination load handler.
+   * `ChatWindow` fires `onLoadOlder` -> `loadOlderMessages()`.
    * Client calls `fetchNextPage()` using `next_cursor` as the next `pageParam`.
    * Newly retrieved older messages are prepended to the message list without disrupting the scroll position or resetting the active input.
