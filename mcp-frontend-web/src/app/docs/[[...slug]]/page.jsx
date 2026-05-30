@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import DocsLayout from "@/components/DocsLayout";
 
 function getDocsList() {
-	const docsDir = path.join(process.cwd(), "../docs");
+	const docsDir = path.join(process.cwd(), "public/docs");
 	if (!fs.existsSync(docsDir)) {
 		return [];
 	}
@@ -44,7 +44,7 @@ export default async function DocsPage({ params }) {
 			<div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6">
 				<div className="text-center">
 					<h1 className="text-xl font-bold">No documentation files found.</h1>
-					<p className="text-muted-foreground text-sm mt-1">Please add markdown files to the root /docs folder.</p>
+					<p className="text-muted-foreground text-sm mt-1">Please add markdown files to the public/docs folder.</p>
 				</div>
 			</div>
 		);
@@ -67,7 +67,7 @@ export default async function DocsPage({ params }) {
 
 	let fileContent = "";
 	try {
-		const filePath = path.join(process.cwd(), "../docs", activeDoc.filename);
+		const filePath = path.join(process.cwd(), "public/docs", activeDoc.filename);
 		fileContent = fs.readFileSync(filePath, "utf-8");
 	} catch (error) {
 		console.error("Failed to read doc file:", error);

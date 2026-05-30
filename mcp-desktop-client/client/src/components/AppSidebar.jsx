@@ -52,11 +52,11 @@ const items = [
 		url: "/",
 		icon: Home,
 	},
-	{
-		title: "Test",
-		url: "/test",
-		icon: TestTubeDiagonal,
-	},
+	// {
+	// 	title: "Test",
+	// 	url: "/test",
+	// 	icon: TestTubeDiagonal,
+	// },
 	// {
 	// 	title: "Test Chat",
 	// 	url: "/chat",

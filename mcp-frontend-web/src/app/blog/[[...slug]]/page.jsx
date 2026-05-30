@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import BlogLayout from "@/components/BlogLayout";
 
 function getBlogList() {
-	const blogDir = path.join(process.cwd(), "../blog");
+	const blogDir = path.join(process.cwd(), "public/blog");
 	if (!fs.existsSync(blogDir)) {
 		return [];
 	}
@@ -47,7 +47,7 @@ export default async function BlogPage({ params }) {
 			<div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6">
 				<div className="text-center">
 					<h1 className="text-xl font-bold">No blog posts found.</h1>
-					<p className="text-muted-foreground text-sm mt-1">Please add markdown files to the root /blog folder.</p>
+					<p className="text-muted-foreground text-sm mt-1">Please add markdown files to the public/blog folder.</p>
 				</div>
 			</div>
 		);
@@ -69,7 +69,7 @@ export default async function BlogPage({ params }) {
 
 	let fileContent = "";
 	try {
-		const filePath = path.join(process.cwd(), "../blog", activePost.filename);
+		const filePath = path.join(process.cwd(), "public/blog", activePost.filename);
 		fileContent = fs.readFileSync(filePath, "utf-8");
 	} catch (error) {
 		console.error("Failed to read blog file:", error);

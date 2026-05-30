@@ -3,44 +3,69 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+} from "@/components/ui/dialog";
 
 const slides = [
 	{
-		image: "/placeholder_analytics.png",
-		title: "Real-time AI Analytics",
-		description: "Monitor agent behavior, tool execution times, and token cost metrics instantly.",
+		image: "/client/home_page.png",
+		title: "Intuitive Home Dashboard",
+		description:
+			"Get an overview of your assistant's system status, active providers, and quick actions in a clean, modern layout.",
 	},
 	{
-		image: "/placeholder_automation.png",
-		title: "Visual Workflow Designer",
-		description: "Map agentic workflows and tool connections with an intuitive visual node-editor interface.",
+		image: "/client/chat_interface.png",
+		title: "Conversational Agent",
+		description:
+			"Interact naturally with your assistant, track step-by-step reasoning processes, and see execution details for each action.",
 	},
 	{
-		image: "/placeholder_integrations.png",
-		title: "Native Integrations Library",
-		description: "Connect standard cloud APIs like Spotify, Google Calendar, and Slack in a single click.",
+		image: "/client/mcp_control_center.png",
+		title: "MCP Control Center",
+		description:
+			"Manage and monitor local stdio and remote HTTP/SSE Model Context Protocol servers in one centralized panel.",
 	},
 	{
-		image: "/placeholder_terminal.png",
-		title: "Interactive System Console",
-		description: "Securely run terminal scripts, background binaries, and command executions.",
+		image: "/client/model_selection.png",
+		title: "Dynamic Model Selection",
+		description:
+			"Switch dynamically between different LLMs from Groq, Google Gemini, or local endpoints to optimize for speed or intelligence.",
+	},
+	{
+		image: "/client/bring_your_own_keys.png",
+		title: "Bring Your Own Keys",
+		description:
+			"Keep your credentials safe. Input and configure your own API keys locally for model providers and connected platforms.",
 	},
 ];
 
 export default function InteractiveShowcase() {
 	const [index, setIndex] = useState(0);
+	const [isPaused, setIsPaused] = useState(false);
+	const [isOpen, setIsOpen] = useState(false);
 
 	useEffect(() => {
+		if (isPaused || isOpen) return;
 		const timer = setInterval(() => {
 			setIndex((prev) => (prev + 1) % slides.length);
 		}, 5000);
 		return () => clearInterval(timer);
-	}, []);
+	}, [isPaused, isOpen]);
 
 	return (
 		<div className="flex flex-col gap-4 w-full">
 			{/* Image Frame */}
-			<div className="relative w-full aspect-[16/10] rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
+			<div
+				className="relative w-full aspect-16/9 rounded-2xl border border-border bg-card shadow-2xl overflow-hidden cursor-zoom-in group"
+				onMouseEnter={() => setIsPaused(true)}
+				onMouseLeave={() => setIsPaused(false)}
+				onClick={() => setIsOpen(true)}
+			>
 				{/* Sliding/Fading Image */}
 				<div className="relative w-full h-full">
 					<AnimatePresence mode="wait">
@@ -57,7 +82,9 @@ export default function InteractiveShowcase() {
 								alt={slides[index].title}
 								fill
 								priority
-								className="object-cover"
+								// quality={100}
+								// unoptimized
+								// className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
 							/>
 						</motion.div>
 					</AnimatePresence>
@@ -94,13 +121,39 @@ export default function InteractiveShowcase() {
 							key={i}
 							onClick={() => setIndex(i)}
 							className={`h-2 w-2 rounded-full transition-all duration-300 ${
-								i === index ? "bg-primary w-4" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+								i === index
+									? "bg-primary w-4"
+									: "bg-muted-foreground/30 hover:bg-muted-foreground/50"
 							}`}
 							aria-label={`Go to slide ${i + 1}`}
 						/>
 					))}
 				</div>
 			</div>
+
+			{/* Shadcn Modal for Large Expanded View */}
+			<Dialog open={isOpen} onOpenChange={setIsOpen}>
+				<DialogContent className="sm:max-w-5xl bg-card border-border p-2 md:p-6 rounded-2xl gap-4">
+					<DialogHeader className="mb-2 flex flex-col gap-1">
+						<DialogTitle className="text-lg font-bold tracking-tight text-foreground">
+							{slides[index].title}
+						</DialogTitle>
+						<DialogDescription className="text:sm md:text-lg text-muted-foreground">
+							{slides[index].description}
+						</DialogDescription>
+					</DialogHeader>
+					<div className="relative w-full aspect-16/9 rounded-lg overflow-hidden border border-border/40 bg-muted/20">
+						<Image
+							src={slides[index].image}
+							alt={slides[index].title}
+							fill
+							quality={100}
+							unoptimized
+							className="object-contain"
+						/>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
