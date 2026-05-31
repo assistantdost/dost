@@ -22,6 +22,9 @@ export const metadata = {
 	title: "DOST-MCP | Multi-Service AI Platform",
 	description:
 		"A distributed system implementing the Model Context Protocol to connect AI models with local and remote tools. FastAPI, LangGraph, Electron, React, Redis",
+	icons: {
+		icon: "/dost.ico",
+	},
 };
 
 export default function RootLayout({ children }) {

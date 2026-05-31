@@ -72,8 +72,8 @@ export default function Footer() {
 				{/* Bottom Part: Meta info */}
 				<div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
 					<div className="flex items-center gap-2">
-						<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-							<Zap className="h-4 w-4 fill-current" />
+						<div className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden shadow-sm">
+							<img src="/dost.png" alt="DOST Logo" className="h-full w-full object-cover" />
 						</div>
 						<span className="text-sm font-bold tracking-tight">DOST</span>
 					</div>

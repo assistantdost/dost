@@ -138,8 +138,8 @@ const Navbar = () => {
 					href="/"
 					className="flex items-center gap-2 shrink-0 group"
 				>
-					<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
-						<Zap className="h-4 w-4 fill-current" />
+					<div className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden transition-transform group-hover:scale-105">
+						<img src="/dost.png" alt="DOST Logo" className="h-full w-full object-cover" />
 					</div>
 					<span className="text-sm font-semibold tracking-tight text-foreground">
 						DOST
@@ -256,8 +256,8 @@ const Navbar = () => {
 								<SheetTitle>
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
-											<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-												<Zap className="h-4 w-4 fill-current" />
+											<div className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden">
+												<img src="/dost.png" alt="DOST Logo" className="h-full w-full object-cover" />
 											</div>
 											<span className="text-lg font-semibold text-foreground">
 												DOST
