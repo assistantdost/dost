@@ -4,6 +4,8 @@ export function middleware(request) {
 	const refreshToken = request.cookies.get("refresh_token")?.value;
 	const { pathname } = request.nextUrl;
 
+	const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+
 	// Define protected and public routes
 	const isProtectedRoute = pathname.startsWith("/profile");
 	const isPublicRoute =
@@ -12,6 +14,10 @@ export function middleware(request) {
 		pathname === "/forgot-password" ||
 		pathname === "/reset-password" ||
 		pathname === "/verify-email";
+
+	if (isProd && (isProtectedRoute || isPublicRoute)) {
+		return NextResponse.redirect(new URL("/", request.url));
+	}
 
 	// Redirect unauthorized users to login if they try to access protected routes
 	if (isProtectedRoute && !refreshToken) {

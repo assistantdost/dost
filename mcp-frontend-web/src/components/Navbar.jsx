@@ -71,6 +71,7 @@ const Navbar = () => {
 	const { user, logged, logout, initialChecked } = useAuthStore();
 	const router = useRouter();
 	const pathname = usePathname();
+	const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
 
 	useEffect(() => {
 		setVisible(true);
@@ -171,62 +172,66 @@ const Navbar = () => {
 				{/* Desktop Auth */}
 				<div className="hidden md:flex items-center gap-3 shrink-0">
 					<ThemeToggle />
-					{!initialChecked ? (
-						<div className="h-7 w-16 bg-muted animate-pulse rounded-full" />
-					) : logged && user ? (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
+					{!isProd && (
+						<>
+							{!initialChecked ? (
+								<div className="h-7 w-16 bg-muted animate-pulse rounded-full" />
+							) : logged && user ? (
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											variant="ghost"
+											className="relative h-8 w-8 rounded-full p-0"
+										>
+											<Avatar className="h-7 w-7">
+												<AvatarImage
+													src={user.avatar}
+													alt={user.name}
+												/>
+												<AvatarFallback className="bg-muted text-primary text-sm font-bold">
+													{user.name?.charAt(0).toUpperCase()}
+												</AvatarFallback>
+											</Avatar>
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent
+										className="w-52"
+										align="end"
+										forceMount
+									>
+										<DropdownMenuLabel className="font-normal">
+											<div className="flex flex-col gap-0.5">
+												<p className="text-sm font-medium">
+													{user.name}
+												</p>
+												<p className="text-xs text-muted-foreground">
+													{user.email}
+												</p>
+											</div>
+										</DropdownMenuLabel>
+										<DropdownMenuItem
+											onClick={() => router.push("/profile")}
+										>
+											<User className="mr-2 h-4 w-4" />
+											Profile
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem onClick={handleLogout}>
+											<LogOut className="mr-2 h-4 w-4" />
+											Log out
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							) : (
 								<Button
-									variant="ghost"
-									className="relative h-8 w-8 rounded-full p-0"
+									size="sm"
+									onClick={() => router.push("/login")}
+									className="h-8 rounded-full px-5 text-xs font-semibold"
 								>
-									<Avatar className="h-7 w-7">
-										<AvatarImage
-											src={user.avatar}
-											alt={user.name}
-										/>
-										<AvatarFallback className="bg-muted text-primary text-sm font-bold">
-											{user.name?.charAt(0).toUpperCase()}
-										</AvatarFallback>
-									</Avatar>
+									Sign In
 								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								className="w-52"
-								align="end"
-								forceMount
-							>
-								<DropdownMenuLabel className="font-normal">
-									<div className="flex flex-col gap-0.5">
-										<p className="text-sm font-medium">
-											{user.name}
-										</p>
-										<p className="text-xs text-muted-foreground">
-											{user.email}
-										</p>
-									</div>
-								</DropdownMenuLabel>
-								<DropdownMenuItem
-									onClick={() => router.push("/profile")}
-								>
-									<User className="mr-2 h-4 w-4" />
-									Profile
-								</DropdownMenuItem>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={handleLogout}>
-									<LogOut className="mr-2 h-4 w-4" />
-									Log out
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					) : (
-						<Button
-							size="sm"
-							onClick={() => router.push("/login")}
-							className="h-8 rounded-full px-5 text-xs font-semibold"
-						>
-							Sign In
-						</Button>
+							)}
+						</>
 					)}
 				</div>
 
@@ -264,39 +269,41 @@ const Navbar = () => {
 							<div className="flex flex-col h-[calc(100vh-100px)] justify-between pt-6">
 								<div className="flex flex-col space-y-6">
 									{/* Profile section if logged in */}
-									{logged && user ? (
-										<div className="flex items-center space-x-3 p-4 border border-border rounded-xl bg-muted/40 shadow-inner">
-											<Avatar className="h-10 w-10">
-												<AvatarImage
-													src={user.avatar}
-													alt={user.name}
-												/>
-												<AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
-													{user.name
-														?.charAt(0)
-														.toUpperCase()}
-												</AvatarFallback>
-											</Avatar>
-											<div className="flex flex-col min-w-0">
-												<p className="text-xs font-bold text-foreground truncate">
-													{user.name}
+									{!isProd && (
+										logged && user ? (
+											<div className="flex items-center space-x-3 p-4 border border-border rounded-xl bg-muted/40 shadow-inner">
+												<Avatar className="h-10 w-10">
+													<AvatarImage
+														src={user.avatar}
+														alt={user.name}
+													/>
+													<AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+														{user.name
+															?.charAt(0)
+															.toUpperCase()}
+													</AvatarFallback>
+												</Avatar>
+												<div className="flex flex-col min-w-0">
+													<p className="text-xs font-bold text-foreground truncate">
+														{user.name}
+													</p>
+													<p className="text-[10px] text-muted-foreground truncate">
+														{user.email}
+													</p>
+												</div>
+											</div>
+										) : (
+											<div className="p-4 border border-border/60 border-dashed rounded-xl bg-card/50 text-left">
+												<p className="text-xs font-bold text-foreground">
+													Welcome to DOST
 												</p>
-												<p className="text-[10px] text-muted-foreground truncate">
-													{user.email}
+												<p className="text-[10px] text-muted-foreground mt-1">
+													Sign in to sync your local
+													environment and connect cloud
+													services.
 												</p>
 											</div>
-										</div>
-									) : (
-										<div className="p-4 border border-border/60 border-dashed rounded-xl bg-card/50 text-left">
-											<p className="text-xs font-bold text-foreground">
-												Welcome to DOST
-											</p>
-											<p className="text-[10px] text-muted-foreground mt-1">
-												Sign in to sync your local
-												environment and connect cloud
-												services.
-											</p>
-										</div>
+										)
 									)}
 
 									{/* Navigation list */}
@@ -333,44 +340,48 @@ const Navbar = () => {
 
 								{/* Action Buttons & Footer */}
 								<div className="space-y-4 pt-4 border-t border-border">
-									{logged && user ? (
-										<div className="flex flex-col gap-2">
-											<Button
-												variant="outline"
-												size="sm"
-												className="w-full h-10 rounded-xl text-xs font-semibold"
-												onClick={() => {
-													router.push("/profile");
-													setIsOpen(false);
-												}}
-											>
-												<User className="mr-2 h-4 w-4" />
-												Go to Profile
-											</Button>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="w-full h-10 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10"
-												onClick={() => {
-													handleLogout();
-													setIsOpen(false);
-												}}
-											>
-												<LogOut className="mr-2 h-4 w-4" />
-												Log out
-											</Button>
-										</div>
-									) : (
-										<Button
-											size="sm"
-											className="w-full h-10 rounded-xl text-xs font-semibold"
-											onClick={() => {
-												router.push("/login");
-												setIsOpen(false);
-											}}
-										>
-											Sign In to Account
-										</Button>
+									{!isProd && (
+										<>
+											{logged && user ? (
+												<div className="flex flex-col gap-2">
+													<Button
+														variant="outline"
+														size="sm"
+														className="w-full h-10 rounded-xl text-xs font-semibold"
+														onClick={() => {
+															router.push("/profile");
+															setIsOpen(false);
+														}}
+													>
+														<User className="mr-2 h-4 w-4" />
+														Go to Profile
+													</Button>
+													<Button
+														variant="ghost"
+														size="sm"
+														className="w-full h-10 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10"
+														onClick={() => {
+															handleLogout();
+															setIsOpen(false);
+														}}
+													>
+														<LogOut className="mr-2 h-4 w-4" />
+														Log out
+													</Button>
+												</div>
+											) : (
+												<Button
+													size="sm"
+													className="w-full h-10 rounded-xl text-xs font-semibold"
+													onClick={() => {
+														router.push("/login");
+														setIsOpen(false);
+													}}
+												>
+													Sign In to Account
+												</Button>
+											)}
+										</>
 									)}
 
 									<div className="text-center pt-2">

@@ -163,6 +163,11 @@ export const useAuthStore = create(
 
 			// Refresh Access Token
 			refreshToken: async () => {
+				const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+				if (isProd) {
+					set({ token: null, user: null, logged: false, initialChecked: true });
+					return null;
+				}
 				try {
 					const response = await auth.refresh();
 					const { token, logged } = response;

@@ -16,7 +16,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/authStore";
 import { Loader2, CheckCircle } from "lucide-react";
 
+import { notFound } from "next/navigation";
+
 export default function VerifyEmailPage() {
+	const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+	if (isProd) {
+		notFound();
+		return null;
+	}
+
 	const router = useRouter();
 	const { verifyOTP, resendOTP, signupData, loading } = useAuthStore();
 	const [otp, setOtp] = useState(["", "", "", "", "", ""]);

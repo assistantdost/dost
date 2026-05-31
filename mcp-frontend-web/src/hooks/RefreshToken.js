@@ -6,6 +6,9 @@ import { useAuthStore } from "@/store/authStore";
 function RefreshToken() {
 	const refreshToken = useAuthStore((state) => state.refreshToken);
 	useEffect(() => {
+		const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+		if (isProd) return;
+
 		const interval = setInterval(
 			() => {
 				refreshToken();

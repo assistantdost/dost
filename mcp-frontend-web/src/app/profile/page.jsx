@@ -17,6 +17,7 @@ import LogoutButton from "@/components/dashboard/LogoutButton";
 import { getServerFetcher } from "@/lib/serverApi";
 import { getMe } from "@/api/user";
 import { getAPIKeys } from "@/api/apiKeys";
+import { notFound } from "next/navigation";
 
 async function getProfileData() {
 	try {
@@ -36,6 +37,11 @@ async function getProfileData() {
 }
 
 export default async function ProfilePage() {
+	const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+	if (isProd) {
+		notFound();
+	}
+
 	const { user, initialApiKeys } = await getProfileData();
 
 	if (!user) {
