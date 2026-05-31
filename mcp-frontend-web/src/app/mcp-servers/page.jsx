@@ -3,249 +3,431 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { 
-	Terminal, 
-	Server, 
 	Monitor, 
 	Cloud, 
-	Code2, 
-	Zap, 
-	Play, 
-	Layers, 
-	Settings, 
-	ExternalLink 
+	ChevronDown, 
+	ChevronUp,
+	Cpu,
+	Settings2
 } from "lucide-react";
 
 export default function McpServersPage() {
-	const [activeServer, setActiveServer] = useState("desktop");
+	const [expandedDesktopTool, setExpandedDesktopTool] = useState(null);
+	const [expandedRemoteTool, setExpandedRemoteTool] = useState(null);
 
-	const servers = {
-		desktop: {
-			title: "Desktop Server",
-			icon: <Monitor className="h-5 w-5" />,
-			type: "Local (stdio)",
-			description: "This is your local action engine. It communicates over stdin/stdout, allowing AI models to execute safe system-level controls and scripting on your computer.",
-			setup: "npx -y @dost/desktop-server start",
-			tools: [
-				{
-					name: "open_application",
-					description: "Launch desktop applications and open browser URLs.",
-					args: { app_name: "string (e.g. 'chrome', 'spotify')", url: "string (optional)" }
-				},
-				{
-					name: "control_system_audio",
-					description: "Adjust or mute master audio output volume.",
-					args: { volume: "integer (0-100)", mute: "boolean (optional)" }
-				},
-				{
-					name: "take_screenshot",
-					description: "Capture the active monitor screen and save it locally.",
-					args: { format: "string ('png', 'jpg')" }
-				},
-				{
-					name: "manage_active_window",
-					description: "Control app window states (minimize, maximize, focus, close).",
-					args: { window_title: "string", action: "string ('minimize', 'maximize', 'focus', 'close')" }
-				},
-				{
-					name: "read_clipboard",
-					description: "Retrieve plain text currently copied to the system clipboard.",
-					args: {}
-				},
-				{
-					name: "run_shell_script",
-					description: "Execute a validated command-line script in a controlled sandbox.",
-					args: { script: "string", timeout: "integer (ms)" }
-				}
-			]
-		},
-		remote: {
-			title: "Remote Server",
-			icon: <Cloud className="h-5 w-5" />,
-			type: "Cloud (WebSockets / SSE)",
-			description: "This is your cloud integration gateway. It connects your AI model with live information APIs and authorized online accounts using OAuth2 authentication.",
-			setup: "npx -y @dost/remote-server start --port 8080",
-			tools: [
-				{
-					name: "fetch_gmail_inbox",
-					description: "Retrieve recent email messages, sender metadata, and unread threads.",
-					args: { max_results: "integer (1-50)", unread_only: "boolean" }
-				},
-				{
-					name: "create_calendar_event",
-					description: "Schedule bookings and add agenda details directly to Google Calendar.",
-					args: { title: "string", start_time: "ISO Date", end_time: "ISO Date", description: "string (optional)" }
-				},
-				{
-					name: "spotify_playback_control",
-					description: "Toggle playback state or skip songs in your active queue.",
-					args: { state: "string ('play', 'pause', 'next', 'previous')", volume: "integer (optional)" }
-				},
-				{
-					name: "spotify_device_swap",
-					description: "Transfer active Spotify playback stream to a different authorized device.",
-					args: { device_id: "string" }
-				},
-				{
-					name: "fetch_market_quote",
-					description: "Get real-time market indices, stock tickers, or cryptocurrency quotes.",
-					args: { symbol: "string (e.g. 'TSLA', 'BTCUSD')" }
-				},
-				{
-					name: "fetch_weather",
-					description: "Get current conditions and forecasts for a specified global city.",
-					args: { city: "string" }
-				}
-			]
-		}
+	const toggleDesktopTool = (name) => {
+		setExpandedDesktopTool(prev => prev === name ? null : name);
 	};
 
-	const currentServer = servers[activeServer];
+	const toggleRemoteTool = (name) => {
+		setExpandedRemoteTool(prev => prev === name ? null : name);
+	};
+
+	const desktopTools = [
+		{
+			name: "get_time",
+			description: "Retrieves the current local time for a specific location, city, or timezone. Use this to check 'What time is it in Tokyo?' or system time.",
+			args: { location: "string (optional)" }
+		},
+		{
+			name: "list_open_windows",
+			description: "Lists the window titles of all currently visible application windows running on the user's desktop.",
+			args: {}
+		},
+		{
+			name: "focus_window",
+			description: "Brings an open application window to the foreground and focuses it using its title.",
+			args: { title: "string (required)" }
+		},
+		{
+			name: "minimize_window",
+			description: "Minimizes a target application window to the taskbar.",
+			args: { title: "string (required)" }
+		},
+		{
+			name: "maximize_window",
+			description: "Maximizes a target application window to fill the screen.",
+			args: { title: "string (required)" }
+		},
+		{
+			name: "close_window",
+			description: "Closes a specific application window.",
+			args: { title: "string (required)" }
+		},
+		{
+			name: "schedule_task",
+			description: "Creates an automated background task in Windows Task Scheduler.",
+			args: { task_name: "string (required)", command: "string (required)", time_str: "string (required)", date_str: "string (optional)" }
+		},
+		{
+			name: "list_scheduled_tasks",
+			description: "Lists technical background jobs and automation scripts scheduled in the Windows Task Scheduler.",
+			args: { filter_name: "string (optional)" }
+		},
+		{
+			name: "delete_scheduled_task",
+			description: "Permanently deletes a scheduled task from the Windows Task Scheduler.",
+			args: { task_name: "string (required)" }
+		},
+		{
+			name: "set_reminder",
+			description: "Registers a timer that displays a desktop notification when the duration expires.",
+			args: { time_string: "string (required)", message: "string (required)" }
+		},
+		{
+			name: "get_system_info",
+			description: "Gathers software and hardware specifications, including operating system name and version, CPU model, CPU cores, active memory usage (RAM), and disk drive capacities.",
+			args: {}
+		},
+		{
+			name: "open_app",
+			description: "Opens a Windows application using the smart resolver.",
+			args: { app_name: "string (required)" }
+		},
+		{
+			name: "open_webpage",
+			description: "Opens a URL in the system's default web browser.",
+			args: { url: "string (required)" }
+		},
+		{
+			name: "play_song",
+			description: "Opens the default browser and plays a song search query on YouTube.",
+			args: { song: "string (required)" }
+		},
+		{
+			name: "volume_control",
+			description: "Modifies system master audio volume.",
+			args: { action: "SET | INCREASE | DECREASE (required)", value: "integer (optional)" }
+		},
+		{
+			name: "brightness_control",
+			description: "Modifies target screen brightness percentage.",
+			args: { action: "SET | INCREASE | DECREASE (required)", value: "integer (optional)" }
+		},
+		{
+			name: "system_power",
+			description: "Controls Windows system power state commands.",
+			args: { action: "shutdown | restart | hibernate | lock (required)" }
+		},
+		{
+			name: "create_note",
+			description: "Writes new text files safely to the user's isolated note directory (%USERPROFILE%\\Documents\\MCP_Notes).",
+			args: { content: "string (required)", custom_filename: "string (optional)" }
+		},
+		{
+			name: "find_files",
+			description: "Recursively searches for files or folders matching a query within an allowed start directory.",
+			args: { query: "string (required)", start_directory: "string (required)" }
+		},
+		{
+			name: "screenshot",
+			description: "Captures the current visible state of the primary display screen and writes it to a file.",
+			args: {}
+		},
+		{
+			name: "clipboard_manager",
+			description: "Reads (GET) or updates (SET) system clipboard contents.",
+			args: { action: "GET | SET (required)", text_to_set: "string (optional)" }
+		},
+		{
+			name: "show_notification",
+			description: "Displays a native Windows toast notification popup on the host.",
+			args: { title: "string (required)", message: "string (required)", duration_seconds: "integer (optional)" }
+		},
+		{
+			name: "basic_math",
+			description: "Evaluates basic list-based arithmetic operators.",
+			args: { numbers: "array of floats (required)", operation: "sum | product | min | max | power | factorial | modulo | percentage (required)" }
+		},
+		{
+			name: "evaluate_expression",
+			description: "Parses and evaluates complex mathematical expression strings using a secure Abstract Syntax Tree (AST) evaluator.",
+			args: { expression: "string (required)" }
+		},
+		{
+			name: "statistics_calc",
+			description: "Computes statistical values from lists of numerical values.",
+			args: { numbers: "array of floats (required)", operation: "mean | median | mode | stdev | variance | range (required)" }
+		},
+		{
+			name: "unit_converter",
+			description: "Performs linear conversions between standard units. Auto-detects physical properties category.",
+			args: { value: "float (required)", from_unit: "string (required)", to_unit: "string (required)" }
+		},
+		{
+			name: "date_calculator",
+			description: "Performs calendar math calculations using YYYY-MM-DD ISO formatting.",
+			args: { operation: "today | days_between | add_days | day_of_week (required)", date1: "string (optional)", date2: "string (optional)", days: "integer (optional)" }
+		},
+		{
+			name: "base_converter",
+			description: "Converts input numbers from a source numeral base to a target base.",
+			args: { number: "string (required)", from_base: "dec | bin | oct | hex (required)", to_base: "dec | bin | oct | hex (required)" }
+		},
+		{
+			name: "search_web",
+			description: "Executes search queries on DuckDuckGo and fetches the top results, returning titles, links, snippets, and truncated webpage contents.",
+			args: { query: "string (required)", num_results: "integer (optional)", max_chars_per_page: "integer (optional)" }
+		},
+		{
+			name: "scrape_webpage",
+			description: "Downloads and extracts clean text (formatted in Markdown) from any public webpage URL using Trafilatura or BeautifulSoup.",
+			args: { url: "string (required)" }
+		}
+	];
+
+	const remoteTools = [
+		{
+			name: "get_weather",
+			description: "Retrieves the current weather forecast for a specific location. Use this to check temperature, wind, humidity, or precipitation conditions.",
+			args: { city: "string (required)", units: "string (optional)" }
+		},
+		{
+			name: "get_stock_data",
+			description: "Fetches real-time equity quote data from NSE India (for Indian stocks) or NASDAQ (for international equities). Includes current price, net change, and volume.",
+			args: { stock_name: "string (required)" }
+		},
+		{
+			name: "get_crypto_price",
+			description: "Fetches real-time cryptocurrency price, market cap rank, supply details, and 24h/7d change statistics using the CoinGecko API.",
+			args: { coin_name: "string (required)" }
+		},
+		{
+			name: "get_crypto_history",
+			description: "Retrieves historical coin price points for charting purposes.",
+			args: { coin_name: "string (required)", period: "string (optional)", currency: "string (optional)" }
+		},
+		{
+			name: "get_metal_price",
+			description: "Fetches current spot prices for precious metals (Gold, Silver, Platinum, Palladium) per troy ounce. Converts prices to USD and INR.",
+			args: { metal_name: "string (required)" }
+		},
+		{
+			name: "convert_currency",
+			description: "Performs currency conversions using live European Central Bank exchange rates retrieved from the Frankfurter API.",
+			args: { amount: "float (required)", from_currency: "string (required)", to_currency: "string (required)" }
+		},
+		{
+			name: "read_recent_emails",
+			description: "Retrieves recent email metadata (sender, subject, snippet) from the user's Gmail inbox.",
+			args: { max_results: "integer (optional)", query: "string (optional)" }
+		},
+		{
+			name: "send_email",
+			description: "Composes and sends a new plaintext email from the user's Gmail account.",
+			args: { to: "string (required)", subject: "string (required)", body: "string (required)" }
+		},
+		{
+			name: "list_calendar_events",
+			description: "Retrieves upcoming events, meetings, and agendas from the user's primary Google Calendar.",
+			args: { max_results: "integer (optional)" }
+		},
+		{
+			name: "create_calendar_event",
+			description: "Schedules a new appointment, booking, or event on the user's calendar.",
+			args: { summary: "string (required)", start_datetime: "string (required)", end_datetime: "string (required)", time_zone: "string (optional)", attendees: "array of strings (optional)", description: "string (optional)" }
+		},
+		{
+			name: "list_contacts",
+			description: "Searches the user's Google Contacts address book to retrieve contact names, emails, and phone numbers.",
+			args: { query: "string (optional)", max_results: "integer (optional)" }
+		},
+		{
+			name: "get_current_playback",
+			description: "Checks the active Spotify session and returns the current track title, artist name, album name, device name, URI, and URL.",
+			args: {}
+		},
+		{
+			name: "list_spotify_devices",
+			description: "Lists all available Spotify Connect devices (computers, phones, smart speakers) along with their active statuses and unique device IDs.",
+			args: {}
+		},
+		{
+			name: "set_spotify_device",
+			description: "Transfers media playback from the current device to a selected target device.",
+			args: { device_id: "string (required)", play: "boolean (optional)" }
+		},
+		{
+			name: "play_spotify",
+			description: "Resumes playback on the currently active Spotify device.",
+			args: {}
+		},
+		{
+			name: "pause_spotify",
+			description: "Pauses playback on the currently active Spotify device.",
+			args: {}
+		},
+		{
+			name: "next_track_spotify",
+			description: "Skips forward to the next track in the user's playback queue.",
+			args: {}
+		},
+		{
+			name: "previous_track_spotify",
+			description: "Goes back to the previous track in the user's playback history.",
+			args: {}
+		},
+		{
+			name: "start_spotify_playback",
+			description: "Starts playing a specific album, artist, playlist, or track list on the active device.",
+			args: { context_uri: "string (optional)", uris: "array of strings (optional)" }
+		},
+		{
+			name: "search_spotify",
+			description: "Searches the Spotify catalog for matching media objects.",
+			args: { query: "string (required)", search_type: "string (optional)", limit: "integer (optional)" }
+		}
+	];
 
 	return (
 		<div className="min-h-screen bg-background text-foreground p-6 pt-28 font-sans">
-			<div className="container mx-auto max-w-5xl space-y-8">
+			<div className="container mx-auto max-w-6xl space-y-8">
 				{/* Top Header */}
-				<div className="text-center md:text-left border-b border-border/60 pb-6">
-					<Badge variant="outline" className="mb-3 bg-primary/10 border-primary text-primary text-xs font-semibold px-3 py-0.5 rounded-full">
-						Infrastructure
-					</Badge>
-					<h1 className="text-3xl font-bold tracking-tight">MCP Servers Explorer</h1>
-					<p className="text-sm text-muted-foreground mt-1">
-						Browse pre-configured tools, schemas, and configurations built on the Model Context Protocol.
-					</p>
+				<div className="text-left border-b border-border/60 pb-6 flex items-center justify-between">
+					<div>
+						<Badge variant="outline" className="mb-3 bg-primary/10 border-primary text-primary text-xs font-semibold px-3 py-0.5 rounded-full">
+							Infrastructure
+						</Badge>
+						<h1 className="text-3xl font-bold tracking-tight">MCP Control Center</h1>
+						<p className="text-sm text-muted-foreground mt-1">
+							Manage and monitor your Model Context Protocol infrastructure
+						</p>
+					</div>
+					<div className="hidden sm:flex items-center gap-3">
+						<div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card text-xs font-bold text-muted-foreground">
+							<Cpu className="h-3.5 w-3.5" /> 2 Servers
+						</div>
+						<div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card text-xs font-bold text-muted-foreground">
+							<Settings2 className="h-3.5 w-3.5" /> 50 Tools
+						</div>
+					</div>
 				</div>
 
-				{/* Selection Tabs */}
-				<div className="flex bg-muted/40 border border-border p-1.5 rounded-xl max-w-md mx-auto md:mx-0">
-					<button
-						onClick={() => setActiveServer("desktop")}
-						className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-							activeServer === "desktop"
-								? "bg-primary text-primary-foreground shadow-sm"
-								: "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-						}`}
-					>
-						<Monitor className="h-4 w-4" />
-						Desktop Server
-					</button>
-					<button
-						onClick={() => setActiveServer("remote")}
-						className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-							activeServer === "remote"
-								? "bg-primary text-primary-foreground shadow-sm"
-								: "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-						}`}
-					>
-						<Cloud className="h-4 w-4" />
-						Remote Server
-					</button>
-				</div>
-
-				{/* Server details */}
-				<div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-					{/* Left panel: Info & Config */}
-					<div className="lg:col-span-5 space-y-6">
-						<Card className="border-border bg-card shadow-sm">
-							<CardHeader className="flex flex-row items-center gap-3">
-								<div className="h-10 w-10 bg-primary/10 text-primary border border-primary/20 rounded-lg flex items-center justify-center">
-									{currentServer.icon}
-								</div>
-								<div>
-									<CardTitle className="text-base">{currentServer.title}</CardTitle>
-									<CardDescription className="text-xs uppercase font-bold text-primary mt-0.5 tracking-wide">
-										{currentServer.type}
-									</CardDescription>
-								</div>
-							</CardHeader>
-							<CardContent className="space-y-4">
-								<p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-									{currentServer.description}
-								</p>
-
-								{/* Setup Code */}
-								<div className="space-y-2 pt-2">
-									<span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Terminal Startup Command</span>
-									<div className="flex items-center gap-2 border border-border/80 rounded-lg p-3 bg-muted/40 font-mono text-xs select-all text-foreground break-all relative">
-										<Terminal className="h-4 w-4 text-muted-foreground shrink-0" />
-										<span>{currentServer.setup}</span>
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-
-						{/* Quick Client Compatibility checklist */}
-						<Card className="border-border bg-card shadow-sm">
-							<CardHeader>
-								<CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Compatibility Matrix</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-3 pt-0">
-								<div className="flex justify-between items-center text-xs">
-									<span className="text-muted-foreground">DOST Desktop App</span>
-									<Badge className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 rounded-full font-bold">Native</Badge>
-								</div>
-								<div className="flex justify-between items-center text-xs">
-									<span className="text-muted-foreground">Cursor Code Editor</span>
-									<Badge variant="outline" className="text-primary border-primary rounded-full font-bold">Compatible</Badge>
-								</div>
-								<div className="flex justify-between items-center text-xs">
-									<span className="text-muted-foreground">Claude Desktop Client</span>
-									<Badge variant="outline" className="text-primary border-primary rounded-full font-bold">Compatible</Badge>
-								</div>
-								<div className="flex justify-between items-center text-xs">
-									<span className="text-muted-foreground">Custom stdio Clients</span>
-									<Badge variant="outline" className="text-muted-foreground border-border rounded-full font-bold">Supported</Badge>
-								</div>
-							</CardContent>
-						</Card>
+				{/* Active Tools Section */}
+				<div className="space-y-6">
+					<div className="flex items-center justify-between border-b border-border pb-3">
+						<h2 className="text-lg font-bold tracking-tight">Active Tools</h2>
 					</div>
 
-					{/* Right panel: Available Tools */}
-					<div className="lg:col-span-7 space-y-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-								Packaged Tools ({currentServer.tools.length})
-							</h3>
-							<Badge className="bg-primary/10 border-primary text-primary font-bold">
-								MCP Standard 1.0
-							</Badge>
-						</div>
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+						{/* Desktop Server Accordion Card */}
+						<Card className="border-border bg-card flex flex-col h-[600px] overflow-hidden shadow-sm">
+							<CardHeader className="border-b border-border bg-muted/10 py-4 flex flex-row items-center justify-between shrink-0">
+								<div className="flex items-center gap-2">
+									<Monitor className="h-5 w-5 text-primary shrink-0" />
+									<CardTitle className="text-sm font-bold font-mono">desktop_server</CardTitle>
+								</div>
+								<Badge className="bg-primary/10 border-primary text-primary text-xs font-bold">
+									30 Tools
+								</Badge>
+							</CardHeader>
+							<CardContent className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+								{desktopTools.map((tool) => {
+									const isExpanded = expandedDesktopTool === tool.name;
+									return (
+										<div 
+											key={tool.name} 
+											className="border border-border/80 rounded-xl overflow-hidden bg-background/50 hover:border-primary/20 transition-all"
+										>
+											{/* Accordion Trigger */}
+											<button
+												onClick={() => toggleDesktopTool(tool.name)}
+												className="w-full flex items-center justify-between p-3.5 text-left text-xs font-semibold hover:bg-muted/10 transition-colors"
+											>
+												<code className="text-xs font-bold font-sans bg-muted border border-border/60 px-2 py-0.5 rounded text-primary">
+													{tool.name}
+												</code>
+												{isExpanded ? (
+													<ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+												) : (
+													<ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+												)}
+											</button>
 
-						<div className="space-y-4">
-							{currentServer.tools.map((tool) => (
-								<Card key={tool.name} className="border-border bg-card shadow-sm hover:border-primary/45 transition-colors duration-200">
-									<CardHeader className="py-4 pb-2">
-										<div className="flex flex-wrap items-center justify-between gap-2">
-											<code className="text-xs font-bold text-primary font-sans">
-												{tool.name}
-											</code>
-											<span className="text-[10px] text-muted-foreground font-semibold font-mono">
-												tool schema
-											</span>
-										</div>
-										<p className="text-xs text-muted-foreground mt-1">
-											{tool.description}
-										</p>
-									</CardHeader>
-									{Object.keys(tool.args).length > 0 && (
-										<CardContent className="py-3 pt-0 border-t border-border/40 mt-2 bg-muted/10">
-											<div className="space-y-1.5 pt-2">
-												<span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">Input Arguments</span>
-												<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-													{Object.entries(tool.args).map(([argName, argType]) => (
-														<div key={argName} className="flex justify-between items-center border border-border/60 rounded-md p-1.5 bg-background text-[10px]">
-															<span className="font-bold text-foreground">{argName}</span>
-															<span className="text-muted-foreground font-mono">{argType}</span>
+											{/* Accordion Content */}
+											{isExpanded && (
+												<div className="p-4 border-t border-border bg-muted/5 text-xs text-muted-foreground leading-relaxed space-y-3 animate-in fade-in duration-200">
+													<p>{tool.description}</p>
+													{Object.keys(tool.args).length > 0 && (
+														<div className="space-y-2 pt-2 border-t border-border/60">
+															<span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Input Arguments</span>
+															<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+																{Object.entries(tool.args).map(([argName, argType]) => (
+																	<div key={argName} className="flex justify-between items-center border border-border/60 rounded-lg p-2 bg-background text-[10px]">
+																		<span className="font-bold text-foreground">{argName}</span>
+																		<span className="text-muted-foreground font-mono">{argType}</span>
+																	</div>
+																))}
+															</div>
 														</div>
-													))}
+													)}
 												</div>
-											</div>
-										</CardContent>
-									)}
-								</Card>
-							))}
-						</div>
+											)}
+										</div>
+									);
+								})}
+							</CardContent>
+						</Card>
+
+						{/* Remote Server Accordion Card */}
+						<Card className="border-border bg-card flex flex-col h-[600px] overflow-hidden shadow-sm">
+							<CardHeader className="border-b border-border bg-muted/10 py-4 flex flex-row items-center justify-between shrink-0">
+								<div className="flex items-center gap-2">
+									<Cloud className="h-5 w-5 text-primary shrink-0" />
+									<CardTitle className="text-sm font-bold font-mono">remote_server</CardTitle>
+								</div>
+								<Badge className="bg-primary/10 border-primary text-primary text-xs font-bold">
+									20 Tools
+								</Badge>
+							</CardHeader>
+							<CardContent className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+								{remoteTools.map((tool) => {
+									const isExpanded = expandedRemoteTool === tool.name;
+									return (
+										<div 
+											key={tool.name} 
+											className="border border-border/80 rounded-xl overflow-hidden bg-background/50 hover:border-primary/20 transition-all"
+										>
+											{/* Accordion Trigger */}
+											<button
+												onClick={() => toggleRemoteTool(tool.name)}
+												className="w-full flex items-center justify-between p-3.5 text-left text-xs font-semibold hover:bg-muted/10 transition-colors"
+											>
+												<code className="text-xs font-bold font-sans bg-muted border border-border/60 px-2 py-0.5 rounded text-primary">
+													{tool.name}
+												</code>
+												{isExpanded ? (
+													<ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+												) : (
+													<ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+												)}
+											</button>
+
+											{/* Accordion Content */}
+											{isExpanded && (
+												<div className="p-4 border-t border-border bg-muted/5 text-xs text-muted-foreground leading-relaxed space-y-3 animate-in fade-in duration-200">
+													<p>{tool.description}</p>
+													{Object.keys(tool.args).length > 0 && (
+														<div className="space-y-2 pt-2 border-t border-border/60">
+															<span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Input Arguments</span>
+															<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+																{Object.entries(tool.args).map(([argName, argType]) => (
+																	<div key={argName} className="flex justify-between items-center border border-border/60 rounded-lg p-2 bg-background text-[10px]">
+																		<span className="font-bold text-foreground">{argName}</span>
+																		<span className="text-muted-foreground font-mono">{argType}</span>
+																	</div>
+																))}
+															</div>
+														</div>
+													)}
+												</div>
+											)}
+										</div>
+									);
+								})}
+							</CardContent>
+						</Card>
 					</div>
 				</div>
 			</div>

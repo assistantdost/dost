@@ -30,9 +30,12 @@ import {
 	Github,
 	CheckCircle2
 } from "lucide-react";
-import { motion } from "framer-motion";
 import FeatureMarquee from "@/components/FeatureMarquee";
 import InteractiveShowcase from "@/components/InteractiveShowcase";
+import Footer from "@/components/Footer";
+
+const GITHUB_URL = "https://github.com/assistantdost/dost";
+const DEMO_VIDEO_EMBED_URL = "https://www.youtube.com/embed/60ItHLz5WEA";
 
 export default function Home() {
 	const workflows = [
@@ -72,7 +75,7 @@ export default function Home() {
 						{/* Left Column: Left-aligned content */}
 						<div className="lg:col-span-6 text-left flex flex-col items-start">
 							<Badge variant="outline" className="mb-6 rounded-full px-4 py-1 text-xs font-semibold bg-muted/50 border-border">
-								Personal Agentic AI Assistant
+								Personal Agentic AI Assistant (Windows Only)
 							</Badge>
 
 							<h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl leading-tight">
@@ -82,21 +85,27 @@ export default function Home() {
 
 							<p className="mt-6 text-base text-muted-foreground sm:text-lg max-w-xl leading-relaxed">
 								Most AI assistants are built for conversation. DOST is built for execution.
-								Ask naturally, and DOST takes action across your desktop and cloud tools.
+								Ask naturally, and DOST takes action across your Windows desktop and cloud tools.
 							</p>
 
 							<div className="mt-8 flex flex-wrap gap-4 justify-start">
 								<Button asChild size="lg" className="rounded-full px-8 font-semibold shadow-lg">
-									<Link href="/signup">Get Started Free</Link>
+									<a
+										href={GITHUB_URL}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										Get Started
+									</a>
 								</Button>
 								<Button asChild size="lg" variant="outline" className="rounded-full px-8 font-semibold">
 									<a
-										href="https://github.com"
+										href={GITHUB_URL}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="flex items-center gap-2"
 									>
-										<Github className="h-4 w-4" /> View on GitHub
+										<Github className="h-4 w-4" /> GitHub
 									</a>
 								</Button>
 							</div>
@@ -118,6 +127,58 @@ export default function Home() {
 					<p className="text-sm text-muted-foreground mt-2">Dost communicates natively with your system APIs and online cloud services.</p>
 				</div>
 				<FeatureMarquee />
+			</section>
+
+			{/* DEMO VIDEO SECTION */}
+			<section className="py-20 md:py-28 bg-muted/10 border-b border-border">
+				<div className="container mx-auto px-6 max-w-6xl">
+					<div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+						
+						{/* Left Column: Title & Description */}
+						<div className="lg:col-span-5 text-left flex flex-col items-start">
+							<Badge variant="outline" className="mb-6 rounded-full px-4 py-1 text-xs font-semibold bg-muted/50 border-border">
+								Demo
+							</Badge>
+
+							<h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl leading-tight">
+								DOST in Action
+							</h2>
+
+							<p className="mt-6 text-base text-muted-foreground leading-relaxed">
+								Watch how DOST connects your custom workflows, system APIs, and external cloud accounts into a unified, secure execution loop.
+							</p>
+
+							<div className="mt-6 space-y-3 w-full">
+								<div className="flex items-center gap-3 text-sm">
+									<div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+									<span>Execute local system scripts and binaries</span>
+								</div>
+								<div className="flex items-center gap-3 text-sm">
+									<div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+									<span>Automate Chrome, media playback, and volume control</span>
+								</div>
+								<div className="flex items-center gap-3 text-sm">
+									<div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+									<span>Secure authentication handling via remote server</span>
+								</div>
+							</div>
+						</div>
+
+						{/* Right Column: Demo Video Player */}
+						<div className="lg:col-span-7 w-full">
+							<div className="relative aspect-video rounded-2xl overflow-hidden border border-border shadow-2xl bg-black">
+								<iframe
+									src={DEMO_VIDEO_EMBED_URL}
+									title="DOST MCP Demo Video"
+									allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+									allowFullScreen
+									className="absolute inset-0 w-full h-full border-0"
+								/>
+							</div>
+						</div>
+
+					</div>
+				</div>
 			</section>
 
 			{/* BENTO GRID MAIN FEATURES */}
@@ -377,80 +438,20 @@ export default function Home() {
 						</p>
 						<div className="mt-8 flex justify-center relative z-10">
 							<Button asChild size="lg" className="rounded-full px-10 font-semibold shadow-lg">
-								<Link href="/signup">Get DOST Now</Link>
+								<a
+									href={GITHUB_URL}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									Get DOST Now
+								</a>
 							</Button>
 						</div>
 					</Card>
 				</div>
 			</section>
 
-			{/* FOOTER */}
-			<footer className="border-t border-border bg-card/40 py-16 px-6 md:px-12">
-				<div className="container mx-auto max-w-6xl">
-					{/* Top Part: Statement & Columns */}
-					<div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-border">
-						
-						{/* Statement */}
-						<div className="md:col-span-6 space-y-4 text-left">
-							<h3 className="text-2xl md:text-3xl font-extrabold tracking-tight max-w-[18ch] leading-tight">
-								One Assistant.<br />
-								Unlimited Actions.
-							</h3>
-							<p className="text-xs text-muted-foreground max-w-md leading-relaxed">
-								DOST is the first open-source personal agentic AI assistant framework implementing the standardized Model Context Protocol (MCP). Connect models to tools locally and safely.
-							</p>
-						</div>
-
-						{/* Links Columns */}
-						<div className="md:col-span-6 grid grid-cols-2 sm:grid-cols-3 gap-8 text-left">
-							<div className="space-y-3">
-								<h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product</h4>
-								<ul className="space-y-2 text-xs">
-									<li><Link href="/docs" className="text-muted-foreground hover:text-foreground transition-colors">Documentation</Link></li>
-									<li><Link href="/#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</Link></li>
-									<li><Link href="/#about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link></li>
-									<li><Link href="/changelog" className="text-muted-foreground hover:text-foreground transition-colors">Changelog</Link></li>
-								</ul>
-							</div>
-							<div className="space-y-3">
-								<h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Ecosystem</h4>
-								<ul className="space-y-2 text-xs">
-									<li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">GitHub Repository</a></li>
-									<li><Link href="/docs/setup-guide" className="text-muted-foreground hover:text-foreground transition-colors">Desktop App</Link></li>
-									<li><Link href="/docs/setup-guide" className="text-muted-foreground hover:text-foreground transition-colors">CLI Companion</Link></li>
-									<li><a href="https://modelcontextprotocol.org" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">MCP Standard</a></li>
-								</ul>
-							</div>
-							<div className="space-y-3 col-span-2 sm:col-span-1">
-								<h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Legal</h4>
-								<ul className="space-y-2 text-xs">
-									<li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link></li>
-									<li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link></li>
-									<li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Security</Link></li>
-								</ul>
-							</div>
-						</div>
-					</div>
-
-					{/* Bottom Part: Meta info */}
-					<div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-						<div className="flex items-center gap-2">
-							<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-								<Zap className="h-4 w-4 fill-current" />
-							</div>
-							<span className="text-sm font-bold tracking-tight">DOST</span>
-						</div>
-
-						<div className="flex items-center gap-6 text-[10px] text-muted-foreground">
-							<span>&copy; {new Date().getFullYear()} DOST. MIT Licensed.</span>
-							<span className="flex items-center gap-1.5">
-								<span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-								All systems operational
-							</span>
-						</div>
-					</div>
-				</div>
-			</footer>
+			<Footer />
 		</main>
 	);
 }
