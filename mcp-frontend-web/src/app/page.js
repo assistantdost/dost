@@ -181,6 +181,55 @@ export default function Home() {
 				</div>
 			</section>
 
+			{/* ARCHITECTURE & SETUP QUICK LINKS */}
+			<section className="py-12 border-b border-border bg-background">
+				<div className="container mx-auto px-6 max-w-6xl">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						
+						{/* Setup Guide Card */}
+						<Card className="border-border bg-card/40 hover:bg-card/75 transition-all duration-300 flex flex-col justify-between p-6 shadow-md hover:shadow-lg">
+							<div className="space-y-2">
+								<Badge variant="outline" className="w-fit rounded-full text-[10px] font-semibold bg-primary/10 text-primary border-primary/20">
+									Setup Guide
+								</Badge>
+								<h3 className="text-lg font-bold">Getting Started</h3>
+								<p className="text-xs text-muted-foreground leading-relaxed">
+									Need step-by-step instructions on environment variables, registry configuration, and client execution? Follow our detailed setup guide.
+								</p>
+							</div>
+							<div className="mt-6">
+								<Button asChild size="sm" variant="outline" className="rounded-full font-medium border-border hover:bg-muted/80">
+									<Link href="/docs" className="flex items-center gap-1.5">
+										Open Setup Docs <ExternalLink className="h-3 w-3" />
+									</Link>
+								</Button>
+							</div>
+						</Card>
+
+						{/* Technical / Architecture Card */}
+						<Card className="border-border bg-card/40 hover:bg-card/75 transition-all duration-300 flex flex-col justify-between p-6 shadow-md hover:shadow-lg">
+							<div className="space-y-2">
+								<Badge variant="outline" className="w-fit rounded-full text-[10px] font-semibold bg-primary/10 text-primary border-primary/20">
+									Architecture
+								</Badge>
+								<h3 className="text-lg font-bold">Technical Specifications</h3>
+								<p className="text-xs text-muted-foreground leading-relaxed">
+									Want to know about our hybrid fastMCP architecture, system context truncation filters, and secure stdio/HTTP message loops? Dive into our technical docs.
+								</p>
+							</div>
+							<div className="mt-6">
+								<Button asChild size="sm" variant="outline" className="rounded-full font-medium border-border hover:bg-muted/80">
+									<Link href="/technical" className="flex items-center gap-1.5">
+										Explore Technical Architecture <ExternalLink className="h-3 w-3" />
+									</Link>
+								</Button>
+							</div>
+						</Card>
+
+					</div>
+				</div>
+			</section>
+
 			{/* BENTO GRID MAIN FEATURES */}
 			<section id="features" className="py-20 md:py-28">
 				<div className="container mx-auto px-4 max-w-6xl">
@@ -398,25 +447,31 @@ export default function Home() {
 						<AccordionItem value="item-1" className="border-border">
 							<AccordionTrigger className="text-sm font-semibold">What is DOST-MCP?</AccordionTrigger>
 							<AccordionContent className="text-xs text-muted-foreground leading-relaxed">
-								DOST-MCP is a personal agentic AI assistant framework built on the Model Context Protocol (MCP). It allows local and cloud AI models to interact securely with your local computer and remote web services.
+								DOST-MCP is a personal agentic AI assistant framework built on the open Model Context Protocol (MCP). It enables secure execution of desktop commands and cloud automations through localized LLM requests.
 							</AccordionContent>
 						</AccordionItem>
 						<AccordionItem value="item-2" className="border-border">
-							<AccordionTrigger className="text-sm font-semibold">How does the Desktop Server work?</AccordionTrigger>
+							<AccordionTrigger className="text-sm font-semibold">Is DOST compatible with OS platforms other than Windows?</AccordionTrigger>
 							<AccordionContent className="text-xs text-muted-foreground leading-relaxed">
-								The Desktop Server runs locally on your machine. It executes actions like opening applications, adjusting screen brightness, managing volume, taking screenshots, and accessing files when authorized by you.
+								No, the DOST desktop client and local productivity servers are built and optimized exclusively for Windows systems. It integrates natively with Windows APIs to control volume, screen settings, window layout, and run local binaries.
 							</AccordionContent>
 						</AccordionItem>
 						<AccordionItem value="item-3" className="border-border">
-							<AccordionTrigger className="text-sm font-semibold">Is my data secure?</AccordionTrigger>
+							<AccordionTrigger className="text-sm font-semibold">How do I get started with DOST?</AccordionTrigger>
 							<AccordionContent className="text-xs text-muted-foreground leading-relaxed">
-								Yes. All cloud integrations like Google Workspace and Spotify use secure OAuth2 authentication directly with the service providers. Your local desktop server only accepts connections from authorized local clients.
+								Since DOST is completely open source, you can get started by visiting our GitHub repository. Clone the repository, set up your model credentials, and run the installer. Detailed steps are in our Setup Guide.
 							</AccordionContent>
 						</AccordionItem>
 						<AccordionItem value="item-4" className="border-border">
-							<AccordionTrigger className="text-sm font-semibold">Can I add custom tools or APIs?</AccordionTrigger>
+							<AccordionTrigger className="text-sm font-semibold">How does the security model work?</AccordionTrigger>
 							<AccordionContent className="text-xs text-muted-foreground leading-relaxed">
-								Absolutely. DOST-MCP follows the open MCP specification. You can plug in any standard MCP server (such as databases, CLI tools, custom APIs, or CRMs) by updating the server configuration.
+								All local executions (file search, screenshotting, system parameters) are run locally by your Python-based Stdio server. Cloud integrations like Gmail and Spotify handle OAuth tokens securely in your browser/local state. Your keys and tokens are stored on your machine.
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-5" className="border-border">
+							<AccordionTrigger className="text-sm font-semibold">Can I integrate DOST with other clients like Cursor or Claude Desktop?</AccordionTrigger>
+							<AccordionContent className="text-xs text-muted-foreground leading-relaxed">
+								Yes! Since DOST conforms fully to the open Model Context Protocol standard, you can point Cursor or Claude Desktop configuration files to the Python stdio binary for direct tool execution inside your favorite environment. Check our "Connecting to Other Clients" guide.
 							</AccordionContent>
 						</AccordionItem>
 					</Accordion>
