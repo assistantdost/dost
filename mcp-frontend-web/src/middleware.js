@@ -5,7 +5,7 @@ export function middleware(request) {
 	const { pathname } = request.nextUrl;
 
 	// Define protected and public routes
-	const isProtectedRoute = pathname.startsWith("/dashboard");
+	const isProtectedRoute = pathname.startsWith("/profile");
 	const isPublicRoute =
 		pathname === "/login" ||
 		pathname === "/signup" ||
@@ -18,9 +18,9 @@ export function middleware(request) {
 		return NextResponse.redirect(new URL("/login", request.url));
 	}
 
-	// Redirect authorized users to dashboard if they try to access public auth routes
+	// Redirect authorized users to profile if they try to access public auth routes
 	if (isPublicRoute && refreshToken) {
-		return NextResponse.redirect(new URL("/dashboard", request.url));
+		return NextResponse.redirect(new URL("/profile", request.url));
 	}
 
 	return NextResponse.next();

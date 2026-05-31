@@ -22,7 +22,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	Menu,
 	Zap,
-	LayoutDashboard,
 	User,
 	LogOut,
 	Sun,
@@ -207,13 +206,6 @@ const Navbar = () => {
 										</p>
 									</div>
 								</DropdownMenuLabel>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									onClick={() => router.push("/dashboard")}
-								>
-									<LayoutDashboard className="mr-2 h-4 w-4" />
-									Dashboard
-								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={() => router.push("/profile")}
 								>
@@ -348,12 +340,12 @@ const Navbar = () => {
 												size="sm"
 												className="w-full h-10 rounded-xl text-xs font-semibold"
 												onClick={() => {
-													router.push("/dashboard");
+													router.push("/profile");
 													setIsOpen(false);
 												}}
 											>
-												<LayoutDashboard className="mr-2 h-4 w-4" />
-												Go to Dashboard
+												<User className="mr-2 h-4 w-4" />
+												Go to Profile
 											</Button>
 											<Button
 												variant="ghost"

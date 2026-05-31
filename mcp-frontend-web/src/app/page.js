@@ -211,7 +211,7 @@ export default function Home() {
 							</CardHeader>
 							<CardContent className="space-y-3">
 								<p className="text-xs text-muted-foreground leading-relaxed">
-									DOST implements OAuth2 flow for all Google and Spotify endpoints. Token exchange happens on your authorized frontend server. No third-party data collection.
+									DOST implements OAuth2 flow for all Google and Spotify endpoints. Token exchange happens on your secure Remote MCP Server. No third-party data collection.
 								</p>
 								<div className="rounded border border-border p-2 bg-muted/40 text-[10px] font-mono">
 									OAuth state validation: verified
@@ -291,7 +291,7 @@ export default function Home() {
 								</div>
 								<div className="flex items-center gap-3 text-sm">
 									<div className="h-2 w-2 rounded-full bg-primary" />
-									<span>DOST Node-based CLI Companion</span>
+									<span>DOST Python-based CLI Companion</span>
 								</div>
 								<div className="flex items-center gap-3 text-sm">
 									<div className="h-2 w-2 rounded-full bg-primary" />
@@ -299,7 +299,7 @@ export default function Home() {
 								</div>
 								<div className="flex items-center gap-3 text-sm">
 									<div className="h-2 w-2 rounded-full bg-primary" />
-									<span>Custom APIs and WebSockets connectors</span>
+									<span>Custom APIs and SSE/HTTP connectors</span>
 								</div>
 							</div>
 						</div>
@@ -311,7 +311,7 @@ export default function Home() {
 							</div>
 							<h3 className="text-lg font-bold mb-2">Connect Your Own Server</h3>
 							<p className="text-xs text-muted-foreground leading-relaxed mb-6">
-								Adding custom servers is simple. Create any executable that communicates over standard input/output (stdio) or WebSockets, and register it inside the configuration panel.
+								Adding custom servers is simple. Create any executable that communicates over standard input/output (stdio) or HTTP/SSE, and register it inside the configuration panel.
 							</p>
 							<div className="flex flex-wrap gap-2">
 								<Badge variant="secondary">PostgreSQL</Badge>
@@ -416,17 +416,17 @@ export default function Home() {
 								<h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Ecosystem</h4>
 								<ul className="space-y-2 text-xs">
 									<li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">GitHub Repository</a></li>
-									<li><Link href="/desktop" className="text-muted-foreground hover:text-foreground transition-colors">Desktop App</Link></li>
-									<li><Link href="/cli" className="text-muted-foreground hover:text-foreground transition-colors">CLI Companion</Link></li>
+									<li><Link href="/docs/setup-guide" className="text-muted-foreground hover:text-foreground transition-colors">Desktop App</Link></li>
+									<li><Link href="/docs/setup-guide" className="text-muted-foreground hover:text-foreground transition-colors">CLI Companion</Link></li>
 									<li><a href="https://modelcontextprotocol.org" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">MCP Standard</a></li>
 								</ul>
 							</div>
 							<div className="space-y-3 col-span-2 sm:col-span-1">
 								<h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Legal</h4>
 								<ul className="space-y-2 text-xs">
-									<li><Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link></li>
-									<li><Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link></li>
-									<li><Link href="/security" className="text-muted-foreground hover:text-foreground transition-colors">Security</Link></li>
+									<li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link></li>
+									<li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link></li>
+									<li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Security</Link></li>
 								</ul>
 							</div>
 						</div>

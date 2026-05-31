@@ -1,5 +1,5 @@
 import AuthGuard from "@/components/auth/AuthGuard";
 
-export default function DashboardLayout({ children }) {
+export default function ProfileLayout({ children }) {
 	return <AuthGuard>{children}</AuthGuard>;
 }

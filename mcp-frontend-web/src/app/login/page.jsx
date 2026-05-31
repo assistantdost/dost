@@ -68,7 +68,7 @@ export default function LoginPage() {
 
 		try {
 			await login(formData);
-			router.push("/dashboard");
+			router.push("/profile");
 		} catch (error) {
 			console.error("Login error:", error);
 		}
