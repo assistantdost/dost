@@ -112,40 +112,48 @@ cd dost
 
 ### 2. Set up environment variables
 
-Each component that needs secrets has its own `.env` file. Copy and fill in the values:
+Each component has a `.env.default` template file. To configure a component, copy its `.env.default` to a new `.env` file in the same folder and fill in the credentials:
 
-<details>
-<summary><b>Root <code>.env</code></b> — LLM & API keys</summary>
-
-```env
-GROQ_API_KEY=gsk_...
-WEATHER_API_KEY=...
+```bash
+# In each component folder (e.g. mcp-desktop-client, mcp-server-web, etc.):
+cp .env.default .env
 ```
-
-</details>
 
 <details>
 <summary><b><code>mcp-desktop-client/.env</code></b> — Desktop client config</summary>
 
 ```env
 VITE_API_URL=http://localhost:5000/api/v1
-GROQ_API_KEY=gsk_...
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-VITE_SUMMARY_MAX_TOKENS=800
-VITE_SUMMARY_TOKEN_THRESHOLD=1500
+VITE_WEB_URL=http://localhost:3000
+VITE_PUBLIC_API_URL=http://localhost:5599
+VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+VITE_SUMMARY_MAX_TOKENS=700
+VITE_SUMMARY_TRIGGER_TOKENS=6000
+VITE_SUMMARY_WINDOW_CONVERSATIONS=2
 ```
 
 </details>
 
 <details>
-<summary><b><code>mcp-server-web/.env</code></b> — Backend config</summary>
+<summary><b><code>mcp-server-web/.env</code></b> — Central Backend config</summary>
 
 ```env
-DATABASE_URL=postgres://user:password@host:5432/dbname
+DATABASE_URL=postgres://username:password@host:port/dbname
+JWT_SECRET=your_jwt_secret_here
+REFRESH_TOKEN_SECRET=your_refresh_token_secret_here
+ACCESS_TOKEN_SECRET=your_access_token_secret_here
+ALGORITHM=HS256
+GMAIL_SENDER=your_email@gmail.com
+REDIS_URL=redis://username:password@host:port
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 DEV_MODE=true
-PORT=8000
-SECRET_KEY=your-jwt-secret
+PORT=5000
+DOMAIN="localhost"
+DOMAIN_ADDRESS="http://localhost:5173"
+EMAIL_ADDRESS="your_email@gmail.com"
 ```
 
 </details>
@@ -154,12 +162,13 @@ SECRET_KEY=your-jwt-secret
 <summary><b><code>mcp-server-remote/.env</code></b> — Remote server & OAuth</summary>
 
 ```env
-WEATHER_API_KEY=...
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-SPOTIFY_CLIENT_ID=...
-SPOTIFY_CLIENT_SECRET=...
-SPOTIFY_REDIRECT_URI=http://localhost:8000/auth/spotify_callback
+GROQ_API_KEY=your_groq_api_key
+WEATHER_API_KEY=your_openweathermap_api_key
+DATABASE_URL=postgres://username:password@host:port/dbname?sslmode=require
+VALKEY_CONNECTION_STRING=redis://username:password@host:port
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+MAIN_SERVER_URL=http://localhost:5000/api/v1
 ```
 
 </details>

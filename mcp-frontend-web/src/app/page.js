@@ -30,6 +30,7 @@ import {
 	Github,
 	CheckCircle2,
 } from "lucide-react";
+import { FaWindows } from "react-icons/fa";
 import FeatureMarquee from "@/components/FeatureMarquee";
 import InteractiveShowcase from "@/components/InteractiveShowcase";
 import Footer from "@/components/Footer";
@@ -75,16 +76,16 @@ export default function Home() {
 						<div className="lg:col-span-6 text-left flex flex-col items-start">
 							<Badge
 								variant="outline"
-								className="mb-6 rounded-full px-4 py-1 text-xs font-semibold bg-muted/50 border-border"
+								className="mb-6 rounded-full px-4 py-1 text-sm font-semibold bg-muted/50 border-border"
 							>
-								Personal Agentic AI Assistant (Windows Only)
+								One Assistant real actions.
 							</Badge>
 
 							<h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl leading-tight">
-								One Assistant.
+								Personal Agentic
 								<br />
 								<span className="text-primary">
-									Real Actions.
+									AI Assistant
 								</span>
 							</h1>
 
@@ -95,19 +96,24 @@ export default function Home() {
 								and cloud tools.
 							</p>
 
-							<div className="mt-8 flex flex-wrap gap-4 justify-start">
+							<p className="mt-4 ml-2  flex items-center gap-2">
+								<FaWindows className="h-4 w-4 text-blue-500" />
+								Windows OS Only
+							</p>
+
+							<div className="mt-4 flex flex-wrap gap-4 justify-start">
 								<Button
-									asChild
 									size="lg"
-									className="rounded-full px-8 font-semibold shadow-lg"
+									className="rounded-full px-8 font-semibold shadow-lg cursor-pointer"
+									onClick={() => {
+										document
+											.getElementById("capabilities")
+											?.scrollIntoView({
+												behavior: "smooth",
+											});
+									}}
 								>
-									<a
-										href={GITHUB_URL}
-										target="_blank"
-										rel="noopener noreferrer"
-									>
-										Get Started
-									</a>
+									Get Started
 								</Button>
 								<Button
 									asChild
@@ -136,7 +142,10 @@ export default function Home() {
 			</section>
 
 			{/* MARQUEE CAROUSEL */}
-			<section className="py-12 border-t border-b border-border bg-card/30">
+			<section
+				id="capabilities"
+				className="py-12 border-t border-b border-border bg-card/30"
+			>
 				<div className="container mx-auto px-4 max-w-6xl text-center mb-8">
 					<h2 className="text-2xl font-bold tracking-tight">
 						Capabilities in Action
