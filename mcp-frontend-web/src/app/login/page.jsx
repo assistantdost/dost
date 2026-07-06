@@ -18,8 +18,15 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import { Separator } from "@/components/ui/separator";
+import { notFound } from "next/navigation";
 
 export default function LoginPage() {
+	const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+	if (isProd) {
+		notFound();
+		return null;
+	}
+
 	const router = useRouter();
 	const { login, googleLogin, loading, error } = useAuthStore();
 	const [formData, setFormData] = useState({
@@ -68,7 +75,7 @@ export default function LoginPage() {
 
 		try {
 			await login(formData);
-			router.push("/dashboard");
+			router.push("/profile");
 		} catch (error) {
 			console.error("Login error:", error);
 		}

@@ -19,7 +19,15 @@ import { useAuthStore } from "@/store/authStore";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import { Separator } from "@/components/ui/separator";
 
+import { notFound } from "next/navigation";
+
 export default function SignupPage() {
+	const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+	if (isProd) {
+		notFound();
+		return null;
+	}
+
 	const router = useRouter();
 	const { signup, loading, error, setSignUpData, googleLogin } =
 		useAuthStore();

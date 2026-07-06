@@ -52,11 +52,11 @@ const items = [
 		url: "/",
 		icon: Home,
 	},
-	{
-		title: "Test",
-		url: "/test",
-		icon: TestTubeDiagonal,
-	},
+	// {
+	// 	title: "Test",
+	// 	url: "/test",
+	// 	icon: TestTubeDiagonal,
+	// },
 	// {
 	// 	title: "Test Chat",
 	// 	url: "/chat",
@@ -102,7 +102,13 @@ export function AppSidebar() {
 			<SidebarHeader className="border-b px-4 py-2">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
-						<MessageCircle className="h-6 w-6 text-primary" />
+						<div className="h-8 w-8 overflow-hidden ">
+							<img
+								src="/dost.png"
+								alt="DOST Logo"
+								className="h-full w-full object-cover"
+							/>
+						</div>
 						<span className="font-semibold text-lg">DOST MCP</span>
 					</div>
 					<button

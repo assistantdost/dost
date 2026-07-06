@@ -74,7 +74,7 @@ class CRUDAuth:
         jwt_obj = JsonWebToken(algorithms=["RS256"])
         try:
             claims = jwt_obj.decode(id_token_str, jwks)
-            claims.validate()
+            claims.validate(leeway=120)
         except Exception as e:
             raise ValueError(f"Invalid Google token: {str(e)}")
 

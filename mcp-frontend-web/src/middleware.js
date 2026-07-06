@@ -4,8 +4,10 @@ export function middleware(request) {
 	const refreshToken = request.cookies.get("refresh_token")?.value;
 	const { pathname } = request.nextUrl;
 
+	const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+
 	// Define protected and public routes
-	const isProtectedRoute = pathname.startsWith("/dashboard");
+	const isProtectedRoute = pathname.startsWith("/profile");
 	const isPublicRoute =
 		pathname === "/login" ||
 		pathname === "/signup" ||
@@ -13,14 +15,18 @@ export function middleware(request) {
 		pathname === "/reset-password" ||
 		pathname === "/verify-email";
 
+	if (isProd && (isProtectedRoute || isPublicRoute)) {
+		return NextResponse.redirect(new URL("/", request.url));
+	}
+
 	// Redirect unauthorized users to login if they try to access protected routes
 	if (isProtectedRoute && !refreshToken) {
 		return NextResponse.redirect(new URL("/login", request.url));
 	}
 
-	// Redirect authorized users to dashboard if they try to access public auth routes
+	// Redirect authorized users to profile if they try to access public auth routes
 	if (isPublicRoute && refreshToken) {
-		return NextResponse.redirect(new URL("/dashboard", request.url));
+		return NextResponse.redirect(new URL("/profile", request.url));
 	}
 
 	return NextResponse.next();

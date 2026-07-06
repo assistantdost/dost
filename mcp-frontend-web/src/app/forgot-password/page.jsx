@@ -17,7 +17,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/authStore";
 import { Loader2 } from "lucide-react";
 
+import { notFound } from "next/navigation";
+
 export default function ForgotPasswordPage() {
+	const isProd = process.env.NEXT_PUBLIC_MODE === "prod";
+	if (isProd) {
+		notFound();
+		return null;
+	}
+
 	const router = useRouter();
 	const { forgotPassword, loading } = useAuthStore();
 	const [email, setEmail] = useState("");

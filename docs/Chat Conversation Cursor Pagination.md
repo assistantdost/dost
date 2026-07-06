@@ -1,122 +1,188 @@
-# Chat Conversation Cursor Pagination
+# Chat & Message Pagination Architecture
 
-## Overview
+This document describes the cursor-based pagination architecture implemented in the DOST server and how it is integrated and consumed by the client applications.
 
-This document explains how conversation message pagination works for chat retrieval.
+---
 
-- Endpoint behavior is cursor-based.
-- Messages are fetched in bounded pages (default limit is 30).
-- Cursor format is `created_at::message_id`.
-- Message ordering is stabilized using `(created_at, id)`.
+## 1. Chat List Pagination
 
-## Why Cursor Pagination
+The chat list endpoint retrieves a user's active conversations, paginated with standard cursor-based scrolling.
 
-Cursor pagination is used to keep payload size and memory usage bounded.
+### Backend Implementation
 
-- The server never loads the whole conversation for normal page fetches.
-- The client can load older messages incrementally when scrolling up.
-- Pagination remains stable even when multiple messages share the same timestamp.
+* **Endpoint:** `GET /api/chats/`
+* **Controller/Router:** [routers/chat.py](file:///d:/Python%20Save%20files/dost-mcp/mcp-server-web/routers/chat.py#L12-L34) (`get_user_chats`)
+* **CRUD Logic:** [crud/chat.py](file:///d:/Python%20Save%20files/dost-mcp/mcp-server-web/crud/chat.py#L11-L22) (`get_user_chats`)
+* **Default Page Size:** 20 chats (configurable via `limit` query param, 1 to 100)
 
-## Cursor Format
+#### DB Query & Cursor logic:
+1. **Ordering:** Sorted strictly by `updated_at` descending, placing the most recently updated chats at the top.
+2. **Cursor format:** The ISO-8601 string of the last chat's `updated_at` timestamp.
+3. **Paging Filter:** If a `cursor` is provided, the database filters out chats updated at or after the cursor, querying:
+   ```sql
+   ChatModel.updated_at < cursor_datetime
+   ```
+   This prevents page-drift duplicates when new chats are created while the user scrolls.
 
-Cursor token:
+```mermaid
+flowchart TD
+    Start(["Get Chat List"]) --> QueryDB["Query ChatModel"]
+    QueryDB --> HasCursor{"Has cursor?"}
+    HasCursor -- Yes --> FilterCursor["Filter: updated_at < cursor_time"]
+    HasCursor -- No --> OrderDesc["Order by updated_at desc"]
+    FilterCursor --> OrderDesc
+    OrderDesc --> LimitResult["Fetch limit = limit rows"]
+    LimitResult --> BuildResult["Map metadata to response list"]
+    BuildResult --> CheckNextCursor{"Rows fetched == limit?"}
+    CheckNextCursor -- Yes --> GenerateCursor["next_cursor = last_item.updated_at.isoformat"]
+    CheckNextCursor -- No --> NullCursor["next_cursor = None"]
+    GenerateCursor --> ReturnChats(["Return PaginatedChats"])
+    NullCursor --> ReturnChats
+```
 
-- `<iso_datetime>::<message_id>`
+### Client-Side Integration
 
-Example:
+* **TanStack Query Key:** `["chats"]`
+* **Query Setup:** `chatQueryOptions.list` inside the client queries config.
+* **API call:** `getUserChats(limit, pageParam)`
 
-- `2026-04-06T18:52:51.711897+00:00::01KNJ27TGXTZC1NKJE2NRWG2A4`
+The client fetches pages incrementally by retrieving `next_cursor` from the last page fetched, passing it as `pageParam` to the query function.
 
-## Sort and Comparison Rules
+---
 
-Messages are sorted in descending order when fetched from DB:
+## 2. Chat Messages Pagination (with Summary Boundary Expansion)
 
-- `created_at DESC, id DESC`
+Retrieving messages inside a specific chat is more complex because:
+1. High-frequency messaging can lead to identical creation timestamps (`created_at`).
+2. The UI requires chronological order (oldest messages at top, newest at bottom), but the DB query must fetch backwards (starting from the newest and going older).
+3. The LLM context requires a contiguous block of messages since the last chat summarization. If a page cut-off splits these messages, context is lost.
 
-To fetch strictly older rows than a cursor boundary:
+### Backend Implementation
 
-- `created_at < cursor_dt`
-- or (`created_at == cursor_dt` and `id < cursor_id`)
+* **Endpoint:** `GET /api/chats/{chat_id}`
+* **Controller/Router:** [routers/chat.py](file:///d:/Python%20Save%20files/dost-mcp/mcp-server-web/routers/chat.py#L37-L72) (`get_chat`)
+* **CRUD Logic:** [crud/chat.py](file:///d:/Python%20Save%20files/dost-mcp/mcp-server-web/crud/chat.py#L67-L188) (`get_chat_messages_paginated`)
+* **Default Page Size:** 30 messages (configurable via `limit` query param, 1 to 200)
 
-This tuple comparison prevents duplicates or skips across pages.
+#### Architectural Safeguards & Optimizations:
 
-## Page Fetch Algorithm
+1. **Compound Ordering Key (`created_at`, `id`)**: To prevent overlap/skips when timestamps collide, the system enforces a strict compound sort comparison:
+   * **Older Than Cursor:** `created_at < cursor_dt` OR (`created_at == cursor_dt` and `id < cursor_id`).
+   * **Newer or Equal to Summary Boundary:** `created_at > boundary_dt` OR (`created_at == boundary_dt` and `id >= boundary_id`).
+2. **Cursor Encoding**: The cursor is a base64-encoded string representing the compound tuple `(created_at, id)`.
+3. **Keep track of older exists:** The DB query fetches `limit + 1` rows. If `len(rows) > limit`, we know `has_more_older = True` without running a separate COUNT query.
+4. **Summary Boundary Expansion (First-Load only)**:
+   * When loading a chat for the first time (no cursor), if `last_summarized_message_id` is present, the server decodes the creation time directly from the ULID string in memory (using `_decode_ulid_time`). This avoids an extra DB read for the summary message.
+   * If the summary boundary is older than the oldest message in the initial page payload, the server dynamically runs an expanded query to fetch **all** messages newer than or equal to the summary boundary.
 
-1. Resolve and validate the chat by `chat_id` and `user_id`.
-2. Build base message query for that chat.
-3. If cursor exists, apply the "older than cursor" predicate.
-4. Fetch `limit + 1` rows.
-5. `has_more_older = len(rows) > limit`.
-6. Keep first `limit` rows as current page.
-7. Build `next_cursor` from the oldest message in returned page.
-8. Reverse page in memory for API output order (chronological).
+```mermaid
+flowchart TD
+    Start(["Get Chat Messages"]) --> FetchChat["Validate Chat Ownership & Fetch Chat Metadata"]
+    FetchChat --> CheckChat{"Chat exists?"}
+    CheckChat -- No --> Ret404["Raise 404 Not Found"]
 
-## First-Load Summary Boundary Rule
+    CheckChat -- Yes --> InitQuery["Build Base Message Query"]
+    InitQuery --> CheckCursor{"Has cursor?"}
 
-On first load only (no cursor), we optionally expand the page using `last_summarized_message_id`.
+    CheckCursor -- Yes --> FilterCursor["Filter: older_than(cursor_dt, cursor_id)"]
+    CheckCursor -- No --> FirstLoad["First Load Path"]
 
-Rule:
+    FilterCursor --> ExecutePageQuery["Execute Query with limit = limit + 1"]
+    FirstLoad --> ExecutePageQuery
 
-- Start with latest `limit` rows.
-- If summary boundary is older than the oldest loaded row, expand up to that boundary.
+    ExecutePageQuery --> FetchRows["Fetch page rows"]
+    FetchRows --> CheckHasMore{"Rows fetched > limit?"}
+    CheckHasMore -- Yes --> SetHasMore["has_more_older = True, Truncate extra row"]
+    CheckHasMore -- No --> SetHasMoreNo["has_more_older = False"]
 
-Examples (negative index from latest):
+    SetHasMore --> CheckExpand{"Is First Load AND last_summarized_message_id exists AND messages loaded?"}
+    SetHasMoreNo --> CheckExpand
 
-- Boundary at `-17` => return `-30` (keep default 30 window).
-- Boundary at `-35` => return `-35` (expanded page includes boundary).
+    CheckExpand -- No --> CheckEmpty{"Is messages list empty?"}
 
-## Response Fields
+    CheckExpand -- Yes --> DecodeULID["Decode summary_time from last_summarized_message_id ULID"]
+    DecodeULID --> CheckBoundary{"Is summary boundary older than oldest loaded message?"}
 
-The paginated chat response includes:
+    CheckBoundary -- No --> CheckEmpty
 
-- `messages`: Chronological messages for current page.
-- `next_cursor`: Cursor token for loading older messages.
-- `has_more_older`: Whether another older page exists.
-- Chat metadata (`id`, `name`, `chat_model`, `summary`, etc.).
+    CheckBoundary -- Yes --> RunExpandedQuery["Query all messages newer than or equal to last_summarized_message_id"]
+    RunExpandedQuery --> UpdateMessages["Update messages list with expanded rows"]
+    UpdateMessages --> CheckEmpty
 
-## Notes
+    CheckEmpty -- Yes --> ReturnEmpty(["Return Empty Response"])
+    CheckEmpty -- No --> SetupCursor["Set next_cursor = build_cursor(oldest_message) if has_more_older"]
 
-- Cursor should always be generated from the oldest returned message in the page.
-- Frontend should treat cursor as an opaque token.
-- If first-load expansion is enabled, page size may exceed the default limit in that specific scenario.
+    SetupCursor --> ChronologicalReverse["Reverse messages list to ascending order"]
+    ChronologicalReverse --> ReturnResult(["Return PaginatedChatMessages"])
+```
 
-## Query Cost (Before vs Now)
+#### Helper Functions in `crud/chat.py`:
 
-The current implementation saves database queries in common paths by:
+```python
+# Helper to check if a row is older than the cursor
+def older_than(created_at: datetime, message_id: str):
+    return or_(
+        MessageModel.created_at < created_at,
+        and_(
+            MessageModel.created_at == created_at,
+            MessageModel.id < message_id,
+        ),
+    )
 
-- Decoding `last_summarized_message_id` timestamp from ULID (no summary-row lookup query).
-- Using `limit + 1` to derive `has_more_older` (no separate "older exists" query).
+# Helper to check if a row is newer than/equal to the summary boundary
+def newer_or_equal(created_at: datetime, message_id: str):
+    return or_(
+        MessageModel.created_at > created_at,
+        and_(
+            MessageModel.created_at == created_at,
+            MessageModel.id >= message_id,
+        ),
+    )
+```
 
-### Cursor page (scroll-up load)
+---
 
-- Before: 2 queries
-    - page query
-    - `has_more_older` existence query
-- Now: 1 query
-    - page query with `limit + 1`
+## 3. Client-Side Message Integration
 
-Saved: **1 query per scroll-up page**
+The client application handles message retrieval using TanStack's `useInfiniteQuery`.
 
-### First load, no boundary expansion
+### Query Setup
 
-- Before: 3 queries
-    - page query
-    - summary boundary lookup query
-    - `has_more_older` existence query
-- Now: 1 query
-    - page query with `limit + 1`
+* **Query Key:** `["chat", chatId, "messages"]`
+* **API Call:** `getChat(chatId, { limit: 10, cursor: pageParam })`
 
-Saved: **2 queries**
+### Chronological Assembly (`useMemo`)
 
-### First load, boundary expansion triggered
+Because each page of messages is returned chronologically (oldest first, newest last), and pages are retrieved in reverse-chronological order, the client compiles the full conversation list backwards from the oldest page to the newest:
 
-- Before: 4 queries
-    - page query
-    - summary boundary lookup query
-    - expansion query
-    - `has_more_older` existence query
-- Now: 2 queries
-    - page query with `limit + 1`
-    - expansion query
+```javascript
+const mergedMessages = useMemo(() => {
+	if (pages.length === 0) return [];
 
-Saved: **2 queries**
+	const seenIds = new Set();
+	const result = [];
+
+	// Iterate from the oldest fetched page to the newest fetched page
+	for (let i = pages.length - 1; i >= 0; i--) {
+		const pageMessages = pages[i]?.messages || [];
+		for (const message of pageMessages) {
+			if (!seenIds.has(message.id)) {
+				seenIds.add(message.id);
+				result.push(message);
+			}
+		}
+	}
+
+	return result;
+}, [pages]);
+```
+
+### Scrolling & Lazy-Loading Flow
+
+1. **Initial Load:** Component mounts with `pageParam = null` (no cursor).
+   * Backend returns the latest messages, automatically expanding the page if needed to cover the summary boundary.
+   * If there are older messages beyond the retrieved window, the backend includes `next_cursor`.
+2. **Scrolling Up:** When the user scrolls near the top of the chat window:
+   * The list fires the pagination load handler.
+   * Client calls `fetchNextPage()` using `next_cursor` as the next `pageParam`.
+   * Newly retrieved older messages are prepended to the message list without disrupting the scroll position or resetting the active input.

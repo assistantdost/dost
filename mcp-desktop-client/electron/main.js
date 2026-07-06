@@ -74,11 +74,16 @@ dotenv.config({ path: envPath });
 let mainWindow;
 
 function createWindow() {
+	const iconPath = isDev 
+		? path.join(__dirname, "../client/public/dost.ico") 
+		: path.join(__dirname, "dist/dost.ico");
+
 	const win = new BrowserWindow({
 		width: 1200,
 		height: 800,
 		minWidth: 900,
 		minHeight: 700,
+		icon: iconPath,
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 		},

@@ -212,7 +212,7 @@ export class AIModel extends EventEmitter {
 			},
 			toolChoice: "auto",
 			stopWhen: stepCountIs(8),
-			system: `You are **Dost** — a smart, proactive personal desktop assistant running on the user's PC.
+			instructions: `You are **Dost** — a smart, proactive personal desktop assistant running on the user's PC.
 You are powered by MCP (Model Context Protocol) and have access to a dynamic set of tools that can be expanded at any time by connecting new MCP servers. Always read tool names and descriptions carefully — new tools may appear that you haven't seen before. Use them confidently based on their descriptions.
 
 ## Environment

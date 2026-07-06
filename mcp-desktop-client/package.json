@@ -53,6 +53,7 @@
 			}
 		],
 		"win": {
+			"icon": "client/public/dost.ico",
 			"target": [
 				{
 					"target": "nsis",

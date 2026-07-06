@@ -248,3 +248,5 @@ try.py
 .vscode/
 conversations.db
 
+.agents/
+.hallmark/
