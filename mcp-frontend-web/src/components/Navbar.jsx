@@ -19,14 +19,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-	Menu,
-	Zap,
-	User,
-	LogOut,
-	Sun,
-	Moon,
-} from "lucide-react";
+import { Menu, Zap, User, LogOut, Sun, Moon } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -83,7 +76,8 @@ const Navbar = () => {
 			setScrolled(currentScrollY > 20);
 
 			const isDocsOrTechnical =
-				pathname?.startsWith("/docs") || pathname?.startsWith("/technical");
+				pathname?.startsWith("/docs") ||
+				pathname?.startsWith("/technical");
 
 			if (
 				isDocsOrTechnical ||
@@ -139,9 +133,13 @@ const Navbar = () => {
 					className="flex items-center gap-2 shrink-0 group"
 				>
 					<div className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden transition-transform group-hover:scale-105">
-						<img src="/dost.png" alt="DOST Logo" className="h-full w-full object-cover" />
+						<img
+							src="/dost.png"
+							alt="DOST Logo"
+							className="h-full w-full object-cover"
+						/>
 					</div>
-					<span className="text-sm font-semibold tracking-tight text-foreground">
+					<span className="text-lg font-semibold tracking-tight text-foreground">
 						DOST
 					</span>
 				</Link>
@@ -189,7 +187,9 @@ const Navbar = () => {
 													alt={user.name}
 												/>
 												<AvatarFallback className="bg-muted text-primary text-sm font-bold">
-													{user.name?.charAt(0).toUpperCase()}
+													{user.name
+														?.charAt(0)
+														.toUpperCase()}
 												</AvatarFallback>
 											</Avatar>
 										</Button>
@@ -210,13 +210,17 @@ const Navbar = () => {
 											</div>
 										</DropdownMenuLabel>
 										<DropdownMenuItem
-											onClick={() => router.push("/profile")}
+											onClick={() =>
+												router.push("/profile")
+											}
 										>
 											<User className="mr-2 h-4 w-4" />
 											Profile
 										</DropdownMenuItem>
 										<DropdownMenuSeparator />
-										<DropdownMenuItem onClick={handleLogout}>
+										<DropdownMenuItem
+											onClick={handleLogout}
+										>
 											<LogOut className="mr-2 h-4 w-4" />
 											Log out
 										</DropdownMenuItem>
@@ -257,7 +261,11 @@ const Navbar = () => {
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
 											<div className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden">
-												<img src="/dost.png" alt="DOST Logo" className="h-full w-full object-cover" />
+												<img
+													src="/dost.png"
+													alt="DOST Logo"
+													className="h-full w-full object-cover"
+												/>
 											</div>
 											<span className="text-lg font-semibold text-foreground">
 												DOST
@@ -269,8 +277,8 @@ const Navbar = () => {
 							<div className="flex flex-col h-[calc(100vh-100px)] justify-between pt-6">
 								<div className="flex flex-col space-y-6">
 									{/* Profile section if logged in */}
-									{!isProd && (
-										logged && user ? (
+									{!isProd &&
+										(logged && user ? (
 											<div className="flex items-center space-x-3 p-4 border border-border rounded-xl bg-muted/40 shadow-inner">
 												<Avatar className="h-10 w-10">
 													<AvatarImage
@@ -299,12 +307,11 @@ const Navbar = () => {
 												</p>
 												<p className="text-[10px] text-muted-foreground mt-1">
 													Sign in to sync your local
-													environment and connect cloud
-													services.
+													environment and connect
+													cloud services.
 												</p>
 											</div>
-										)
-									)}
+										))}
 
 									{/* Navigation list */}
 									<div className="flex flex-col space-y-1">
@@ -349,7 +356,9 @@ const Navbar = () => {
 														size="sm"
 														className="w-full h-10 rounded-xl text-xs font-semibold"
 														onClick={() => {
-															router.push("/profile");
+															router.push(
+																"/profile",
+															);
 															setIsOpen(false);
 														}}
 													>

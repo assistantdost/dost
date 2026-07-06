@@ -14,7 +14,7 @@ import {
 	Layout,
 	Cpu,
 	GitBranch,
-	Plus
+	Plus,
 } from "lucide-react";
 
 const marqueeFeatures = [
@@ -87,7 +87,9 @@ function MarqueeFeatureCard({ icon, text, desc }) {
 				<div className="flex items-center justify-center rounded-lg bg-primary/10 p-2 text-primary">
 					{icon}
 				</div>
-				<span className="font-semibold text-sm text-foreground">{text}</span>
+				<span className="font-semibold text-sm text-foreground">
+					{text}
+				</span>
 			</div>
 			<p className="text-xs text-muted-foreground leading-relaxed mt-1">
 				{desc}

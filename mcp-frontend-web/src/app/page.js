@@ -150,7 +150,7 @@ export default function Home() {
 					<h2 className="text-2xl font-bold tracking-tight">
 						Capabilities in Action
 					</h2>
-					<p className="text-sm text-muted-foreground mt-2">
+					<p className="text-base text-muted-foreground mt-2">
 						Dost communicates natively with your system APIs and
 						online cloud services.
 					</p>
@@ -238,7 +238,7 @@ export default function Home() {
 								<h3 className="text-lg font-bold">
 									Getting Started
 								</h3>
-								<p className="text-sm text-muted-foreground leading-relaxed">
+								<p className="text-base text-muted-foreground leading-relaxed">
 									Need step-by-step instructions on
 									environment variables, registry
 									configuration, and client execution? Follow
@@ -248,7 +248,6 @@ export default function Home() {
 							<div className="mt-6">
 								<Button
 									asChild
-									size="sm"
 									variant="outline"
 									className="rounded-full font-medium border-border hover:bg-muted/80"
 								>
@@ -275,7 +274,7 @@ export default function Home() {
 								<h3 className="text-lg font-bold">
 									Technical Specifications
 								</h3>
-								<p className="text-sm text-muted-foreground leading-relaxed">
+								<p className="text-base text-muted-foreground leading-relaxed">
 									Want to know about our hybrid fastMCP
 									architecture, system context truncation
 									filters, and secure stdio/HTTP message
@@ -285,7 +284,6 @@ export default function Home() {
 							<div className="mt-6">
 								<Button
 									asChild
-									size="sm"
 									variant="outline"
 									className="rounded-full font-medium border-border hover:bg-muted/80"
 								>
