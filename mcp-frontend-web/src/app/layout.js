@@ -2,7 +2,7 @@ import { Oxanium, Poppins } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "sonner";
-import RefreshToken from "@/hooks/refreshToken";
+import RefreshToken from "@/hooks/RefreshToken";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
