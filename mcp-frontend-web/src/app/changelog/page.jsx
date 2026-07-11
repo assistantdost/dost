@@ -1,3 +1,8 @@
+export const metadata = {
+	title: "Changelog",
+	description: "See the latest features, releases, and developer updates for the DOST agentic AI framework.",
+};
+
 import {
 	Card,
 	CardContent,

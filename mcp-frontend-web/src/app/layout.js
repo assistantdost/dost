@@ -19,11 +19,85 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-	title: "DOST-MCP | Multi-Service AI Platform",
+	title: {
+		default: "DOST - Personal Agentic AI Assistant",
+		template: "%s | DOST",
+	},
 	description:
-		"A distributed system implementing the Model Context Protocol to connect AI models with local and remote tools. FastAPI, LangGraph, Electron, React, Redis",
+		"DOST is an open-source personal agentic AI assistant framework implementing the standardized Model Context Protocol (MCP) to automate Windows desktop actions and cloud services safely.",
+	keywords: [
+		"DOST",
+		"Agentic AI",
+		"AI Assistant",
+		"Model Context Protocol",
+		"MCP",
+		"Windows Automation",
+		"Desktop Assistant",
+		"Personal AI",
+		"Open Source AI",
+		"LangGraph",
+		"FastAPI",
+		"Electron AI",
+		"Context Engineering",
+	],
+	authors: [
+		{ name: "Dost Team", url: "https://github.com/assistantdost/dost" },
+	],
+	creator: "Dost Team",
+	publisher: "Dost Team",
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: {
+			index: true,
+			follow: true,
+			"max-video-preview": -1,
+			"max-image-preview": "large",
+			"max-snippet": -1,
+		},
+	},
 	icons: {
 		icon: "/dost.ico",
+		shortcut: "/dost.ico",
+		apple: "/dost.png",
+	},
+	openGraph: {
+		type: "website",
+		locale: "en_US",
+		url: "https://github.com/assistantdost/dost",
+		title: "DOST - Personal Agentic AI Assistant",
+		description:
+			"Most AI assistants are built for conversation. DOST is built for execution. Ask naturally, and DOST takes action across your Windows desktop and cloud tools.",
+		siteName: "DOST",
+		images: [
+			{
+				url: "/twitter%20card%20large.png",
+				width: 1200,
+				height: 628,
+				alt: "DOST - Personal Agentic AI Assistant",
+			},
+			{
+				url: "/twitter%20card%20app.png",
+				width: 800,
+				height: 800,
+				alt: "DOST - Personal Agentic AI Assistant Icon",
+			},
+		],
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "DOST - Personal Agentic AI Assistant",
+		description:
+			"An AI-powered desktop assistant that can control your PC, manage your emails, play music, and fetch live market data - all through natural language using MCP.",
+		images: [
+			{
+				url: "/twitter%20card%20large.png",
+				width: 1200,
+				height: 628,
+				alt: "DOST - Personal Agentic AI Assistant",
+			},
+		],
+		creator: "@TheFastest599",
 	},
 };
 

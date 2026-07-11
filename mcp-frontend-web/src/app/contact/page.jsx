@@ -1,3 +1,8 @@
+export const metadata = {
+	title: "Contact Support",
+	description: "Get in touch with support, request custom features, or connect with the DOST agentic assistant developer team.",
+};
+
 import {
 	Card,
 	CardContent,

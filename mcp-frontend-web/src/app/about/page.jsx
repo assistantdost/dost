@@ -1,3 +1,8 @@
+export const metadata = {
+	title: "About",
+	description: "Learn more about DOST, the open-source agentic AI assistant framework implementing the standardized Model Context Protocol (MCP).",
+};
+
 import {
 	Card,
 	CardContent,

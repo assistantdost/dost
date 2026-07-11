@@ -39,6 +39,33 @@ export async function generateStaticParams() {
 	];
 }
 
+export async function generateMetadata({ params }) {
+	const resolvedParams = await params;
+	const slugArr = resolvedParams.slug || [];
+	const technicalList = getTechnicalList();
+
+	if (slugArr.length === 0 && technicalList.length > 0) {
+		return {
+			title: technicalList[0].title,
+			description: `Read the ${technicalList[0].title} technical specifications for the DOST agentic AI assistant framework.`,
+		};
+	}
+
+	const slug = slugArr.join("-");
+	const activePost = technicalList.find((post) => post.slug === slug);
+
+	if (!activePost) {
+		return {
+			title: "Technical Specs",
+		};
+	}
+
+	return {
+		title: activePost.title,
+		description: `Read the ${activePost.title} technical specifications for the DOST agentic AI assistant framework.`,
+	};
+}
+
 export default async function TechnicalPage({ params }) {
 	const resolvedParams = await params;
 	const slugArr = resolvedParams.slug || [];

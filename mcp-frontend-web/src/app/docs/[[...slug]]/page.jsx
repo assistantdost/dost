@@ -36,6 +36,33 @@ export async function generateStaticParams() {
 	];
 }
 
+export async function generateMetadata({ params }) {
+	const resolvedParams = await params;
+	const slugArr = resolvedParams.slug || [];
+	const docsList = getDocsList();
+
+	if (slugArr.length === 0 && docsList.length > 0) {
+		return {
+			title: docsList[0].title,
+			description: `Read the ${docsList[0].title} documentation for the DOST agentic AI assistant.`,
+		};
+	}
+
+	const slug = slugArr.join("-");
+	const activeDoc = docsList.find((doc) => doc.slug === slug);
+
+	if (!activeDoc) {
+		return {
+			title: "Documentation",
+		};
+	}
+
+	return {
+		title: activeDoc.title,
+		description: `Read the ${activeDoc.title} documentation for the DOST agentic AI assistant.`,
+	};
+}
+
 export default async function DocsPage({ params }) {
 	const resolvedParams = await params;
 	const slugArr = resolvedParams.slug || [];
