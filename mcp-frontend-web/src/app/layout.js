@@ -19,6 +19,7 @@ const poppins = Poppins({
 });
 
 export const metadata = {
+	metadataBase: new URL("https://dost-assistant.vercel.app"),
 	title: {
 		default: "DOST - Personal Agentic AI Assistant",
 		template: "%s | DOST",
