@@ -68,26 +68,22 @@ export default function InteractiveShowcase() {
 			>
 				{/* Sliding/Fading Image */}
 				<div className="relative w-full h-full">
-					<AnimatePresence mode="wait">
-						<motion.div
-							key={index}
-							initial={{ opacity: 0, scale: 0.98 }}
-							animate={{ opacity: 1, scale: 1 }}
-							exit={{ opacity: 0, scale: 0.98 }}
-							transition={{ duration: 0.5, ease: "easeInOut" }}
-							className="absolute inset-0 w-full h-full"
+					{slides.map((slide, i) => (
+						<div
+							key={i}
+							className={`absolute inset-0 w-full h-full transition-opacity duration-500 ease-in-out ${
+								i === index ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+							}`}
 						>
 							<Image
-								src={slides[index].image}
-								alt={slides[index].title}
+								src={slide.image}
+								alt={slide.title}
 								fill
-								priority
-								// quality={100}
-								// unoptimized
-								// className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+								priority={true}
+								className="object-cover"
 							/>
-						</motion.div>
-					</AnimatePresence>
+						</div>
+					))}
 				</div>
 			</div>
 

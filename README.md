@@ -3,6 +3,10 @@
   <p align="center">
     An AI-powered desktop assistant that can control your PC, manage your emails, play music, fetch live market data, and much more - all through natural language.
   </p>
+  <p align="center">
+    <a href="https://dost-assistant.vercel.app"><strong>dost-assistant.vercel.app</strong></a> |
+    <a href="https://github.com/assistantdost/dost"><strong>GitHub</strong></a>
+  </p>
 </p>
 
 <p align="center">
@@ -106,7 +110,7 @@ dost/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-username/dost.git
+git clone https://github.com/assistantdost/dost.git
 cd dost
 ```
 
