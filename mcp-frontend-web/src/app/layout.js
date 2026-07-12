@@ -19,7 +19,7 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-	metadataBase: new URL("https://dost-assistant.vercel.app"),
+	metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://dost-assistant.vercel.app"),
 	verification: {
 		google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
 	},
