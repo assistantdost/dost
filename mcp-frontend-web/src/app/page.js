@@ -36,7 +36,7 @@ import InteractiveShowcase from "@/components/InteractiveShowcase";
 import Footer from "@/components/Footer";
 
 const GITHUB_URL = "https://github.com/assistantdost/dost";
-const DEMO_VIDEO_EMBED_URL = "https://www.youtube.com/embed/TRsFd3JEnr8";
+const DEMO_VIDEO_EMBED_URL = "https://www.youtube.com/embed/YRQ9Ke-wTZ8";
 
 export default function Home() {
 	const workflows = [

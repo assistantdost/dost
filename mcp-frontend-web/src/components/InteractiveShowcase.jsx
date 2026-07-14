@@ -42,6 +42,18 @@ const slides = [
 		description:
 			"Keep your credentials safe. Input and configure your own API keys locally for model providers and connected platforms.",
 	},
+	{
+		image: "/client/mermaid_support.png",
+		title: "Mermaid Diagram Support",
+		description:
+			"Render and interact with flowcharts, sequence diagrams, and architectures generated dynamically by the AI.",
+	},
+	{
+		image: "/client/maths_support.png",
+		title: "LaTeX Mathematical Support",
+		description:
+			"View and read complex math equations and scientific notations typeset beautifully in LaTeX and KaTeX.",
+	},
 ];
 
 export default function InteractiveShowcase() {
