@@ -41,7 +41,7 @@ export const CodeBlock = ({
 		<div
 			className={cn(
 				"relative w-full overflow-hidden rounded-md border bg-background text-foreground",
-				className
+				className,
 			)}
 			{...props}
 		>
@@ -174,7 +174,7 @@ export const CodeBlockSvgDownloadButton = ({
 			className={cn("shrink-0", className)}
 			onClick={downloadSvg}
 			size="icon"
-			variant="ghost"
+			variant="default"
 			{...props}
 		>
 			{children ?? <DownloadIcon size={14} />}

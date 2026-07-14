@@ -4,6 +4,7 @@ import { aiModel } from "../ai/models.js";
 import { tools } from "../mcp/tools.js";
 import { toolRAG } from "../mcp/toolRAG.js";
 import { generateText } from "ai";
+import { ulid } from "ulid";
 
 import { config } from "../config.js";
 import getStore from "../store.js";
@@ -172,6 +173,7 @@ Format your response STRICTLY using the following sections:
 
 			// Return in message format
 			const summaryMessage = {
+				id: ulid(),
 				role: "system",
 				parts: [
 					{

@@ -38,8 +38,8 @@ export default function MermaidDiagram({ code, className }) {
 	return (
 		<div
 			className={cn(
-				"relative rounded-md border bg-background text-foreground overflow-x-auto my-4",
-				className
+				"relative rounded-md border bg-gray-50 text-foreground overflow-x-auto my-4",
+				className,
 			)}
 			role="img"
 			aria-label="Mermaid diagram"
