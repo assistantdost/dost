@@ -11,11 +11,11 @@ function RefreshToken() {
 
 		const interval = setInterval(
 			() => {
-				refreshToken();
+				refreshToken().catch(() => {});
 			},
 			15 * 60 * 1000,
 		);
-		refreshToken(); // Refresh immediately on mount
+		refreshToken().catch(() => {}); // Refresh immediately on mount
 		return () => clearInterval(interval);
 	}, [refreshToken]);
 	return null; // This component doesn't render anything
