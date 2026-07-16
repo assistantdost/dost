@@ -33,6 +33,7 @@ import {
 import { FaWindows } from "react-icons/fa";
 import FeatureMarquee from "@/components/FeatureMarquee";
 import InteractiveShowcase from "@/components/InteractiveShowcase";
+import TokenChart from "@/components/TokenChart";
 import Footer from "@/components/Footer";
 
 const GITHUB_URL = "https://github.com/assistantdost/dost";
@@ -297,6 +298,106 @@ export default function Home() {
 								</Button>
 							</div>
 						</Card>
+					</div>
+				</div>
+			</section>
+
+			{/* CONTEXT & TOKEN OPTIMIZATION SECTION */}
+			<section className="py-20 md:py-28 bg-muted/10 border-b border-border">
+				<div className="container mx-auto px-6 max-w-6xl">
+					<div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+						{/* Left Column: Description & Statistics */}
+						<div className="lg:col-span-6 text-left flex flex-col items-start space-y-6">
+							<Badge
+								variant="outline"
+								className="rounded-full px-4 py-1 text-xs font-semibold bg-muted/50 border-border"
+							>
+								Efficiency & Optimization
+							</Badge>
+
+							<h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl leading-tight">
+								Prevent Context Exhaustion
+								<br />
+								<span className="text-primary">
+									& Reduce Token Spend
+								</span>
+							</h2>
+
+							<div className="space-y-4">
+								<p className=" text-muted-foreground leading-relaxed">
+									Most agentic loops suffer from rapid token
+									accumulation. Every step of reasoning,
+									parameter validation, and tool output
+									consumes context, leading to slow response
+									times and eventual model crashes.
+								</p>
+
+								<div className="space-y-3.5 border-l-2 border-primary/20 pl-4">
+									<div>
+										<h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+											<span className="h-1.5 w-1.5 rounded-full bg-primary" />
+											Dynamic Tool RAG
+										</h4>
+										<p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+											Exposing dozens of tool schemas at
+											once bloats prompts and distracts
+											models. DOST indexes all MCP tools
+											locally using semantic vector
+											embeddings and BM25 full-text
+											search, injecting only the top 3-5
+											relevant schemas per turn.
+										</p>
+									</div>
+									<div>
+										<h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+											<span className="h-1.5 w-1.5 rounded-full bg-primary" />
+											Rolling Summarization
+										</h4>
+										<p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+											When conversation context crosses
+											configured limits, older execution
+											turns are automatically compressed
+											into dense system summaries,
+											preserving historical context while
+											keeping current chat segments
+											completely raw.
+										</p>
+									</div>
+								</div>
+							</div>
+
+							<div className="pt-2 flex flex-wrap gap-4 w-full justify-start">
+								<div className="flex flex-col p-4 rounded-2xl bg-card border border-border/80 shadow-sm min-w-[130px] shrink-0">
+									<span className="text-2xl font-black text-primary">
+										-93%
+									</span>
+									<span className="text-[10px] text-muted-foreground mt-1 font-semibold uppercase tracking-wider">
+										Prompt Tool Bloat
+									</span>
+								</div>
+								<div className="flex flex-col p-4 rounded-2xl bg-card border border-border/80 shadow-sm min-w-[130px] shrink-0">
+									<span className="text-2xl font-black text-primary">
+										Stable
+									</span>
+									<span className="text-[10px] text-muted-foreground mt-1 font-semibold uppercase tracking-wider">
+										Context Windows
+									</span>
+								</div>
+								<div className="flex flex-col p-4 rounded-2xl bg-card border border-border/80 shadow-sm min-w-[130px] shrink-0">
+									<span className="text-2xl font-black text-primary">
+										-96%
+									</span>
+									<span className="text-[10px] text-muted-foreground mt-1 font-semibold uppercase tracking-wider">
+										Cost Reduction
+									</span>
+								</div>
+							</div>
+						</div>
+
+						{/* Right Column: Recharts Area Chart */}
+						<div className="lg:col-span-6 w-full">
+							<TokenChart />
+						</div>
 					</div>
 				</div>
 			</section>
