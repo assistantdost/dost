@@ -8,7 +8,6 @@ import {
 	YAxis,
 	CartesianGrid,
 	Tooltip,
-	ResponsiveContainer,
 } from "recharts";
 import {
 	Card,
@@ -17,6 +16,11 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	ChartContainer,
+	ChartLegend,
+	ChartLegendContent,
+} from "@/components/ui/chart";
 
 const data = [
 	{ turn: "Turn 1", unoptimized: 25000, optimized: 2500 },
@@ -30,6 +34,17 @@ const data = [
 	{ turn: "Turn 9", unoptimized: 115000, optimized: 4500 },
 	{ turn: "Turn 10", unoptimized: 120000, optimized: 4500 },
 ];
+
+const chartConfig = {
+	unoptimized: {
+		label: "Unoptimized Loop",
+		color: "#ef4444",
+	},
+	optimized: {
+		label: "DOST Bounded Loop",
+		color: "#10b981",
+	},
+};
 
 const CustomTooltip = ({ active, payload }) => {
 	if (active && payload && payload.length) {
@@ -101,8 +116,8 @@ export default function TokenChart() {
 			</CardHeader>
 
 			<CardContent className=" pt-4 sm:px-6 sm:pt-6 flex-1 flex flex-col justify-between">
-				<div className="flex-1 w-full h-[240px] text-[11px]">
-					<ResponsiveContainer width="100%" height="100%">
+				<div className="flex-1 w-full h-[320px] text-[11px]">
+					<ChartContainer config={chartConfig} className="w-full h-full">
 						<AreaChart
 							data={data}
 							margin={{
@@ -193,19 +208,9 @@ export default function TokenChart() {
 								fillOpacity={1}
 								fill="url(#colorOptimized)"
 							/>
+							<ChartLegend content={<ChartLegendContent />} />
 						</AreaChart>
-					</ResponsiveContainer>
-				</div>
-
-				<div className="flex items-center gap-6 justify-center mt-4 border-t border-border/40 pt-4 text-xs font-semibold">
-					<div className="flex items-center gap-2 text-red-500">
-						<span className="h-2 w-2 rounded-full bg-red-500" />
-						<span>Unoptimized Loop</span>
-					</div>
-					<div className="flex items-center gap-2 text-emerald-500">
-						<span className="h-2 w-2 rounded-full bg-emerald-500" />
-						<span>DOST Bounded Loop</span>
-					</div>
+					</ChartContainer>
 				</div>
 			</CardContent>
 		</Card>

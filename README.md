@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">🤝 Dost - AI Desktop Assistant</h1>
+  <h1 align="center">🤝 DOST - Personal Agentic AI Assistant</h1>
   <p align="center">
     An AI-powered desktop assistant that can control your PC, manage your emails, play music, fetch live market data, and much more - all through natural language.
   </p>
@@ -7,6 +7,10 @@
     <a href="https://dost-assistant.vercel.app"><strong>dost-assistant.vercel.app</strong></a> |
     <a href="https://github.com/assistantdost/dost"><strong>GitHub</strong></a>
   </p>
+</p>
+
+<p align="center">
+  <img src="mcp-frontend-web/public/client/home_page.png" alt="DOST Homepage" width="800" />
 </p>
 
 <p align="center">

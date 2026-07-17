@@ -34,6 +34,7 @@ import { FaWindows } from "react-icons/fa";
 import FeatureMarquee from "@/components/FeatureMarquee";
 import InteractiveShowcase from "@/components/InteractiveShowcase";
 import TokenChart from "@/components/TokenChart";
+import ContextBreakdown from "@/components/ContextBreakdown";
 import Footer from "@/components/Footer";
 
 const GITHUB_URL = "https://github.com/assistantdost/dost";
@@ -394,9 +395,10 @@ export default function Home() {
 							</div>
 						</div>
 
-						{/* Right Column: Recharts Area Chart */}
+						{/* Right Column: Recharts Area Chart & Context Breakdown */}
 						<div className="lg:col-span-6 w-full">
 							<TokenChart />
+							<ContextBreakdown />
 						</div>
 					</div>
 				</div>
@@ -579,20 +581,6 @@ export default function Home() {
 									third-party MCP servers with zero custom
 									code.
 								</p>
-								<div className="flex flex-wrap gap-2">
-									<Badge variant="secondary">
-										Postgres & MySQL
-									</Badge>
-									<Badge variant="secondary">
-										GitHub Sync
-									</Badge>
-									<Badge variant="secondary">
-										Docker Orchestration
-									</Badge>
-									<Badge variant="secondary">
-										Jira & Slack APIs
-									</Badge>
-								</div>
 							</CardContent>
 						</Card>
 					</div>
@@ -694,19 +682,19 @@ export default function Home() {
 							<h3 className="text-lg font-bold mb-2">
 								Connect Your Own Server
 							</h3>
-							<p className="text-xs text-muted-foreground leading-relaxed mb-6">
+							<p className="text-sm text-muted-foreground leading-relaxed mb-6">
 								Adding custom servers is simple. Create any
 								executable that communicates over standard
 								input/output (stdio) or HTTP/SSE, and register
 								it inside the configuration panel.
 							</p>
-							<div className="flex flex-wrap gap-2">
+							{/* <div className="flex flex-wrap gap-2">
 								<Badge variant="secondary">PostgreSQL</Badge>
 								<Badge variant="secondary">
 									Puppeteer browser
 								</Badge>
 								<Badge variant="secondary">Local Memory</Badge>
-							</div>
+							</div> */}
 						</Card>
 					</div>
 				</div>

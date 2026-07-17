@@ -1,6 +1,7 @@
 export const metadata = {
 	title: "About",
-	description: "Learn more about DOST, the open-source agentic AI assistant framework implementing the standardized Model Context Protocol (MCP).",
+	description:
+		"Learn more about DOST, the open-source agentic AI assistant framework implementing the standardized Model Context Protocol (MCP).",
 };
 
 import {
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 
 export default function AboutPage() {
+	const GITHUB_URL = "https://github.com/assistantdost/dost";
 	return (
 		<div className="min-h-screen bg-background text-foreground p-2 md:p-6 mt-28 font-sans relative overflow-hidden">
 			{/* Decorative background glows */}
@@ -263,7 +265,7 @@ export default function AboutPage() {
 							className="rounded-full px-6 font-semibold shadow-md"
 						>
 							<a
-								href="https://github.com"
+								href={GITHUB_URL}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex items-center gap-2"

@@ -1,6 +1,7 @@
 export const metadata = {
 	title: "Contact Support",
-	description: "Get in touch with support, request custom features, or connect with the DOST agentic assistant developer team.",
+	description:
+		"Get in touch with support, request custom features, or connect with the DOST agentic assistant developer team.",
 };
 
 import {
@@ -18,6 +19,7 @@ export default function ContactPage() {
 		"assistantant.dost@gmail.com",
 		"ribhusaha2003@gmail.com",
 		"sayanbarma2004@gmail.com",
+		"rb636739@gmail.com",
 	];
 
 	return (
