@@ -19,7 +19,9 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-	metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://dost-assistant.vercel.app"),
+	metadataBase: new URL(
+		process.env.NEXT_PUBLIC_APP_URL || "https://dost-assistant.vercel.app",
+	),
 	verification: {
 		google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
 	},
@@ -75,13 +77,13 @@ export const metadata = {
 		siteName: "DOST",
 		images: [
 			{
-				url: "/twitter%20card%20large.png",
+				url: "/twitter-card-large.png",
 				width: 1200,
 				height: 628,
 				alt: "DOST - Personal Agentic AI Assistant",
 			},
 			{
-				url: "/twitter%20card%20app.png",
+				url: "/twitter-card-app.png",
 				width: 800,
 				height: 800,
 				alt: "DOST - Personal Agentic AI Assistant Icon",
@@ -95,7 +97,7 @@ export const metadata = {
 			"An AI-powered desktop assistant that can control your PC, manage your emails, play music, and fetch live market data - all through natural language using MCP.",
 		images: [
 			{
-				url: "/twitter%20card%20large.png",
+				url: "/twitter-card-large.png",
 				width: 1200,
 				height: 628,
 				alt: "DOST - Personal Agentic AI Assistant",
